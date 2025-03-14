@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import styles from "./Events.module.css";
+import styles from "./events.module.css";
 
 // Example event image inside /public/images (adjust path/filename if needed)
 const tasteAfricaImage = "/images/taste-africa.jpg";

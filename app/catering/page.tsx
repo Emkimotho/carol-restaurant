@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import styles from './Catering.module.css';
+import styles from './catering.module.css';
 
 export default function CateringPage() {
   const [formData, setFormData] = useState({
