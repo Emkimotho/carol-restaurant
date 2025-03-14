@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import styles from './careers.module.css';
+import styles from './Careers.module.css';
 
 interface Job {
   id: number;
