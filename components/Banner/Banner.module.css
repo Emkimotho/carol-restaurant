@@ -1,0 +1,136 @@
+/* File: components/Banner/Banner.module.css */
+
+/* ====== Banner Section ====== */
+.banner {
+  position: relative;
+  width: 100%;
+  /* Reduced banner height by 20% */
+  min-height: 400px;
+  max-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Reduced gap between navbar and banner by 75% */
+  margin-top: calc(var(--navbar-height, 60px) * 0.125);
+  text-align: center;
+  overflow: hidden;
+  background-color: var(--light-gray); /* Fallback background */
+}
+
+/* Wrapper for the banner image */
+.bannerImageContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Banner Content */
+.bannerContent {
+  position: relative;
+  z-index: 1; /* Above the image */
+  text-align: center;
+  color: var(--white);
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* Subtle shadow for text */
+  padding: 0 1rem;
+}
+
+/* Banner Title */
+.bannerTitle {
+  font-size: 2.5rem;
+  font-family: var(--font-heading);
+  margin-bottom: 0.5rem;
+}
+
+/* Banner Subtitle */
+.bannerSubtitle {
+  font-size: 1.2rem;
+  font-family: var(--font-body);
+  margin-top: 0.5rem;
+}
+
+/* Banner Buttons Container */
+.bannerButtons {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem; /* Space between buttons */
+  flex-wrap: wrap; /* Wrap buttons on smaller screens */
+}
+
+/* Common Button Style */
+.button {
+  font-family: var(--font-body);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  white-space: nowrap;
+}
+
+/* Primary Button: Order Now */
+.primaryButton {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+.primaryButton:hover {
+  background-color: var(--primary-color-hover);
+  transform: scale(1.05);
+}
+
+/* Secondary Button: Book a Table */
+.secondaryButton {
+  background-color: var(--secondary-color);
+  color: var(--white);
+}
+
+.secondaryButton:hover {
+  background-color: var(--secondary-color-hover);
+  transform: scale(1.05);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .banner {
+    min-height: 320px;  /* 80% of 400px */
+    max-height: 384px;  /* 80% of 480px */
+  }
+  .bannerTitle {
+    font-size: 2rem;
+  }
+  .bannerSubtitle {
+    font-size: 1rem;
+  }
+  .bannerButtons {
+    gap: 0.75rem;
+  }
+  .button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner {
+    min-height: 240px;  /* 80% of 300px approx. */
+    max-height: 288px;
+  }
+  .bannerTitle {
+    font-size: 1.8rem;
+  }
+  .bannerSubtitle {
+    font-size: 0.85rem;
+  }
+  .bannerButtons {
+    gap: 0.5rem;
+  }
+  .button {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+}

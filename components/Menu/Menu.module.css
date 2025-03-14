@@ -1,0 +1,100 @@
+/* File: components/Menu/Menu.module.css */
+
+/* ==========================================================================
+   Container & Title
+   ========================================================================== */
+   .menuPage {
+    /* Container styles – adjust margins/padding as needed */
+  }
+  
+  .menuPage h1 {
+    font-family: var(--font-heading, 'Arial, sans-serif');
+    font-weight: bold;
+    color: var(--primary-color, #00bf63);
+    text-align: center;
+    margin: 1rem 0;       /* Reduced vertical margin */
+    padding-top: 0;       /* No extra top padding */
+  }
+  
+  /* ==========================================================================
+     Nav Tabs Overrides (Bootstrap)
+     ========================================================================== */
+  .menuPage :global(.nav-tabs) {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .menuPage :global(.nav-tabs .nav-link) {
+    font-size: 1.1rem;
+    padding: 0.75rem 1.25rem;
+    color: var(--primary-color, #00bf63);
+    background-color: var(--white, #fff);
+    font-family: var(--font-body, 'Arial, sans-serif');
+    text-align: center;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+  }
+  
+  .menuPage :global(.nav-tabs .nav-link.active) {
+    background-color: var(--primary-color, #00bf63);
+    color: var(--white, #fff);
+    border-color: var(--primary-color, #00bf63);
+  }
+  
+  .menuPage :global(.nav-tabs .nav-link:hover) {
+    background-color: var(--secondary-color, #D0A933);
+    color: var(--white, #fff);
+  }
+  
+  /* ==========================================================================
+     Add to Cart Button & In-Restaurant Message
+     ========================================================================== */
+  .menuPage .btnAddToCart {
+    background-color: var(--primary-color, #00bf63) !important;
+    color: var(--white, #fff) !important;
+    border: none;
+    padding: 1rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+  }
+  
+  .menuPage .btnAddToCart:hover {
+    background-color: var(--secondary-color, #D0A933) !important;
+    transform: scale(1.05);
+  }
+  
+  /* Message style for items not available for online purchase */
+  .menuPage .textMuted {
+    color: var(--gray, #6c757d);
+    font-style: italic;
+    text-align: center;
+    padding: 0.5rem;
+  }
+  
+  /* ==========================================================================
+     Image Styling
+     ========================================================================== */
+  .menuPage .itemImage {
+    width: 50%;
+    margin: 0 auto 1rem;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+  
+  .menuPage .itemImage img {
+    width: 100%;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+  
+  .menuPage .itemImage:hover img {
+    transform: scale(1.1);
+  }
+  

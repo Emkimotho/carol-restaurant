@@ -1,0 +1,49 @@
+.neonSign {
+  /* Local component variables */
+  --neon-open: #28a745;
+  --neon-closed: #af0516e1;
+  --text-color: #343a40;
+
+  font-size: 2em;
+  font-weight: bold;
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
+  margin: 20px 0;
+  color: var(--text-color);
+  background-color: #000;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Neon effect for "open" state */
+.neonSign.open {
+  color: var(--neon-open);
+  text-shadow:
+    0 0 5px var(--neon-open),
+    0 0 10px var(--neon-open),
+    0 0 20px var(--neon-open),
+    0 0 40px var(--neon-open);
+}
+
+/* Neon effect for "closed" state */
+.neonSign.closed {
+  color: var(--neon-closed);
+  text-shadow:
+    0 0 5px var(--neon-closed),
+    0 0 10px var(--neon-closed),
+    0 0 20px var(--neon-closed),
+    0 0 40px var(--neon-closed);
+}
+
+/* Inline-flex for icon and text alignment */
+.statusContainer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+
+/* Keeps icon vertically aligned */
+.statusIcon {
+  vertical-align: middle;
+}

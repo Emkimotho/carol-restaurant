@@ -1,0 +1,372 @@
+/* =======================================
+   Login.module.css
+======================================= */
+
+/* =======================================
+   Container Styles
+======================================= */
+.auth-container {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  font-family: var(--font-body);
+  position: relative;
+}
+
+/* Dark mode override */
+.dark-mode {
+  background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+}
+
+/* Dark mode toggle button */
+.dark-mode-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  z-index: 1100;
+}
+
+.dark-mode-toggle:hover {
+  background-color: var(--secondary-color);
+}
+
+/* =======================================
+   Left Section - Welcome Panel
+======================================= */
+.auth-left {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(4px);
+  color: var(--white);
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.auth-left h2 {
+  font-size: 3rem;
+  font-family: var(--font-heading);
+  margin-bottom: 1rem;
+}
+
+.auth-left p {
+  font-size: 1.2rem;
+  line-height: 1.5;
+  margin-bottom: 2rem;
+}
+
+/* =======================================
+   Right Section - Login Form Container
+======================================= */
+.auth-right {
+  flex: 1;
+  background-color: var(--white);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.dark-mode .auth-right {
+  background-color: #222;
+}
+
+.auth-right form {
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+  background: var(--white);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
+}
+
+.dark-mode .auth-right form {
+  background: #333;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  color: var(--white);
+}
+
+.auth-right form:hover {
+  transform: translateY(-3px);
+}
+
+/* =======================================
+   Form Elements
+======================================= */
+.login-form h3 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-family: var(--font-heading);
+  font-size: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+.dark-mode .form-group label {
+  color: #ddd;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--light-gray);
+  color: var(--dark-gray);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.dark-mode .form-group input,
+.dark-mode .form-group select {
+  background-color: #444;
+  color: #eee;
+  border: 2px solid #555;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 191, 99, 0.4);
+  outline: none;
+}
+
+input.error,
+select.error {
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 10px rgba(208, 169, 51, 0.4);
+}
+
+/* =======================================
+   Button Styles (Sweeping Effect ONLY on .btn-primary)
+======================================= */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* Primary button with sweeping overlay behind text */
+.btn-primary {
+  position: relative;      /* so we can position the overlay */
+  z-index: 0;             /* overlay goes behind text */
+  overflow: hidden;       /* hide the sweeping overlay edges */
+  background-color: var(--primary-color);
+  border: none;
+  color: var(--white);
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--box-shadow-primary);
+  transition: color 0.3s, transform 0.3s, background-color 0.3s;
+}
+
+/* Sweeping overlay behind text */
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background-color: var(--secondary-color);
+  transition: transform 0.5s ease;
+  z-index: -1; /* ensures overlay is behind the text */
+}
+
+/* On hover, move overlay across the button and change text color */
+.btn-primary:hover::before {
+  transform: translateX(100%);
+}
+
+.btn-primary:hover {
+  color: var(--black);
+  transform: translateY(-2px);
+  box-shadow: var(--box-shadow-secondary);
+}
+
+/* =======================================
+   Remove Sweeping Effect from Other Links/Buttons
+======================================= */
+
+/* Forgot password & sign-up links (no overlay) */
+.forgot-password,
+.signup-link {
+  position: static;
+  overflow: visible;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+/* Dark mode override for those links */
+.dark-mode .forgot-password,
+.dark-mode .signup-link {
+  color: #aaa;
+}
+
+/* On hover, just change color (no sweeping) */
+.forgot-password:hover,
+.signup-link:hover {
+  color: var(--secondary-color);
+}
+
+/* Ensure no overlay is generated for them */
+.forgot-password::before,
+.signup-link::before {
+  content: none;
+}
+
+/* =======================================
+   Modal Styles
+======================================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.4s;
+}
+
+.modal-content {
+  background-color: var(--white);
+  padding: 2rem;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  position: relative;
+  animation: slideDown 0.4s;
+}
+
+.dark-mode .modal-content {
+  background-color: #333;
+  color: var(--white);
+}
+
+/* Close button in the modal (no sweeping) */
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--dark-gray);
+  cursor: pointer;
+  transition: color 0.3s;
+  overflow: visible; /* ensure no clipping */
+}
+
+/* No overlay for close button */
+.close-button::before {
+  content: none;
+}
+
+.close-button:hover {
+  color: var(--secondary-color);
+}
+
+/* =======================================
+   Sign-Up Form Layout (Multi-Step)
+======================================= */
+.sign-up-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+/* =======================================
+   Error and Success Messages
+======================================= */
+.error-message {
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.success-message {
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* =======================================
+   Animations
+======================================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* =======================================
+   Responsive Adjustments
+======================================= */
+@media (max-width: 768px) {
+  .auth-container {
+    flex-direction: column;
+  }
+  .auth-left,
+  .auth-right {
+    padding: 2rem;
+    text-align: center;
+  }
+  .auth-right form {
+    margin: 0 1rem;
+  }
+}

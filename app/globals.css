@@ -1,0 +1,185 @@
+/* File: app/globals.css */
+
+/* 1. Import Bootstrap first */
+@import "bootstrap/dist/css/bootstrap.min.css";
+
+/* 2. Tailwind Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 3. Global Variables */
+:root {
+  /* Color Palette */
+  --primary-color: #00BF63;
+  --primary-color-hover: #009F53;
+  --secondary-color: #D0A933;
+  --secondary-color-hover: #B8902D;
+  --white: #ffffff;
+  --black: #000000;
+  --gray: #6c757d;
+  --gray-hover: #5a6268;
+  --light-gray: #f8f9fa;
+  --dark-gray: #343a40;
+  --border-color: #e0e0e0;
+  --border-color-dark: #ced4da;
+
+  /* Typography */
+  --font-body: 'Montserrat', sans-serif;
+  --font-heading: 'Belleza', sans-serif;
+
+  /* Shadows */
+  --box-shadow-primary: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  --box-shadow-secondary: 0px 4px 6px rgba(76, 175, 80, 0.2);
+
+  /* Layout Variables */
+  --navbar-height: 80px;
+  --container-width: 1200px;
+
+  /* Global Background & Foreground */
+  --background: var(--white);
+  --foreground: var(--dark-gray);
+}
+
+/* 4. Global Resets & Base Styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--background);
+  color: var(--foreground);
+  line-height: 1.6;
+  padding-top: var(--navbar-height);
+}
+
+img,
+video {
+  max-width: 100%;
+  display: block;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+a:hover,
+a:focus {
+  color: var(--primary-color-hover);
+  text-decoration: underline;
+}
+
+/* 5. Global Button Overrides with Sweeping Hover Effect */
+button,
+.btn,
+button.btn {
+  position: relative;
+  z-index: 0; /* Ensure overlay can go behind text */
+  overflow: hidden;
+  background-color: var(--primary-color);
+  border: none;
+  padding: 12px 20px;
+  color: var(--white);
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  /* Delay text color transition so it changes after the sweep */
+  transition: color 0.3s ease 0.5s;
+}
+
+/* Sweeping overlay behind text */
+button::before,
+.btn::before,
+button.btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background-color: var(--secondary-color);
+  transition: transform 0.5s ease;
+  /* Place it behind the button text */
+  z-index: -1;
+}
+
+/* Animate the overlay left to right on hover */
+button:hover::before,
+.btn:hover::before,
+button.btn:hover::before {
+  transform: translateX(100%);
+}
+
+/* On hover, change the text color (delayed) to black */
+button:hover,
+.btn:hover,
+button.btn:hover {
+  color: var(--black);
+}
+
+/* 6. Checkbox Styling */
+input[type="checkbox"] {
+  accent-color: var(--primary-color);
+}
+
+/* 7. Popup Window Styles */
+.popup-window {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  background-color: var(--white);
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow-primary);
+  border-radius: 8px;
+  min-width: 300px;
+  max-width: 90%;
+}
+
+/* Override sweeping effect for .close-btn so it remains a simple "x" */
+.popup-window .close-btn {
+  /* Override general button styles that create the sweep effect */
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--black);
+  cursor: pointer;
+  overflow: visible;
+  z-index: auto;         /* remove the stacking context */
+  transition: none;      /* no color transition or sweep effect */
+}
+
+.popup-window .close-btn::before {
+  content: "x";
+  position: static;      /* no absolute positioning on the pseudo-element */
+  background: none;      /* remove the sweeping background color */
+  transition: none;
+  z-index: auto;
+}
+
+.popup-window .close-btn:hover {
+  color: var(--gray-hover);
+}

@@ -1,0 +1,128 @@
+/* =======================================
+   About Us Section Styles
+======================================= */
+.aboutUs {
+  padding: 4rem 0;
+  background-color: #fff;
+}
+
+.aboutUs .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.aboutUs .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Left Column (Image) */
+.aboutUs .col-lg-6 {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding: 1rem;
+}
+
+.aboutUs img {
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Right Column (Text Content) */
+.aboutUs .col-lg-6 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Titles in Green */
+.aboutUs h2 {
+  font-size: 2.5rem;
+  font-family: var(--font-heading);
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+/* Paragraph Styling */
+.aboutUs p {
+  font-size: 1.1rem;
+  color: var(--dark-gray);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+/* Read More Button: Green by default, hover transitions to secondary color.
+   The padding is reduced so it wraps tightly around the text.
+*/
+.readMoreBtn {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  white-space: nowrap;
+}
+
+.readMoreBtn:hover {
+  background-color: var(--secondary-color);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Sweep Link Styling: Styled as text, green by default, transitions to secondary on hover with an underline sweep */
+.sweepLink {
+  position: relative;
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.sweepLink::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  height: 2px;
+  width: 0;
+  background-color: var(--secondary-color);
+  transition: width 0.3s ease;
+}
+
+.sweepLink:hover {
+  color: var(--secondary-color);
+}
+
+.sweepLink:hover::after {
+  width: 100%;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .aboutUs .row {
+    flex-direction: column;
+  }
+  .aboutUs .col-lg-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  .aboutUs h2 {
+    font-size: 2rem;
+    text-align: center;
+  }
+  .aboutUs p {
+    text-align: center;
+  }
+  .readMoreBtn {
+    align-self: center;
+  }
+}

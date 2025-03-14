@@ -1,0 +1,176 @@
+/* File: app/schedule-order/schedule.module.css */
+
+/* Main container */
+.scheduleContainer {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: var(--box-shadow-primary);
+}
+
+/* Step Indicator */
+.stepIndicator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.stepItem {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.stepItemActive {
+  background: var(--primary-color);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.stepLabel {
+  font-size: 0.8rem;
+  color: var(--dark-gray);
+  text-align: center;
+}
+
+/* Heading & Intro */
+.scheduleHeading {
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.scheduleIntro {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--dark-gray);
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* Day & Time Grids */
+.dayGrid,
+.timeGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.dayCard,
+.timeSlot {
+  width: 90px;
+  padding: 0.75rem;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dayCard:hover,
+.timeSlot:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dayCardSelected,
+.timeSlotSelected {
+  border: 2px solid var(--primary-color);
+  background: #e6f7ec;
+}
+
+.dayCardClosed,
+.timeSlotClosed {
+  background: #f8d7da;
+  color: #721c24;
+  cursor: not-allowed;
+}
+
+/* Error message */
+.errorMessage {
+  text-align: center;
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+/* Action Buttons */
+.scheduleActions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btnCancel,
+.btnPrimary {
+  min-width: 100px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.btnCancel {
+  background-color: var(--gray);
+  color: #fff;
+}
+
+.btnCancel:hover {
+  background-color: var(--gray-hover);
+  transform: scale(1.03);
+}
+
+.btnPrimary {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.btnPrimary:hover {
+  background-color: var(--primary-color-hover);
+  transform: scale(1.03);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .scheduleContainer {
+    padding: 1.5rem 1rem;
+  }
+
+  .scheduleHeading {
+    font-size: 1.5rem;
+  }
+
+  .dayCard,
+  .timeSlot {
+    width: 80px;
+    padding: 0.6rem;
+  }
+
+  .btnCancel,
+  .btnPrimary {
+    font-size: 0.9rem;
+    padding: 0.65rem 1rem;
+  }
+}

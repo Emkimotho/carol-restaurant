@@ -1,0 +1,367 @@
+/* File: app/checkout/Checkout.module.css */
+
+/* ====== Main Checkout Container ====== */
+.checkoutContainer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  background-color: var(--white);
+  border-radius: 0.75rem;
+  box-shadow: var(--box-shadow-primary);
+}
+
+/* ====== Page Layout ====== */
+.checkoutPage {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.checkoutPage h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  font-family: var(--font-heading);
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+/* ====== Section Styling ====== */
+.checkoutSection {
+  background: linear-gradient(135deg, var(--white) 0%, var(--light-gray) 100%);
+  padding: 1.5rem 2rem;
+  border-radius: 0.625rem;
+  box-shadow: var(--box-shadow-secondary);
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.checkoutSection h4 {
+  font-size: 1.8rem;
+  font-family: var(--font-heading);
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.checkoutSection h4::after {
+  content: '';
+  width: 50px;
+  height: 3px;
+  background-color: var(--secondary-color);
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  border-radius: 0.25rem;
+}
+
+.checkoutSection p {
+  font-size: 1rem;
+  color: var(--dark-gray);
+  line-height: 1.6;
+  font-family: var(--font-body);
+}
+
+/* ====== Order Summary Specific ====== */
+.orderSummary {
+  border: 1px solid var(--border-color);
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+  background-color: var(--white);
+}
+
+.orderItem {
+  margin-bottom: 1rem;
+}
+
+.orderItem:last-child {
+  margin-bottom: 0;
+}
+
+.orderItem h5 {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+}
+
+.orderItem p {
+  font-size: 0.95rem;
+  color: var(--dark-gray);
+  margin: 2px 0;
+}
+
+.orderTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.orderTotal h5 {
+  font-size: 1rem;
+  color: var(--primary-color);
+}
+
+.orderTotal p {
+  font-size: 1rem;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* ====== Tip Selection ====== */
+.tipSelection h5 {
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.tipOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tipOptions .btn {
+  flex: 1 1 calc(33.333% - 0.75rem);
+  padding: 0.75rem 0;
+  font-size: 0.95rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ====== Navigation Buttons ====== */
+.navigationButtons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.navigationButtons .btn {
+  flex: 1;
+  padding: 0.75rem 0;
+  font-size: 1rem;
+}
+
+/* ====== Generic Button Styles ====== */
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-family: var(--font-body);
+  border-radius: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btnPrimary {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+.btnSecondary {
+  background-color: var(--secondary-color);
+  color: var(--white);
+}
+
+.btnOutlinePrimary {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.btnSweepWave {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ====== Schedule Page (Day/Time Picker) ====== */
+.dayGrid,
+.timeGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.dayCard,
+.timeSlot {
+  width: 90px;
+  padding: 0.75rem;
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dayCard:hover,
+.timeSlot:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.dayCardSelected,
+.timeSlotSelected {
+  border: 2px solid var(--primary-color);
+  background: #e6f7ec;
+}
+
+.dayCardClosed,
+.timeSlotClosed {
+  background: #f8d7da;
+  color: #721c24;
+  cursor: not-allowed;
+}
+
+/* ====== Step Indicators ====== */
+.stepIndicator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.stepItem {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.stepItemActive {
+  background: var(--primary-color);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.stepLabel {
+  font-size: 0.8rem;
+  color: var(--dark-gray);
+  text-align: center;
+}
+
+/* ====== Schedule Actions (Buttons on Schedule Page) ====== */
+.scheduleActions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btnCancel,
+.btnPrimary {
+  min-width: 100px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.btnCancel {
+  background-color: var(--gray);
+  color: #fff;
+}
+
+.btnCancel:hover {
+  background-color: var(--gray-hover);
+  transform: scale(1.03);
+}
+
+.btnPrimary {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.btnPrimary:hover {
+  background-color: var(--primary-color-hover);
+  transform: scale(1.03);
+}
+
+/* ====== Payment & Billing ====== */
+.paymentOptions {
+  margin-bottom: 1.5rem;
+}
+
+.billingAddress {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--white);
+}
+
+.successMessage {
+  text-align: center;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--light-gray);
+  color: var(--primary-color);
+  margin-top: 2rem;
+}
+
+/* ====== Responsive Design ====== */
+@media (max-width: 768px) {
+  .checkoutContainer {
+    padding: 1.5rem;
+  }
+
+  .checkoutSection h4 {
+    font-size: 1.5rem;
+  }
+
+  .guestChoiceTitle {
+    font-size: 1.4rem;
+  }
+
+  .guestChoiceIntro {
+    font-size: 0.95rem;
+  }
+
+  .guestChoiceButtons {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .btn {
+    font-size: 0.95rem;
+    padding: 0.6rem 1.2rem;
+  }
+
+  .orderTypeOptions .btn {
+    font-size: 0.95rem;
+    padding: 0.5rem 0;
+  }
+
+  .orderSummary .orderItem h5,
+  .orderSummary .orderItem p {
+    font-size: 0.95rem;
+  }
+
+  .orderTotal h5,
+  .orderTotal p {
+    font-size: 0.95rem;
+  }
+
+  .tipOptions .btn {
+    flex: 1 1 100%;
+    font-size: 0.9rem;
+  }
+}
