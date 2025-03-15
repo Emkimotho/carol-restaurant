@@ -1,4 +1,3 @@
-// File: components/EditItemModal/EditItemModal.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -12,7 +11,7 @@ interface EditItemModalProps {
 }
 
 const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, updateCartItem }) => {
-  // All hooks are called unconditionally, assuming item is always provided.
+  // All hooks are called unconditionally.
   const [quantity, setQuantity] = useState<number>(item.quantity);
   const [specialInstructions, setSpecialInstructions] = useState<string>(item.specialInstructions || "");
   const [spiceLevel, setSpiceLevel] = useState<string>(item.spiceLevel || "");
@@ -20,7 +19,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, updateCart
     item.selectedAccompaniments || {}
   );
 
-  // Use availableAccompanimentGroups if available; fallback to item.accompanimentGroups.
+  // Use availableAccompanimentGroups if provided; fallback to item.accompanimentGroups.
   const availableAccompanimentGroups: AccompanimentGroup[] =
     item.availableAccompanimentGroups || item.accompanimentGroups || [];
 
@@ -32,7 +31,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, updateCart
     };
   }, []);
 
-  // Handler to toggle accompaniment selection and enforce maximum allowed selections.
+  // Handler to update accompaniment selections and enforce max allowed selections.
   const handleAccompanimentChange = (
     groupId: string,
     accompaniment: Accompaniment,
@@ -58,7 +57,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, updateCart
     });
   };
 
-  // Calculate total price based on base price, accompaniments, and quantity.
+  // Calculate the total price based on the base price, selected accompaniments, and quantity.
   const calculateTotalPrice = (): string => {
     let total = item.price;
     Object.values(selectedAccompaniments).forEach((groupSelections) => {

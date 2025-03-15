@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/app/checkout/Checkout.module.css";
 import { OrderContext } from "@/contexts/OrderContext";
@@ -25,18 +25,6 @@ export interface OrderSummaryProps {
   onBack: () => void;
 }
 
-/**
- * OrderSummaryStep displays the complete order summary:
- * - It shows cart items with details and a cost breakdown.
- * - It displays order type and scheduled time (if provided).
- * - It provides tip selection options and displays the final total.
- *
- * When the user clicks Next, the component validates whether:
- * - The restaurant is open, OR
- * - A scheduled time is provided.
- *
- * If neither is true, the user is redirected to the schedule order page with a return URL.
- */
 const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
   cartItems,
   getTotalPrice,
@@ -54,6 +42,24 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
   const { schedule } = order;
   const router = useRouter();
   const { isOpen } = useOpeningHours();
+  const [formattedSchedule, setFormattedSchedule] = useState("Instant Order (ASAP)");
+
+  // Format schedule after mounting so that client and server output match.
+  useEffect(() => {
+    if (schedule) {
+      const dateObj = new Date(schedule);
+      const formatted = dateObj.toLocaleString([], {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      setFormattedSchedule(formatted);
+    } else {
+      setFormattedSchedule("Instant Order (ASAP)");
+    }
+  }, [schedule]);
 
   // Calculate cost breakdown.
   const subtotal = getTotalPrice();
@@ -61,9 +67,6 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
   const taxAmount = calculateTaxAmount(subtotal, taxRate);
   const total = calculateTotalWithTipAndTax(subtotal, tipAmount, taxAmount, deliveryFee);
 
-  /**
-   * Returns a friendly label for the order type.
-   */
   const getOrderTypeLabel = () => {
     switch (orderType) {
       case "pickup":
@@ -83,28 +86,6 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
     }
   };
 
-  /**
-   * Format the schedule if available; otherwise assume an instant order.
-   */
-  const getScheduleLabel = () => {
-    if (schedule) {
-      const dateObj = new Date(schedule);
-      return dateObj.toLocaleString([], {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-    return "Instant Order (ASAP)";
-  };
-
-  /**
-   * Final validation check when proceeding to the next step.
-   * If the restaurant is closed and no schedule is set, alert the user and redirect
-   * to the schedule order page with a return URL to come back to this summary.
-   */
   const handleNext = () => {
     if (!schedule && !isOpen) {
       alert("The restaurant is currently closed. Please schedule your order.");
@@ -117,7 +98,6 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
   return (
     <div className={styles.checkoutSection}>
       <h4>Order Summary</h4>
-
       <div className={styles.orderSummary}>
         {cartItems.map((item, index) => (
           <div key={index} className={styles.orderItem}>
@@ -147,29 +127,24 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
             <p>${(item.price * item.quantity).toFixed(2)}</p>
           </div>
         ))}
-
         <hr />
-
         <div className={styles.orderTotal}>
           <h5>Subtotal:</h5>
           <p>${subtotal.toFixed(2)}</p>
         </div>
-
         {orderType && orderType.includes("delivery") && (
           <div className={styles.orderTotal}>
             <h5>Delivery Fee:</h5>
             <p>${deliveryFee.toFixed(2)}</p>
           </div>
         )}
-
         <div className={styles.orderTotal}>
           <h5>Order Type:</h5>
           <p>{getOrderTypeLabel()}</p>
         </div>
-
         <div className={styles.orderTotal}>
           <h5>Scheduled Time:</h5>
-          <p>{getScheduleLabel()}</p>
+          <p>{formattedSchedule}</p>
         </div>
       </div>
 
@@ -178,41 +153,31 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
         <h5>Add a Tip?</h5>
         <div className={styles.tipOptions}>
           <button
-            className={`${styles.btn} ${
-              tip === "0" ? styles.btnPrimary : styles.btnOutlinePrimary
-            }`}
+            className={`${styles.btn} ${tip === "0" ? styles.btnPrimary : styles.btnOutlinePrimary}`}
             onClick={() => onTipChange("0")}
           >
             No Tip
           </button>
           <button
-            className={`${styles.btn} ${
-              tip === "10" ? styles.btnPrimary : styles.btnOutlinePrimary
-            }`}
+            className={`${styles.btn} ${tip === "10" ? styles.btnPrimary : styles.btnOutlinePrimary}`}
             onClick={() => onTipChange("10")}
           >
             10%
           </button>
           <button
-            className={`${styles.btn} ${
-              tip === "15" ? styles.btnPrimary : styles.btnOutlinePrimary
-            }`}
+            className={`${styles.btn} ${tip === "15" ? styles.btnPrimary : styles.btnOutlinePrimary}`}
             onClick={() => onTipChange("15")}
           >
             15%
           </button>
           <button
-            className={`${styles.btn} ${
-              tip === "20" ? styles.btnPrimary : styles.btnOutlinePrimary
-            }`}
+            className={`${styles.btn} ${tip === "20" ? styles.btnPrimary : styles.btnOutlinePrimary}`}
             onClick={() => onTipChange("20")}
           >
             20%
           </button>
           <button
-            className={`${styles.btn} ${
-              tip === "custom" ? styles.btnPrimary : styles.btnOutlinePrimary
-            }`}
+            className={`${styles.btn} ${tip === "custom" ? styles.btnPrimary : styles.btnOutlinePrimary}`}
             onClick={() => onTipChange("custom")}
           >
             Custom

@@ -1,3 +1,7 @@
+/**
+ * Developed by Kimtech Solutions
+ */
+
 import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
 import "./globals.css"; // Import global custom styles
 
@@ -12,7 +16,11 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="light" style={{ colorScheme: "light" }}>
+      <head>
+        <meta name="description" content={metadata.description} />
+        <title>{metadata.title}</title>
+      </head>
       <body>
         <Providers>
           {/* The enhanced preloader is rendered globally and will show during page load */}

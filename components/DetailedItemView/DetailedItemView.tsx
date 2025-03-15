@@ -32,7 +32,7 @@ export interface DetailedItemViewProps {
 }
 
 /**
- * Deep clones the accompaniment selections.
+ * Helper function to deep clone accompaniment selections.
  */
 function deepCloneSelections(
   selections: { [groupId: string]: Accompaniment[] }
@@ -53,12 +53,8 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
   
   // Safely initialize selectedAccompaniments.
   const initialSelections: { [groupId: string]: Accompaniment[] } =
-    item.selectedAccompaniments
-      ? deepCloneSelections(item.selectedAccompaniments)
-      : {} as { [groupId: string]: Accompaniment[] };
-  const [selectedAccompaniments, setSelectedAccompaniments] = useState<{ [groupId: string]: Accompaniment[] }>(
-    initialSelections
-  );
+    item.selectedAccompaniments ? deepCloneSelections(item.selectedAccompaniments) : {} as { [groupId: string]: Accompaniment[] };
+  const [selectedAccompaniments, setSelectedAccompaniments] = useState<{ [groupId: string]: Accompaniment[] }>(initialSelections);
 
   const { isSidebarCartOpen } = useContext(CartContext)!;
 
@@ -73,9 +69,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
   // Reinitialize selections when the item prop changes.
   useEffect(() => {
     const newSelections: { [groupId: string]: Accompaniment[] } =
-      item.selectedAccompaniments
-        ? deepCloneSelections(item.selectedAccompaniments)
-        : {} as { [groupId: string]: Accompaniment[] };
+      item.selectedAccompaniments ? deepCloneSelections(item.selectedAccompaniments) : {} as { [groupId: string]: Accompaniment[] };
     setSelectedAccompaniments(newSelections);
   }, [item]);
 
@@ -119,8 +113,8 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
     }
   };
 
-  const handleQuantityIncrease = () => setQuantity((prev) => prev + 1);
-  const handleQuantityDecrease = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+  const handleQuantityIncrease = () => setQuantity(prev => prev + 1);
+  const handleQuantityDecrease = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
 
   const handleAccompanimentChange = (
     groupId: string,
@@ -128,7 +122,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
     isChecked: boolean,
     maxSelections: number
   ) => {
-    setSelectedAccompaniments((prev) => {
+    setSelectedAccompaniments(prev => {
       const currentSelections = prev[groupId] || [];
       if (isChecked) {
         if (maxSelections === 1) {
@@ -142,26 +136,24 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
           }
         }
       } else {
-        return { ...prev, [groupId]: currentSelections.filter((a) => a.id !== option.id) };
+        return { ...prev, [groupId]: currentSelections.filter(a => a.id !== option.id) };
       }
     });
   };
 
   const calculateTotalPrice = () => {
     let total = item.price;
-    Object.values(selectedAccompaniments).forEach((groupSelections) => {
-      if (Array.isArray(groupSelections)) {
-        groupSelections.forEach((acc) => {
-          total += acc.price;
-        });
-      }
+    Object.values(selectedAccompaniments).forEach(groupSelections => {
+      groupSelections.forEach(acc => {
+        total += acc.price;
+      });
     });
     return (total * quantity).toFixed(2);
   };
 
   return (
     <div style={overlayStyle} onClick={onClose} role="dialog" aria-modal="true">
-      <div className={styles.detailedItemView} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.detailedItemView} onClick={e => e.stopPropagation()}>
         {/* Close Button */}
         <button className={styles.closeButton} onClick={onClose} aria-label="Close Modal">
           &times;
@@ -183,15 +175,15 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
           {/* Accompaniment Groups */}
           {item.accompanimentGroups && item.accompanimentGroups.length > 0 && (
             <div className={styles.accompanimentGroups}>
-              {item.accompanimentGroups.map((group) => {
+              {item.accompanimentGroups.map(group => {
                 const groupSelections = selectedAccompaniments[group.id] || [];
                 return (
                   <div key={group.id} className={styles.accompanimentGroup}>
                     <h4>
                       {group.label} (Max {group.maxSelections})
                     </h4>
-                    {group.options.map((option) => {
-                      const isSelected = groupSelections.some((a) => a.id === option.id);
+                    {group.options.map(option => {
+                      const isSelected = groupSelections.some(a => a.id === option.id);
                       const disableCheckbox = !isSelected && groupSelections.length >= group.maxSelections;
                       return (
                         <div key={option.id} className={styles.accompanimentOption}>
@@ -201,7 +193,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
                               value={option.id}
                               checked={isSelected}
                               disabled={disableCheckbox}
-                              onChange={(e) =>
+                              onChange={e =>
                                 handleAccompanimentChange(group.id, option, e.target.checked, group.maxSelections)
                               }
                             />
@@ -221,7 +213,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
             <div className={styles.spiceLevelSelector}>
               <label>Choose Spice Level:</label>
               <div className={styles.spiceOptions}>
-                {["No Spice", "Mild", "Medium", "Hot"].map((level) => (
+                {["No Spice", "Mild", "Medium", "Hot"].map(level => (
                   <button
                     key={level}
                     className={`${styles.btn} ${spiceLevel === level ? styles.btnSelected : styles.btnOutline}`}
@@ -256,7 +248,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
               id="specialInstructions"
               maxLength={500}
               value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
+              onChange={e => setSpecialInstructions(e.target.value)}
               placeholder="Add any special requests or dietary restrictions here."
             ></textarea>
           </div>
@@ -266,7 +258,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
             <div className={styles.recommendations}>
               <h3>Suggested Drinks</h3>
               <div className={styles.drinkList}>
-                {recommendedDrinks.map((drink) => (
+                {recommendedDrinks.map(drink => (
                   <div key={drink.id} className={styles.drinkItem}>
                     <Image src={drink.image} alt={drink.title} width={80} height={80} unoptimized />
                     <p>{drink.title}</p>

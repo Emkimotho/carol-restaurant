@@ -50,12 +50,12 @@ const Checkout: React.FC = () => {
   const taxRate = 0.07;
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
-  // Update the delivery fee when the order type changes.
+  // Update the delivery fee whenever orderType changes.
   useEffect(() => {
     setDeliveryFee(orderType === "delivery" ? calculateDeliveryFee() : 0);
   }, [orderType]);
 
-  // Scroll to the top when the current step changes for smooth transitions.
+  // Scroll to the top when currentStep changes.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
@@ -100,7 +100,7 @@ const Checkout: React.FC = () => {
   };
 
   const handleNextStep = () => {
-    // Validate and control step navigation based on authentication and form completeness.
+    // Navigation logic based on user authentication and form completeness.
     if (!user && currentStep === 1 && isGuest === true) {
       const { firstName, lastName, email, phone } = guestDetails;
       if (!firstName || !lastName || !email || !phone) {
@@ -169,7 +169,6 @@ const Checkout: React.FC = () => {
   };
 
   const renderStep = () => {
-    // Render the step based on the user's auth status and the current step.
     if (!user && currentStep === 1) {
       if (isGuest === null) {
         return <GuestChoice onSelect={(choice) => setIsGuest(choice)} />;
@@ -211,10 +210,6 @@ const Checkout: React.FC = () => {
       (orderType === "delivery" &&
         ((user && currentStep === 3) || (!user && currentStep === 4)))
     ) {
-      {/* 
-        NOTE: Ensure that the OrderSummaryStep component’s props interface 
-        (OrderSummaryProps) is updated to include the orderType property.
-      */}
       return (
         <OrderSummaryStep
           cartItems={cartItems}

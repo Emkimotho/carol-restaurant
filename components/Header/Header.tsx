@@ -17,16 +17,21 @@ const Header: React.FC = () => {
   const { cartItems, openSidebarCart } = useContext(CartContext)!;
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Toggle the navbar open/close state.
   const handleToggle = () => {
     setNavbarOpen((prev) => !prev);
   };
 
+  // Close the menu.
   const closeMenu = () => {
     setNavbarOpen(false);
   };
 
+  // Listen for clicks outside the navbar and close it if clicked outside.
   useEffect(() => {
     const handleClickOutside = (event: Event) => {
+      // Optionally, cast event to MouseEvent if needed:
+      // const mouseEvent = event as MouseEvent;
       if (navbarRef.current && !navbarRef.current.contains(event.target as Node)) {
         setNavbarOpen(false);
       }
@@ -37,7 +42,7 @@ const Header: React.FC = () => {
     };
   }, []);
 
-  // When the cart icon is clicked, close the menu and open the sidebar cart.
+  // When the cart icon is clicked, close the menu and open the cart sidebar.
   const handleCartClick = () => {
     closeMenu();
     openSidebarCart();
@@ -46,7 +51,7 @@ const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <nav className={styles["custom-navbar"]} ref={navbarRef}>
-        {/* Logo */}
+        {/* Logo Section */}
         <div className={styles["navbar-logo"]}>
           <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
             <Image
@@ -55,18 +60,19 @@ const Header: React.FC = () => {
               className={styles["custom-logo"]}
               width={120}
               height={40}
+              priority
             />
           </Link>
         </div>
 
         {/* Mobile Menu Toggler */}
         <button
-          className={`${styles["custom-navbar-toggler"]} ${navbarOpen ? styles.open : ""}`}
           type="button"
           onClick={handleToggle}
           aria-controls="customNavbarMenu"
           aria-expanded={navbarOpen}
           aria-label="Toggle navigation"
+          className={`${styles["custom-navbar-toggler"]} ${navbarOpen ? styles.open : ""}`}
         >
           <span className={styles["custom-navbar-toggler-icon"]}></span>
           <span className={styles["custom-navbar-toggler-label"]}>Menu</span>
@@ -74,15 +80,15 @@ const Header: React.FC = () => {
 
         {/* Navigation Links */}
         <div
-          className={`${styles["custom-navbar-collapse"]} ${navbarOpen ? styles.show : ""}`}
           id="customNavbarMenu"
+          className={`${styles["custom-navbar-collapse"]} ${navbarOpen ? styles.show : ""}`}
         >
           <ul className={styles["custom-navbar-nav"]}>
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/"
-                className={`${styles["custom-nav-link"]} ${pathname === "/" ? styles.active : ""}`}
                 onClick={closeMenu}
+                className={`${styles["custom-nav-link"]} ${pathname === "/" ? styles.active : ""}`}
               >
                 Home
               </Link>
@@ -90,8 +96,8 @@ const Header: React.FC = () => {
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/menu"
-                className={`${styles["custom-nav-link"]} ${pathname === "/menu" ? styles.active : ""}`}
                 onClick={closeMenu}
+                className={`${styles["custom-nav-link"]} ${pathname === "/menu" ? styles.active : ""}`}
               >
                 Menu
               </Link>
@@ -99,8 +105,8 @@ const Header: React.FC = () => {
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/reservation"
-                className={`${styles["custom-nav-link"]} ${pathname === "/reservation" ? styles.active : ""}`}
                 onClick={closeMenu}
+                className={`${styles["custom-nav-link"]} ${pathname === "/reservation" ? styles.active : ""}`}
               >
                 Reservation
               </Link>
@@ -108,8 +114,8 @@ const Header: React.FC = () => {
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/catering"
-                className={`${styles["custom-nav-link"]} ${pathname === "/catering" ? styles.active : ""}`}
                 onClick={closeMenu}
+                className={`${styles["custom-nav-link"]} ${pathname === "/catering" ? styles.active : ""}`}
               >
                 Catering
               </Link>
@@ -117,8 +123,8 @@ const Header: React.FC = () => {
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/events"
-                className={`${styles["custom-nav-link"]} ${pathname === "/events" ? styles.active : ""}`}
                 onClick={closeMenu}
+                className={`${styles["custom-nav-link"]} ${pathname === "/events" ? styles.active : ""}`}
               >
                 Events
               </Link>
@@ -137,8 +143,8 @@ const Header: React.FC = () => {
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/careers"
-                className={`${styles["custom-nav-link"]} ${pathname === "/careers" ? styles.active : ""}`}
                 onClick={closeMenu}
+                className={`${styles["custom-nav-link"]} ${pathname === "/careers" ? styles.active : ""}`}
               >
                 Careers
               </Link>
@@ -146,8 +152,8 @@ const Header: React.FC = () => {
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/about"
-                className={`${styles["custom-nav-link"]} ${pathname === "/about" ? styles.active : ""}`}
                 onClick={closeMenu}
+                className={`${styles["custom-nav-link"]} ${pathname === "/about" ? styles.active : ""}`}
               >
                 About Us
               </Link>
@@ -155,8 +161,8 @@ const Header: React.FC = () => {
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/login"
-                className={`${styles["custom-nav-link"]} ${pathname === "/login" ? styles.active : ""}`}
                 onClick={closeMenu}
+                className={`${styles["custom-nav-link"]} ${pathname === "/login" ? styles.active : ""}`}
               >
                 Login
               </Link>
@@ -164,9 +170,9 @@ const Header: React.FC = () => {
             {/* Cart Icon */}
             <li className={styles["custom-nav-item"]} style={{ position: "relative" }}>
               <button
-                className={styles["custom-nav-link"]}
                 onClick={handleCartClick}
                 aria-label="Open Cart Sidebar"
+                className={styles["custom-nav-link"]}
               >
                 <div style={{ position: "relative", display: "inline-block" }}>
                   <FaShoppingCart style={{ fontSize: "1.2rem" }} />

@@ -35,18 +35,17 @@ export default function MenuItem({
   const { addToCart } = useContext(CartContext)!;
   const { order } = useContext(OrderContext)!;
 
-  // Local states
+  // Local states to control modal view and timing popup.
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [showChoicePopup, setShowChoicePopup] = useState(false);
 
+  // Handle the Add-to-Cart click event.
   const handleAddClick = () => {
     console.log("[MenuItem] Add to Cart clicked for item:", item.title);
-
     if (!allowAddToCart) {
       console.log("[MenuItem] Adding to cart not allowed for this item.");
       return;
     }
-
     if (order.schedule || restaurantOpen) {
       console.log("[MenuItem] Either already scheduled or restaurant is open. Showing item detail.");
       setShowDetailedView(true);
@@ -56,10 +55,10 @@ export default function MenuItem({
     }
   };
 
+  // Proceed with ASAP order.
   const proceedASAP = () => {
     console.log("[MenuItem] User chose ASAP ordering");
     setShowChoicePopup(false);
-
     if (!restaurantOpen) {
       console.log("[MenuItem] Restaurant is closed -> redirecting to schedule order.");
       window.location.href = "/schedule-order";
@@ -68,6 +67,7 @@ export default function MenuItem({
     setShowDetailedView(true);
   };
 
+  // Proceed with scheduling order.
   const proceedSchedule = () => {
     console.log("[MenuItem] User chose schedule ordering");
     setShowChoicePopup(false);
@@ -92,10 +92,7 @@ export default function MenuItem({
       <div className={styles.details}>
         <h4 className={styles.title}>{item.title}</h4>
         <p className={styles.description}>{item.description}</p>
-        <h5 className={styles.price}>
-          ${parseFloat(String(item.price)).toFixed(2)}
-        </h5>
-
+        <h5 className={styles.price}>${parseFloat(String(item.price)).toFixed(2)}</h5>
         {allowAddToCart ? (
           <button className={styles.btnAddToCart} onClick={handleAddClick}>
             Add to Cart
@@ -145,10 +142,7 @@ export default function MenuItem({
                 </div>
               </>
             )}
-            <button
-              className={styles.btnCloseChoice}
-              onClick={() => setShowChoicePopup(false)}
-            >
+            <button className={styles.btnCloseChoice} onClick={() => setShowChoicePopup(false)}>
               Cancel
             </button>
           </div>

@@ -30,7 +30,6 @@ const MainContent: React.FC = () => {
                 className="img-fluid rounded shadow"
                 width={600}
                 height={400}
-                placeholder="blur"
               />
             </div>
 
