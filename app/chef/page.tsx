@@ -1,10 +1,9 @@
-// File: pages/chef/Chef.tsx
 'use client';
 
 import React from 'react';
 import styles from './chef.module.css';
 import Image from 'next/image';
-import chefCrosby from '../../public/assets/img/chef-crosby.jpg'; // Adjust the path based on your project structure
+import chefCrosby from '../../public/assets/img/chef-crosby.jpg';
 
 const Chef: React.FC = () => {
   return (
@@ -46,7 +45,7 @@ const Chef: React.FC = () => {
         </ul>
         <h3 className={styles.chefPhilosophyTitle}>Culinary Philosophy</h3>
         <p className={styles.chefPhilosophy}>
-          "Cooking is an art form that combines passion, creativity, and precision. I believe in creating dishes that not only delight the palate but also tell a story. My goal is to provide an unforgettable dining experience by blending traditional flavors with modern techniques."
+          &quot;Cooking is an art form that combines passion, creativity, and precision. I believe in creating dishes that not only delight the palate but also tell a story. My goal is to provide an unforgettable dining experience by blending traditional flavors with modern techniques.&quot;
         </p>
       </div>
     </div>

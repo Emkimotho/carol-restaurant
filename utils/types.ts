@@ -22,8 +22,11 @@ export interface AccompanimentGroup {
   label: string;
   /** Maximum number of selections allowed for this group */
   maxSelections: number;
-  /** The type of group: 'primaryChoice' enforces a strict rule (e.g., only one option), 
-      while 'freeAddOns' can be more flexible (e.g., up to a higher number or unlimited) */
+  /**
+   * Type of group that can determine selection rules:
+   * - 'primaryChoice': only one option can be selected
+   * - 'freeAddOns': multiple options can be selected (up to a specified limit or unlimited)
+   */
   type: "primaryChoice" | "freeAddOns";
   /** List of accompaniment options for this group */
   options: Accompaniment[];
@@ -45,13 +48,18 @@ export interface MenuItem {
   image: string;
   /** Flag indicating if this item supports different spice levels */
   hasSpiceLevel: boolean;
-  /** List of accompaniment groups available for this item */
+  /** List of accompaniment groups available for this item (if any) */
   accompanimentGroups?: AccompanimentGroup[];
+  /**
+   * Optional pre-selected accompaniments for this item.
+   * This is useful when rendering detailed views where a default selection is provided.
+   */
+  selectedAccompaniments?: { [groupId: string]: Accompaniment[] };
 }
 
 /**
  * Represents an item added to the cart.
- * Contains both the display data (copied from MenuItem) and any selected options.
+ * It extends the MenuItem with additional properties for cart management.
  */
 export interface CartItem extends MenuItem {
   /** Unique cart-specific identifier (e.g., a UUID) */
@@ -60,13 +68,20 @@ export interface CartItem extends MenuItem {
   quantity: number;
   /** Any special instructions provided by the customer */
   specialInstructions: string;
-  /** Selected spice level; if not applicable, null */
+  /**
+   * Selected spice level for the item.
+   * If the item does not support spice level, this may be null.
+   */
   spiceLevel?: string | null;
-  /** Selected accompaniments grouped by the group ID */
-  selectedAccompaniments: {
-    [groupId: string]: Accompaniment[];
-  };
-  /** Full list of available accompaniment groups (copied from MenuItem) for editing purposes */
+  /**
+   * Selected accompaniments grouped by the group ID.
+   * This stores the customer's choices.
+   */
+  selectedAccompaniments: { [groupId: string]: Accompaniment[] };
+  /**
+   * Full list of available accompaniment groups.
+   * Useful for editing selections in the cart.
+   */
   availableAccompanimentGroups?: AccompanimentGroup[];
 }
 

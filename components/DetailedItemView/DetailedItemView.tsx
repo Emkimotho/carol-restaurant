@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useContext } from "react";
+import Image from "next/image";
 import styles from "./DetailedItemView.module.css";
 import { MenuItem, Accompaniment, AccompanimentGroup } from "../../utils/types";
 import { CartContext } from "@/contexts/CartContext";
@@ -12,7 +13,7 @@ interface Drink {
   price: number;
 }
 
-interface DetailedItemViewProps {
+export interface DetailedItemViewProps {
   item: MenuItem;
   onClose: () => void;
   addToCart: (
@@ -30,6 +31,9 @@ interface DetailedItemViewProps {
   recommendedDrinks?: Drink[];
 }
 
+/**
+ * Deep clones the accompaniment selections.
+ */
 function deepCloneSelections(
   selections: { [groupId: string]: Accompaniment[] }
 ): { [groupId: string]: Accompaniment[] } {
@@ -41,14 +45,19 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
   onClose,
   addToCart,
   openSidebarCart,
-  recommendedDrinks = []
+  recommendedDrinks = [],
 }) => {
-  // Default quantity is 1 and no spice level selected
   const [quantity, setQuantity] = useState<number>(1);
   const [specialInstructions, setSpecialInstructions] = useState<string>("");
-  const [spiceLevel, setSpiceLevel] = useState<string>(""); // no default selection
+  const [spiceLevel, setSpiceLevel] = useState<string>("");
+  
+  // Safely initialize selectedAccompaniments.
+  const initialSelections: { [groupId: string]: Accompaniment[] } =
+    item.selectedAccompaniments
+      ? deepCloneSelections(item.selectedAccompaniments)
+      : {} as { [groupId: string]: Accompaniment[] };
   const [selectedAccompaniments, setSelectedAccompaniments] = useState<{ [groupId: string]: Accompaniment[] }>(
-    item.selectedAccompaniments ? deepCloneSelections(item.selectedAccompaniments) : {}
+    initialSelections
   );
 
   const { isSidebarCartOpen } = useContext(CartContext)!;
@@ -61,14 +70,15 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
     };
   }, []);
 
-  // Reinitialize accompaniments when the item prop changes.
+  // Reinitialize selections when the item prop changes.
   useEffect(() => {
-    setSelectedAccompaniments(
-      item.selectedAccompaniments ? deepCloneSelections(item.selectedAccompaniments) : {}
-    );
+    const newSelections: { [groupId: string]: Accompaniment[] } =
+      item.selectedAccompaniments
+        ? deepCloneSelections(item.selectedAccompaniments)
+        : {} as { [groupId: string]: Accompaniment[] };
+    setSelectedAccompaniments(newSelections);
   }, [item]);
 
-  // Inline style for the overlay.
   const overlayStyle: React.CSSProperties = {
     position: "fixed",
     top: 0,
@@ -82,7 +92,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
     zIndex: 1100,
   };
 
-  // Base item object for addToCart.
+  // Define baseItem with default values for specialInstructions and spiceLevel.
   const baseItem = {
     id: item.id,
     title: item.title,
@@ -90,6 +100,8 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
     price: item.price,
     image: item.image,
     hasSpiceLevel: item.hasSpiceLevel,
+    specialInstructions: "", // default value
+    spiceLevel: item.hasSpiceLevel ? null : undefined, // default for spice-supported items
   };
 
   const handleAddToCart = () => {
@@ -107,17 +119,16 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
     }
   };
 
-  const handleQuantityIncrease = () => setQuantity(prev => prev + 1);
-  const handleQuantityDecrease = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
+  const handleQuantityIncrease = () => setQuantity((prev) => prev + 1);
+  const handleQuantityDecrease = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
-  // Update selections and enforce maximum rules.
   const handleAccompanimentChange = (
     groupId: string,
     option: Accompaniment,
     isChecked: boolean,
     maxSelections: number
   ) => {
-    setSelectedAccompaniments(prev => {
+    setSelectedAccompaniments((prev) => {
       const currentSelections = prev[groupId] || [];
       if (isChecked) {
         if (maxSelections === 1) {
@@ -131,16 +142,16 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
           }
         }
       } else {
-        return { ...prev, [groupId]: currentSelections.filter(a => a.id !== option.id) };
+        return { ...prev, [groupId]: currentSelections.filter((a) => a.id !== option.id) };
       }
     });
   };
 
   const calculateTotalPrice = () => {
     let total = item.price;
-    Object.values(selectedAccompaniments).forEach(groupSelections => {
+    Object.values(selectedAccompaniments).forEach((groupSelections) => {
       if (Array.isArray(groupSelections)) {
-        groupSelections.forEach(acc => {
+        groupSelections.forEach((acc) => {
           total += acc.price;
         });
       }
@@ -163,7 +174,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
             <p>{item.description}</p>
           </div>
           <div className={styles.itemIcon}>
-            <img src={item.image} alt={item.title} />
+            <Image src={item.image} alt={item.title} width={100} height={100} unoptimized />
           </div>
         </div>
 
@@ -172,13 +183,15 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
           {/* Accompaniment Groups */}
           {item.accompanimentGroups && item.accompanimentGroups.length > 0 && (
             <div className={styles.accompanimentGroups}>
-              {item.accompanimentGroups.map(group => {
+              {item.accompanimentGroups.map((group) => {
                 const groupSelections = selectedAccompaniments[group.id] || [];
                 return (
                   <div key={group.id} className={styles.accompanimentGroup}>
-                    <h4>{group.label} (Max {group.maxSelections})</h4>
-                    {group.options.map(option => {
-                      const isSelected = groupSelections.some(a => a.id === option.id);
+                    <h4>
+                      {group.label} (Max {group.maxSelections})
+                    </h4>
+                    {group.options.map((option) => {
+                      const isSelected = groupSelections.some((a) => a.id === option.id);
                       const disableCheckbox = !isSelected && groupSelections.length >= group.maxSelections;
                       return (
                         <div key={option.id} className={styles.accompanimentOption}>
@@ -208,7 +221,7 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
             <div className={styles.spiceLevelSelector}>
               <label>Choose Spice Level:</label>
               <div className={styles.spiceOptions}>
-                {["No Spice", "Mild", "Medium", "Hot"].map(level => (
+                {["No Spice", "Mild", "Medium", "Hot"].map((level) => (
                   <button
                     key={level}
                     className={`${styles.btn} ${spiceLevel === level ? styles.btnSelected : styles.btnOutline}`}
@@ -226,19 +239,11 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
           <div className={styles.quantitySelector}>
             <label>Quantity:</label>
             <div className={styles.quantityControls}>
-              <button
-                onClick={handleQuantityDecrease}
-                className={`${styles.btn} ${styles.btnDecrease}`}
-                aria-label="Decrease Quantity"
-              >
+              <button onClick={handleQuantityDecrease} className={`${styles.btn} ${styles.btnDecrease}`} aria-label="Decrease Quantity">
                 –
               </button>
               <span className={styles.quantityDisplay}>{quantity}</span>
-              <button
-                onClick={handleQuantityIncrease}
-                className={`${styles.btn} ${styles.btnIncrease}`}
-                aria-label="Increase Quantity"
-              >
+              <button onClick={handleQuantityIncrease} className={`${styles.btn} ${styles.btnIncrease}`} aria-label="Increase Quantity">
                 +
               </button>
             </div>
@@ -261,9 +266,9 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
             <div className={styles.recommendations}>
               <h3>Suggested Drinks</h3>
               <div className={styles.drinkList}>
-                {recommendedDrinks.map(drink => (
+                {recommendedDrinks.map((drink) => (
                   <div key={drink.id} className={styles.drinkItem}>
-                    <img src={drink.image} alt={drink.title} />
+                    <Image src={drink.image} alt={drink.title} width={80} height={80} unoptimized />
                     <p>{drink.title}</p>
                   </div>
                 ))}

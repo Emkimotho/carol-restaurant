@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useContext } from "react";
 import { Tabs, Tab } from "react-bootstrap";
 import { useRouter } from "next/navigation";
@@ -53,7 +55,9 @@ export default function Menu({ slug }: MenuProps) {
   // Determine active section and category from the slug prop.
   const activeSection = slug[0] || "MainMenu";
   // If no category is provided, use the first dynamic category.
-  const activeCategory = slug[1] || (activeSection === "MainMenu" ? dynamicCategories[0] : "Lunch/Dinner");
+  const activeCategory =
+    slug[1] ||
+    (activeSection === "MainMenu" ? dynamicCategories[0] : "Lunch/Dinner");
 
   const handleSectionSelect = (key: string | null) => {
     if (!key) return;
@@ -81,14 +85,19 @@ export default function Menu({ slug }: MenuProps) {
     console.log("[Menu] Closing sidebar cart.");
   };
 
-  // Only two main sections are needed.
-  const sections = ["MainMenu", "GolfMenu"];
-
   return (
-    <div className={`container py-5 ${styles.menuPage}`} style={{ marginTop: "100px" }}>
+    <div
+      className={`container py-5 ${styles.menuPage}`}
+      style={{ marginTop: "100px" }}
+    >
       <MenuTimingBar />
       <h1 className="text-center mb-4">Our Menu</h1>
-      <Tabs activeKey={activeSection} onSelect={handleSectionSelect} id="menu-tabs" className={styles["nav-tabs"]}>
+      <Tabs
+        activeKey={activeSection}
+        onSelect={handleSectionSelect}
+        id="menu-tabs"
+        className={styles["nav-tabs"]}
+      >
         <Tab eventKey="MainMenu" title="Main Menu">
           {/* Dynamically generated sub-tabs for MainMenu */}
           <Tabs
@@ -121,7 +130,10 @@ export default function Menu({ slug }: MenuProps) {
         <Tab eventKey="GolfMenu" title="Golf Menu">
           <div className="row mt-4">
             {menuItems
-              .filter((item) => item.sections && item.sections.includes("GolfMenu"))
+              .filter(
+                (item) =>
+                  item.sections && item.sections.includes("GolfMenu")
+              )
               .map((item) => (
                 <div className="col-md-6 col-lg-4 mb-4" key={item.id}>
                   <MenuItem
@@ -137,7 +149,9 @@ export default function Menu({ slug }: MenuProps) {
         </Tab>
       </Tabs>
       {!isLargeScreen && <FloatingCartBar />}
-      {isLargeScreen && <SidebarCart isOpen={isSidebarOpen} onClose={handleCloseSidebar} />}
+      {isLargeScreen && (
+        <SidebarCart isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
+      )}
     </div>
   );
 }

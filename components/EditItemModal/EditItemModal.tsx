@@ -12,9 +12,7 @@ interface EditItemModalProps {
 }
 
 const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, updateCartItem }) => {
-  if (!item) return null;
-
-  // Initialize local state from the provided cart item.
+  // All hooks are called unconditionally, assuming item is always provided.
   const [quantity, setQuantity] = useState<number>(item.quantity);
   const [specialInstructions, setSpecialInstructions] = useState<string>(item.specialInstructions || "");
   const [spiceLevel, setSpiceLevel] = useState<string>(item.spiceLevel || "");
@@ -22,14 +20,16 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, updateCart
     item.selectedAccompaniments || {}
   );
 
-  // Use availableAccompanimentGroups if available, fallback to item.accompanimentGroups.
+  // Use availableAccompanimentGroups if available; fallback to item.accompanimentGroups.
   const availableAccompanimentGroups: AccompanimentGroup[] =
     item.availableAccompanimentGroups || item.accompanimentGroups || [];
 
   // Lock body scrolling when the modal is open.
   useEffect(() => {
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = "auto"; };
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, []);
 
   // Handler to toggle accompaniment selection and enforce maximum allowed selections.
@@ -206,9 +206,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, updateCart
           </div>
         </div>
         <div className={styles.modal__footer}>
-          <div className={styles.modal__totalPrice}>
-            Total Price: ${calculateTotalPrice()}
-          </div>
+          <div className={styles.modal__totalPrice}>Total Price: ${calculateTotalPrice()}</div>
           <button className={styles["btn-primary"]} onClick={handleSave}>
             Save Changes
           </button>

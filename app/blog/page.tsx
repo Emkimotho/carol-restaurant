@@ -1,6 +1,5 @@
-// pages/blog/index.tsx
 import BlogTabs from '@/components/Blog/BlogTabs';
 
-export default function BlogListingPage() {
+export default async function Page() {
   return <BlogTabs />;
 }

@@ -11,9 +11,10 @@ import {
   calculateTotalWithTipAndTax,
 } from "@/utils/checkoutUtils";
 
-interface OrderSummaryProps {
+export interface OrderSummaryProps {
   cartItems: any[];
   getTotalPrice: () => number;
+  orderType: string;
   deliveryFee: number;
   tip: string;
   customTip: string;
@@ -39,6 +40,7 @@ interface OrderSummaryProps {
 const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
   cartItems,
   getTotalPrice,
+  orderType,
   deliveryFee,
   tip,
   customTip,
@@ -49,11 +51,11 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
   onBack,
 }) => {
   const { order } = useContext(OrderContext)!;
-  const { schedule, orderType } = order;
+  const { schedule } = order;
   const router = useRouter();
   const { isOpen } = useOpeningHours();
 
-  // Calculate cost breakdown
+  // Calculate cost breakdown.
   const subtotal = getTotalPrice();
   const tipAmount = calculateTipAmount(subtotal, tip, customTip);
   const taxAmount = calculateTaxAmount(subtotal, taxRate);
@@ -106,7 +108,6 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
   const handleNext = () => {
     if (!schedule && !isOpen) {
       alert("The restaurant is currently closed. Please schedule your order.");
-      // Redirect to schedule order page with a returnUrl query parameter.
       router.push("/schedule-order?returnUrl=/checkout/summary");
       return;
     }
@@ -241,7 +242,9 @@ const OrderSummaryStep: React.FC<OrderSummaryProps> = ({
         <p>${taxAmount.toFixed(2)}</p>
         <hr />
         <h5 style={{ fontWeight: "bold", color: "#000" }}>Total:</h5>
-        <p style={{ fontWeight: "bold", color: "#000" }}>${total}</p>
+        <p style={{ fontWeight: "bold", color: "#000" }}>
+          ${parseFloat(total).toFixed(2)}
+        </p>
       </div>
 
       {/* Navigation Buttons */}

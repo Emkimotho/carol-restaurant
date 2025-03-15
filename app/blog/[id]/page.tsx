@@ -1,14 +1,12 @@
-// pages/blog/[id].tsx
-import { useParams } from 'next/navigation';
 import BlogDetailPage from '@/components/Blog/BlogDetailPage';
 
 interface PageProps {
-  params: {
-    id: string;
-  };
+  // Next.js expects this property to be a Promise
+  params: Promise<{ id: string }>;
 }
 
-export default function BlogDetail({ params }: PageProps) {
-  // The id is available in params from the URL (e.g. /blog/1)
-  return <BlogDetailPage id={params.id} />;
+export default async function Page({ params }: PageProps) {
+  // Await the promise to get the actual params object
+  const { id } = await params;
+  return <BlogDetailPage id={id} />;
 }

@@ -23,6 +23,7 @@ interface PaymentStepProps {
   onBillingAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSameAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBack: () => void;
+  onNext: () => void;
 }
 
 /**
@@ -48,6 +49,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   onBillingAddressChange,
   onSameAddressChange,
   onBack,
+  onNext,
 }) => {
   const [cardNumber, setCardNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -56,36 +58,36 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const router = useRouter();
   const { clearCart } = useContext(CartContext)!;
 
-  // Scroll to the top when payment is completed
+  // Scroll to the top when payment is complete.
   useEffect(() => {
     if (paymentCompleted) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [paymentCompleted]);
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const handlePaymentSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Validate card number: remove spaces and ensure exactly 16 digits
+    // Validate card number: remove spaces and ensure exactly 16 digits.
     const cleanedCardNumber = cardNumber.replace(/\s+/g, "");
     if (!/^\d{16}$/.test(cleanedCardNumber)) {
       alert("Please enter a valid 16-digit card number.");
       return;
     }
 
-    // Validate expiry date: must be in MM/YY format with month between 01 and 12
+    // Validate expiry date: must be in MM/YY format with month between 01 and 12.
     if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryDate)) {
       alert("Please enter a valid expiry date in MM/YY format.");
       return;
     }
 
-    // Validate CVV: exactly 3 digits
+    // Validate CVV: exactly 3 digits.
     if (!/^\d{3}$/.test(cvv)) {
       alert("Please enter a valid 3-digit CVV.");
       return;
     }
 
-    // All validations passed: clear the cart and mark payment as complete.
+    // Payment validation passed: clear the cart and mark payment as complete.
     clearCart();
     setPaymentCompleted(true);
   };
@@ -117,8 +119,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             </label>
             <input
               type="text"
-              name="cardNumber"
               id="cardNumber"
+              name="cardNumber"
               className={styles.formControl}
               placeholder="1234 5678 9012 3456"
               value={cardNumber}
@@ -133,8 +135,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               </label>
               <input
                 type="text"
-                name="expiryDate"
                 id="expiryDate"
+                name="expiryDate"
                 className={styles.formControl}
                 placeholder="MM/YY"
                 value={expiryDate}
@@ -148,8 +150,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               </label>
               <input
                 type="text"
-                name="cvv"
                 id="cvv"
+                name="cvv"
                 className={styles.formControl}
                 placeholder="123"
                 value={cvv}
@@ -159,12 +161,13 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             </div>
           </div>
         </div>
+
         {orderType === "delivery" && (
           <div className={`${styles.formCheck} mt-3`}>
             <input
               type="checkbox"
-              name="sameAddress"
               id="sameAddress"
+              name="sameAddress"
               className={styles.formCheckInput}
               checked={isSameAddress}
               onChange={onSameAddressChange}
@@ -174,7 +177,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             </label>
           </div>
         )}
-        {((orderType === "delivery" && !isSameAddress) || orderType === "pickup") && (
+
+        {((orderType === "delivery" && !isSameAddress) ||
+          orderType === "pickup") && (
           <div className={`${styles.billingAddress} mt-3`}>
             <h5>Please Enter Your Billing Address</h5>
             <div className={styles.formGroup}>
@@ -183,11 +188,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               </label>
               <input
                 type="text"
-                name="street"
                 id="billingStreet"
+                name="street"
+                className={styles.formControl}
                 value={billingAddress.street}
                 onChange={onBillingAddressChange}
-                className={styles.formControl}
                 required
               />
             </div>
@@ -197,11 +202,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               </label>
               <input
                 type="text"
-                name="city"
                 id="billingCity"
+                name="city"
+                className={styles.formControl}
                 value={billingAddress.city}
                 onChange={onBillingAddressChange}
-                className={styles.formControl}
                 required
               />
             </div>
@@ -212,11 +217,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 </label>
                 <input
                   type="text"
-                  name="state"
                   id="billingState"
+                  name="state"
+                  className={styles.formControl}
                   value={billingAddress.state}
                   onChange={onBillingAddressChange}
-                  className={styles.formControl}
                   required
                 />
               </div>
@@ -226,22 +231,23 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 </label>
                 <input
                   type="text"
-                  name="zipCode"
                   id="billingZipCode"
+                  name="zipCode"
+                  className={styles.formControl}
                   value={billingAddress.zipCode}
                   onChange={onBillingAddressChange}
-                  className={styles.formControl}
                   required
                 />
               </div>
             </div>
           </div>
         )}
+
         <div className={`${styles.formCheck} mt-3`}>
           <input
             type="checkbox"
-            name="terms"
             id="terms"
+            name="terms"
             className={styles.formCheckInput}
             required
           />
@@ -253,6 +259,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             .
           </label>
         </div>
+
         <div className={styles.navigationButtons}>
           <button
             type="button"

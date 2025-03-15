@@ -45,7 +45,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
       });
       const data = await response.json();
       if (response.ok) {
-        login({ token: data.token, role: data.user.role, user: data.user });
+        // Pass the user object only—remove token property because it's not expected by AuthContext.
+        login(data.user);
         router.push("/dashboard");
       } else {
         setLoginError(data.message || "Invalid email or password.");
@@ -96,7 +97,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
       </div>
       <div className={styles["switch-auth"]}>
         <p>
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <button
             type="button"
             className={styles["signup-link"]}

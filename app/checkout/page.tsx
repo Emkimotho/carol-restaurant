@@ -1,54 +1,50 @@
-'use client';
+"use client";
 
-import React, { useContext, useState, useEffect } from 'react';
-import styles from './Checkout.module.css';
-import { CartContext } from '@/contexts/CartContext';
-import { AuthContext } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import GuestChoice from '@/components/checkout/GuestChoice';
-import GuestDetails from '@/components/checkout/GuestDetails';
-import OrderTypeStep from '@/components/checkout/OrderTypeStep';
-import DeliveryAddressStep from '@/components/checkout/DeliveryAddressStep';
-import OrderSummaryStep from '@/components/checkout/OrderSummaryStep';
-import PaymentStep from '@/components/checkout/PaymentStep';
+import React, { useContext, useState, useEffect } from "react";
+import styles from "./Checkout.module.css";
+import { CartContext } from "@/contexts/CartContext";
+import { AuthContext } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import GuestChoice from "@/components/checkout/GuestChoice";
+import GuestDetails from "@/components/checkout/GuestDetails";
+import OrderTypeStep from "@/components/checkout/OrderTypeStep";
+import DeliveryAddressStep from "@/components/checkout/DeliveryAddressStep";
+import OrderSummaryStep from "@/components/checkout/OrderSummaryStep";
+import PaymentStep from "@/components/checkout/PaymentStep";
 import {
   validatePhoneNumber,
   formatPhoneNumber,
   calculateDeliveryFee,
-} from '@/utils/checkoutUtils';
+} from "@/utils/checkoutUtils";
 
-/**
- * Main Checkout component that controls the multi-step checkout flow.
- * Depending on the authentication status and order type, it renders the appropriate step.
- */
 const Checkout: React.FC = () => {
   const { cartItems, getTotalPrice, clearCart } = useContext(CartContext)!;
   const { user } = useContext(AuthContext)!;
   const router = useRouter();
 
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [orderType, setOrderType] = useState<string>('');
+  const [orderType, setOrderType] = useState<string>("");
   const [guestDetails, setGuestDetails] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
   });
   const [deliveryAddress, setDeliveryAddress] = useState({
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
   });
   const [billingAddress, setBillingAddress] = useState({
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
   });
   const [isSameAddress, setIsSameAddress] = useState<boolean>(true);
-  const [tip, setTip] = useState<string>('0');
-  const [customTip, setCustomTip] = useState<string>('');
+  const [tip, setTip] = useState<string>("0");
+  const [customTip, setCustomTip] = useState<string>("");
   const [isGuest, setIsGuest] = useState<boolean | null>(null);
 
   const taxRate = 0.07;
@@ -56,19 +52,19 @@ const Checkout: React.FC = () => {
 
   // Update the delivery fee when the order type changes.
   useEffect(() => {
-    setDeliveryFee(orderType === 'delivery' ? calculateDeliveryFee() : 0);
+    setDeliveryFee(orderType === "delivery" ? calculateDeliveryFee() : 0);
   }, [orderType]);
 
   // Scroll to the top when the current step changes for smooth transitions.
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
 
   const handleGuestDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setGuestDetails((prev) => ({
       ...prev,
-      [name]: name === 'phone' ? formatPhoneNumber(value) : value,
+      [name]: name === "phone" ? formatPhoneNumber(value) : value,
     }));
   };
 
@@ -84,8 +80,8 @@ const Checkout: React.FC = () => {
 
   const handleTipChange = (value: string) => {
     setTip(value);
-    if (value !== 'custom') {
-      setCustomTip('');
+    if (value !== "custom") {
+      setCustomTip("");
     }
   };
 
@@ -99,7 +95,7 @@ const Checkout: React.FC = () => {
     if (checked) {
       setBillingAddress(deliveryAddress);
     } else {
-      setBillingAddress({ street: '', city: '', state: '', zipCode: '' });
+      setBillingAddress({ street: "", city: "", state: "", zipCode: "" });
     }
   };
 
@@ -108,55 +104,55 @@ const Checkout: React.FC = () => {
     if (!user && currentStep === 1 && isGuest === true) {
       const { firstName, lastName, email, phone } = guestDetails;
       if (!firstName || !lastName || !email || !phone) {
-        alert('Please complete all guest details.');
+        alert("Please complete all guest details.");
         return;
       }
       if (!validatePhoneNumber(phone)) {
-        alert('Please enter a valid phone number in the format (XXX) XXX-XXXX.');
+        alert("Please enter a valid phone number in the format (XXX) XXX-XXXX.");
         return;
       }
       setCurrentStep(2);
     } else if (!user && currentStep === 1 && isGuest === false) {
-      router.push('/login');
+      router.push("/login");
     } else if ((currentStep === 1 && user) || (currentStep === 2 && !user)) {
       if (!orderType) {
-        alert('Please select an order type.');
+        alert("Please select an order type.");
         return;
       }
       setCurrentStep(currentStep + 1);
     } else if (
-      orderType === 'delivery' &&
+      orderType === "delivery" &&
       ((user && currentStep === 2) || (!user && currentStep === 3))
     ) {
       const { street, city, state, zipCode } = deliveryAddress;
       if (!street || !city || !state || !zipCode) {
-        alert('Please complete your delivery address.');
+        alert("Please complete your delivery address.");
         return;
       }
       setCurrentStep(currentStep + 1);
     } else if (
-      (orderType === 'pickup' &&
+      (orderType === "pickup" &&
         ((user && currentStep === 2) || (!user && currentStep === 3))) ||
-      (orderType === 'delivery' &&
+      (orderType === "delivery" &&
         ((user && currentStep === 3) || (!user && currentStep === 4)))
     ) {
       setCurrentStep(currentStep + 1);
     } else if (
-      (orderType === 'pickup' &&
+      (orderType === "pickup" &&
         ((user && currentStep === 3) || (!user && currentStep === 4))) ||
-      (orderType === 'delivery' &&
+      (orderType === "delivery" &&
         ((user && currentStep === 4) || (!user && currentStep === 5)))
     ) {
-      if (orderType === 'pickup') {
+      if (orderType === "pickup") {
         const { street, city, state, zipCode } = billingAddress;
         if (!street || !city || !state || !zipCode) {
-          alert('Please complete your billing address.');
+          alert("Please complete your billing address.");
           return;
         }
-      } else if (orderType === 'delivery' && !isSameAddress) {
+      } else if (orderType === "delivery" && !isSameAddress) {
         const { street, city, state, zipCode } = billingAddress;
         if (!street || !city || !state || !zipCode) {
-          alert('Please complete your billing address.');
+          alert("Please complete your billing address.");
           return;
         }
       }
@@ -178,7 +174,7 @@ const Checkout: React.FC = () => {
       if (isGuest === null) {
         return <GuestChoice onSelect={(choice) => setIsGuest(choice)} />;
       } else if (isGuest === false) {
-        router.push('/login');
+        router.push("/login");
       } else {
         return (
           <GuestDetails
@@ -198,7 +194,7 @@ const Checkout: React.FC = () => {
         />
       );
     } else if (
-      orderType === 'delivery' &&
+      orderType === "delivery" &&
       ((user && currentStep === 2) || (!user && currentStep === 3))
     ) {
       return (
@@ -210,11 +206,15 @@ const Checkout: React.FC = () => {
         />
       );
     } else if (
-      (orderType === 'pickup' &&
+      (orderType === "pickup" &&
         ((user && currentStep === 2) || (!user && currentStep === 3))) ||
-      (orderType === 'delivery' &&
+      (orderType === "delivery" &&
         ((user && currentStep === 3) || (!user && currentStep === 4)))
     ) {
+      {/* 
+        NOTE: Ensure that the OrderSummaryStep component’s props interface 
+        (OrderSummaryProps) is updated to include the orderType property.
+      */}
       return (
         <OrderSummaryStep
           cartItems={cartItems}
@@ -231,9 +231,9 @@ const Checkout: React.FC = () => {
         />
       );
     } else if (
-      (orderType === 'pickup' &&
+      (orderType === "pickup" &&
         ((user && currentStep === 3) || (!user && currentStep === 4))) ||
-      (orderType === 'delivery' &&
+      (orderType === "delivery" &&
         ((user && currentStep === 4) || (!user && currentStep === 5)))
     ) {
       return (

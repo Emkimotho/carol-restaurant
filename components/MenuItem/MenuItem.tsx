@@ -2,6 +2,7 @@
 
 import React, { useState, useContext } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import styles from "./MenuItem.module.css";
 
 // Contexts
@@ -21,7 +22,7 @@ interface MenuItemProps {
   user: any;
   openSidebarCart: () => void;
   allowAddToCart: boolean;
-  restaurantOpen: boolean; // provided from parent: true if open, false if closed
+  restaurantOpen: boolean;
 }
 
 export default function MenuItem({
@@ -38,11 +39,6 @@ export default function MenuItem({
   const [showDetailedView, setShowDetailedView] = useState(false);
   const [showChoicePopup, setShowChoicePopup] = useState(false);
 
-  /**
-   * handleAddClick
-   * - If an order is already scheduled OR the restaurant is open, show the detailed view.
-   * - Otherwise (restaurant closed & no schedule), show the timing popup.
-   */
   const handleAddClick = () => {
     console.log("[MenuItem] Add to Cart clicked for item:", item.title);
 
@@ -60,11 +56,6 @@ export default function MenuItem({
     }
   };
 
-  /**
-   * proceedASAP
-   * - If the restaurant is closed, force scheduling.
-   * - Otherwise, show the detailed view.
-   */
   const proceedASAP = () => {
     console.log("[MenuItem] User chose ASAP ordering");
     setShowChoicePopup(false);
@@ -77,10 +68,6 @@ export default function MenuItem({
     setShowDetailedView(true);
   };
 
-  /**
-   * proceedSchedule
-   * Redirect the user to the schedule order page.
-   */
   const proceedSchedule = () => {
     console.log("[MenuItem] User chose schedule ordering");
     setShowChoicePopup(false);
@@ -90,13 +77,24 @@ export default function MenuItem({
   return (
     <div className={styles.container}>
       <div className={styles.photo}>
-        {item.image && <img src={item.image} alt={item.title} />}
+        {item.image && (
+          <Image
+            src={item.image}
+            alt={item.title}
+            width={300}
+            height={200}
+            className={styles.itemImage}
+            unoptimized
+          />
+        )}
       </div>
 
       <div className={styles.details}>
         <h4 className={styles.title}>{item.title}</h4>
         <p className={styles.description}>{item.description}</p>
-        <h5 className={styles.price}>${parseFloat(String(item.price)).toFixed(2)}</h5>
+        <h5 className={styles.price}>
+          ${parseFloat(String(item.price)).toFixed(2)}
+        </h5>
 
         {allowAddToCart ? (
           <button className={styles.btnAddToCart} onClick={handleAddClick}>
@@ -107,7 +105,6 @@ export default function MenuItem({
         )}
       </div>
 
-      {/* Detailed View */}
       {showDetailedView && (
         <DynamicDetailedView
           item={item}
@@ -117,7 +114,6 @@ export default function MenuItem({
         />
       )}
 
-      {/* Order Timing Popup */}
       {showChoicePopup && (
         <div className={styles.orderChoiceOverlay}>
           <div className={styles.orderChoiceModal}>
@@ -138,7 +134,7 @@ export default function MenuItem({
               </>
             ) : (
               <>
-                <h3>We're Closed</h3>
+                <h3>We&apos;re Closed</h3>
                 <p>
                   You can schedule your order for later or come back during our operating hours.
                 </p>
