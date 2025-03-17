@@ -1,3 +1,5 @@
+/* File: styles/menuPreview.module.css */
+
 .menuPreview {
   background-color: var(--light-gray);
   padding: 2rem 0;
@@ -50,7 +52,7 @@
     var(--primary-color) 50%
   );
   background-size: 200% auto;
-  background-position: right center; /* Default shows primary (green) */
+  background-position: right center; /* Default shows primary color */
   transition: background-position 0.5s ease;
 }
 
@@ -76,5 +78,12 @@
 
   .menuItem h4 {
     font-size: 1rem;
+  }
+  
+  /* Center the container holding the images on mobile */
+  .menuItem {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
   }
 }

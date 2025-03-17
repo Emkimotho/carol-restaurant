@@ -27,6 +27,16 @@ interface OpeningHours {
   };
 }
 
+const fullDayMapping: { [key: string]: string } = {
+  Mon: 'Monday',
+  Tue: 'Tuesday',
+  Wed: 'Wednesday',
+  Thu: 'Thursday',
+  Fri: 'Friday',
+  Sat: 'Saturday',
+  Sun: 'Sunday',
+};
+
 const Footer: React.FC = () => {
   const { openingHours } = useOpeningHours();
 
@@ -51,13 +61,16 @@ const Footer: React.FC = () => {
               <ul className={styles.openingHours}>
                 {Object.entries(openingHours).map(([day, hours]) => (
                   <li key={day} className={styles.openingHoursItem}>
-                    <span className={styles.openingHoursDay}>{day}</span>
+                    <span 
+                      className={styles.openingHoursDay}
+                      data-full={fullDayMapping[day] || day}
+                    >
+                      {day}
+                    </span>
                     <span className={styles.openingHoursTime}>
                       {hours.open === 'Closed'
                         ? 'Closed'
-                        : `${convertTo12Hour(hours.open)} - ${convertTo12Hour(
-                            hours.close
-                          )}`}
+                        : `${convertTo12Hour(hours.open)} - ${convertTo12Hour(hours.close)}`}
                     </span>
                   </li>
                 ))}
@@ -65,7 +78,7 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Column 2: Quick Links (already reordered) */}
+          {/* Column 2: Quick Links */}
           <div className={styles.footerColumn}>
             <h4 className={styles.widgetTitle}>Quick Links</h4>
             <ul className={styles.quickLinksList}>
@@ -92,14 +105,15 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 3: Contact Info + "Sponsored by" */}
+          {/* Column 3: Contact Info + Sponsored by */}
           <div className={styles.footerColumn}>
             <h4 className={styles.widgetTitle}>Contact Info</h4>
             <ul className={styles.contactWidget}>
               <li className={styles.contactItem}>
                 <FaMapMarkerAlt className={styles.contactIcon} />
                 <div className={styles.contactContent}>
-                  20025 Mount Aetna Road, Hagerstown, MD 21742
+                  <div>2025 Mount Aetna Road,</div>
+                  <div>Hagerstown, MD 21742</div>
                 </div>
               </li>
               <li className={styles.contactItem}>
@@ -123,7 +137,7 @@ const Footer: React.FC = () => {
               </li>
             </ul>
 
-            {/* Sponsored By in its own container */}
+            {/* Sponsored By */}
             <div className={styles.sponsoredBy}>
               <h4 className={styles.widgetTitle}>Sponsored by</h4>
               <a
@@ -135,7 +149,7 @@ const Footer: React.FC = () => {
                 <Image
                   src="/images/harambee54-logo.png"
                   alt="Harambee54"
-                  width={120}
+                  width={120}  // Recommended size: 120px x 40px
                   height={40}
                 />
               </a>

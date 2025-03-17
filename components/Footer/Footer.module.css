@@ -1,352 +1,293 @@
 /* File: components/Footer/Footer.module.css */
 
-/* ===== Footer Container Styles ===== */
-.footer {
-  background-color: var(--dark-gray);
-  color: #fff;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.footerContainer {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 60px 20px;
-}
-
-/* ===== Footer Grid Layout ===== */
-.footerGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 40px;
-}
-
-/* ===== Footer Column Styling ===== */
-.footerColumn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-/* ===== Logo and Hours Container ===== */
-.logoAndHours {
-  width: 250px; /* Set a fixed width to match logo width */
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Center align the content */
-}
-
-/* ===== Footer Logo Styling ===== */
-.footerLogo {
-  width: 100%;
-  height: auto;
-  margin-bottom: 15px;
-  max-width: 250px;
-}
-
-/* ===== Widget Titles Styling ===== */
-.widgetTitle {
-  font-size: 1.5rem;
-  color: var(--primary-color);
-  margin-bottom: 20px;
-  font-family: var(--font-heading);
-  position: relative;
-  display: inline-block;
-}
-
-.widgetTitle::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: -5px;
-  width: 50px;
-  height: 3px;
-  background-color: var(--secondary-color);
-}
-
-/* ===== About Section Styling ===== */
-.aboutParagraph {
-  margin-bottom: 20px;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: #ddd;
-  text-align: center;
-}
-
-/* ===== Opening Hours Styling ===== */
-.openingHours {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  font-size: 0.9rem; /* Reduced font size */
-  font-family: var(--font-body);
-  width: 100%;
-}
-
-.openingHoursItem {
-  display: flex;
-  justify-content: space-between;
-  padding: 1px 0;
-  border-bottom: 1px solid var(--secondary-color);
-  white-space: nowrap;
-}
-
-.openingHoursDay {
-  font-weight: bold;
-  font-size: 0.9rem; /* Match font size */
-  color: var(--primary-color);
-  margin-right: 10px;
-}
-
-.openingHoursTime {
-  font-size: 0.9rem; /* Match font size */
-  color: #ddd;
-}
-
-/* ===== Quick Links Styling ===== */
-.quickLinksList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.quickLinksItem {
-  margin-bottom: 10px;
-}
-
-.quickLinksLink {
-  color: #fff;
-  text-decoration: none;
-  transition: color 0.3s ease;
-  position: relative;
-}
-
-.quickLinksLink::after {
-  content: "";
-  position: absolute;
-  width: 0;
-  height: 2px;
-  display: block;
-  margin-top: 5px;
-  right: 0;
-  background: var(--secondary-color);
-  transition: width 0.3s ease;
-}
-
-.quickLinksLink:hover::after {
-  width: 100%;
-}
-
-.quickLinksLink:hover {
-  color: var(--secondary-color);
-}
-
-/* ===== Contact Info Styling ===== */
-.contactWidget {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.contactItem {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.contactIcon {
-  width: 30px;
-  margin-right: 10px;
-  font-size: 1.2rem;
-  color: var(--primary-color);
-}
-
-.contactContent {
-  color: #ddd;
-  word-wrap: break-word;
-}
-
-.contactLink {
-  color: #fff;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.contactLink:hover {
-  color: var(--primary-color);
-}
-
-/* ===== Newsletter Form Styling ===== */
-.newsletterForm {
-  display: flex;
-  flex-direction: column;
-}
-
-.newsletterInput {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  width: 100%;
-  margin-bottom: 0.5rem;
-}
-
-.newsletterControls {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.checkboxWrapper {
-  display: flex;
-  align-items: center;
-}
-
-.formCheckInput {
-  margin-right: 10px;
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.formCheckLabel {
-  font-size: 0.75rem;
-  color: #ddd;
-}
-
-.btnSmall {
-  padding: 0.3rem 0.8rem;
-  font-size: 0.875rem;
-  border-radius: 4px;
-  background-color: var(--primary-color);
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.btnSmall:hover {
-  background-color: var(--secondary-color);
-}
-
-/* ===== Footer Bottom Section ===== */
-.footerBottom {
-  border-top: 1px solid var(--secondary-color);
-  width: 100%;
-  padding: 20px 0;
-  margin-top: 40px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.footerSocial {
-  list-style: none;
-  padding: 0;
-  margin: 20px auto 0;
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-}
-
-.footerSocialLink {
-  color: var(--primary-color);
-  font-size: 1.5rem;
-  transition: color 0.3s ease;
-}
-
-.footerSocialLink:hover {
-  color: var(--secondary-color);
-}
-
-.footerBottomText,
-.footerDevelopedBy {
-  margin: 0;
-  font-size: 0.875rem;
-  margin-top: 10px;
-}
-
-.footerDevelopedByLink {
-  color: var(--primary-color);
-  text-decoration: none;
-  border-bottom: 2px solid var(--secondary-color);
-  transition: color 0.3s ease, border-color 0.3s ease;
-}
-
-.footerDevelopedByLink:hover {
-  color: var(--secondary-color);
-  border-color: var(--primary-color);
-}
-
-/* ===== Responsive Adjustments ===== */
-@media (max-width: 991px) {
+/* ================================
+   Footer Base Styles
+   ================================ */
+   .footer {
+    background-color: #333;
+    color: #fff;
+    padding: 2rem;
+    font-size: 1rem;
+  }
+  
+  .footerContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
   .footerGrid {
-      grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
   }
-
+  
   .footerColumn {
-      align-items: flex-start;
+    flex: 1;
+    min-width: 250px;
   }
-
+  
+  /* ================================
+     Logo and Opening Hours Section
+     ================================ */
   .logoAndHours {
-      width: 100%; /* Adjust width on smaller screens */
-      align-items: center;
+    text-align: center;
   }
-}
-
-@media (max-width: 767px) {
-  .footerGrid {
-      grid-template-columns: 1fr;
+  
+  .footerLogo {
+    margin-bottom: 1rem;
   }
-
-  .footerColumn {
-      align-items: center;
-      text-align: center;
+  
+  .aboutParagraph {
+    margin-bottom: 1rem;
   }
-
+  
+  .widgetTitle {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+  }
+  
+  /* Opening Hours */
+  .openingHours {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .openingHoursItem {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    border-bottom: 1px dashed #555;
+  }
+  
+  .openingHoursDay {
+    font-weight: bold;
+    position: relative;
+  }
+  
+  /* On small devices, show full day name using data-full attribute */
+  @media (max-width: 575.98px) {
+    .openingHoursDay {
+      color: transparent;
+    }
+    .openingHoursDay::before {
+      content: attr(data-full);
+      position: absolute;
+      left: 0;
+      color: #fff;
+      font-weight: bold;
+    }
+  }
+  
+  .openingHoursTime {
+    text-align: right;
+    color: #fff;
+  }
+  
+  /* ================================
+     Quick Links Section
+     ================================ */
+  .quickLinksList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .quickLinksItem {
+    margin-bottom: 0.5rem;
+  }
+  
+  .quickLinksLink {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .quickLinksLink:hover {
+    color: #ffcc00;
+  }
+  
+  /* ================================
+     Contact Info Section
+     ================================ */
+  .contactWidget {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
   .contactItem {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  
+  .contactIcon {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+  }
+  
+  /* For the address, display in two lines */
+  .contactItem:first-child .contactContent {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+  
+  .contactContent {
+    color: #fff;
+    text-align: left;
+  }
+  
+  .contactLink {
+    color: #fff;
+    text-decoration: none;
+  }
+  
+  .contactLink:hover {
+    color: #ffcc00;
+  }
+  
+  /* ================================
+     Sponsored By Section
+     ================================ */
+  .sponsoredBy {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .sponsorLogoLink {
+    display: flex;
+    align-items: center;
+  }
+  /* Recommended sponsor logo image size: 120px x 40px */
+  
+  /* ================================
+     Newsletter Subscription
+     ================================ */
+  .newsletterForm {
+    margin-top: 1rem;
+  }
+  
+  .newsletterInput {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #555;
+    border-radius: 4px;
+  }
+  
+  .newsletterControls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .checkboxWrapper {
+    display: flex;
+    align-items: center;
+  }
+  
+  .formCheckInput {
+    margin-right: 0.5rem;
+  }
+  
+  .formCheckLabel {
+    font-size: 0.875rem;
+  }
+  
+  /* Button Styling */
+  .btnSmall {
+    padding: 0.5rem 1rem;
+    border: none;
+    background-color: #ffcc00;
+    color: #333;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btnSmall:hover {
+    background-color: #e6b800;
+  }
+  
+  /* ================================
+     Footer Bottom Section
+     ================================ */
+  .footerBottom {
+    margin-top: 2rem;
+    text-align: center;
+    border-top: 1px solid #555;
+    padding-top: 1rem;
+  }
+  
+  .footerSocial {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto 1rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+  
+  .footerSocialLink {
+    color: #fff;
+    font-size: 1.25rem;
+    transition: color 0.3s ease;
+  }
+  
+  .footerSocialLink:hover {
+    color: #ffcc00;
+  }
+  
+  .footerBottomText {
+    margin-bottom: 0.5rem;
+  }
+  
+  .footerDevelopedBy {
+    font-size: 0.875rem;
+  }
+  
+  .footerDevelopedByLink {
+    color: #ffcc00;
+    text-decoration: none;
+  }
+  
+  .footerDevelopedByLink:hover {
+    text-decoration: underline;
+  }
+  
+  /* ================================
+     Responsive Adjustments for Small Devices
+     ================================ */
+  @media (max-width: 575.98px) {
+    .footerGrid {
       flex-direction: column;
       align-items: center;
-  }
-
-  .contactIcon {
-      margin-right: 0;
-      margin-bottom: 5px;
-  }
-
-  .newsletterControls {
-      align-items: center;
-  }
-
-  .btnSmall {
+      text-align: center;
+    }
+    .footerColumn {
       width: 100%;
+    }
+    .logoAndHours {
+      text-align: center;
+    }
+    /* For contact items, ensure icons remain left and content is centered */
+    .contactItem {
+      justify-content: center;
+    }
+    .contactIcon {
+      flex-shrink: 0;
+    }
+    .contactContent {
+      flex-grow: 1;
+      text-align: center;
+    }
+    .sponsoredBy {
+      justify-content: center;
+    }
   }
-
-  .logoAndHours {
-      width: 100%; /* Full width on mobile */
-  }
-
-  .openingHoursItem {
-      justify-content: center; /* Center content on mobile */
-  }
-}
-
-/* ===== NEW Sponsored By Container Class ===== */
-.sponsoredBy {
-  margin-top: 20px; /* Gap above sponsored by */
-  text-align: center; /* Center content */
-}
-
-.sponsorLogoLink {
-  display: inline-block;
-  transition: opacity 0.3s ease;
-}
-
-.sponsorLogoLink:hover {
-  opacity: 0.8;
-}
+  

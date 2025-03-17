@@ -22,9 +22,9 @@ const NeonSign: React.FC = () => {
       const now = new Date();
       const dayOfWeek = now.toLocaleString('en-US', { weekday: 'short' });
       const currentTime = now.getHours() + now.getMinutes() / 60;
-
       const todayHours = openingHours[dayOfWeek];
-      
+
+      // If no opening hours for today or the place is closed, determine the next opening time.
       if (!todayHours || todayHours.open === 'Closed') {
         findNextOpening();
         return;
@@ -36,11 +36,13 @@ const NeonSign: React.FC = () => {
       const closeTime = parseInt(closeHourStr, 10) + parseInt(closeMinuteStr, 10) / 60;
 
       if (currentTime >= openTime && currentTime < closeTime) {
+        // Place is currently open
         setStatus({
           isOpen: true,
           message: `Open until ${convertTo12Hour(todayHours.close)}`,
         });
       } else {
+        // Outside today's operating hours
         findNextOpening();
       }
     };
@@ -56,13 +58,14 @@ const NeonSign: React.FC = () => {
         if (nextHours && nextHours.open !== 'Closed') {
           setStatus({
             isOpen: false,
-            message: `Will open on ${nextDay} at ${convertTo12Hour(nextHours.open)}`,
+            message: `Opens on ${nextDay} at ${convertTo12Hour(nextHours.open)}`,
           });
           return;
         }
         nextDayIndex = (nextDayIndex + 1) % 7;
       }
 
+      // Fallback message if no opening hours are available.
       setStatus({ isOpen: false, message: 'Closed until further notice' });
     };
 
@@ -80,7 +83,6 @@ const NeonSign: React.FC = () => {
         </div>
       ) : (
         <div className={styles.statusContainer}>
-          <span>Closed</span>
           <FaStopCircle className={styles.statusIcon} />
           <span>{status.message}</span>
         </div>
