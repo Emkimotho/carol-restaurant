@@ -1,5 +1,3 @@
-// File: components/Footer/Footer.tsx
-
 "use client";
 
 import React from 'react';
@@ -149,7 +147,7 @@ const Footer: React.FC = () => {
                 <Image
                   src="/images/harambee54-logo.png"
                   alt="Harambee54"
-                  width={120}  // Recommended size: 120px x 40px
+                  width={120}
                   height={40}
                 />
               </a>

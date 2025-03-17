@@ -17,7 +17,7 @@ This file contains the complete styles for the footer section, including styles 
 }
 
 /* ===== Footer Content Wrapper ===== */
-.footer-style-one {
+.footerContainer {
   max-width: 1200px;
   margin: 0 auto;
   padding: 60px 20px;
@@ -27,39 +27,54 @@ This file contains the complete styles for the footer section, including styles 
 }
 
 /* ===== Footer Item Styling ===== */
-.footer-item {
+.footerGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.footerColumn {
   flex: 1 1 220px;
   margin-bottom: 30px;
   min-width: 220px;
 }
 
-/* ===== Footer Logo Styling ===== */
-.footer-logo {
-  width: 100%; /* Adjusted to fill the container */
+/* ===== Logo and Opening Hours Section ===== */
+.logoAndHours {
+  text-align: center;
+}
+
+.footerLogo {
+  width: 100%;
   height: auto;
   margin-bottom: 15px;
 }
 
 @media (min-width: 992px) {
-  .footer-logo {
-      max-width: 300px; /* Increased size for larger screens */
+  .footerLogo {
+    max-width: 300px;
   }
 }
 
+.aboutParagraph {
+  margin-bottom: 1rem;
+  color: #ddd;
+}
+
 /* ===== Widget Titles Styling ===== */
-.widget-title {
+.widgetTitle {
   font-size: 1.5rem;
   color: var(--primary-color);
   margin-bottom: 20px;
   font-family: var(--font-heading);
   position: relative;
-  display: inline-block; /* Allows centering and underline positioning */
+  display: inline-block;
 }
 
-.widget-title::after {
+.widgetTitle::after {
   content: "";
   position: absolute;
-  left: 50%; /* Centered the underline */
+  left: 50%;
   transform: translateX(-50%);
   bottom: -5px;
   width: 50px;
@@ -67,17 +82,8 @@ This file contains the complete styles for the footer section, including styles 
   background-color: var(--secondary-color);
 }
 
-/* ===== About Section Styling ===== */
-.f-item.about p {
-  margin: 0 auto 20px auto;
-  max-width: 300px;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: #ddd;
-}
-
 /* ===== Opening Hours Styling ===== */
-.opening-hours {
+.openingHours {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -86,30 +92,24 @@ This file contains the complete styles for the footer section, including styles 
   font-family: var(--font-body);
 }
 
-.opening-hours li {
+.openingHours li {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Center-align day and hours */
+  align-items: center;
   padding: 1px 0;
   border-bottom: 1px solid var(--secondary-color);
   word-wrap: break-word;
   text-align: center;
 }
 
-.opening-hours li span:first-child {
+.openingHours li span:first-child {
   font-weight: bold;
   font-size: 1rem;
   color: var(--primary-color);
-  margin-bottom: 1px; /* Space between day and hours */
+  margin-bottom: 1px;
 }
 
-/* For our previous opening hours selectors (if used in TSX) */
-.openingHours {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
+/* For our previous TSX selectors */
 .openingHoursItem {
   display: flex;
   justify-content: space-between;
@@ -120,20 +120,19 @@ This file contains the complete styles for the footer section, including styles 
 .openingHoursDay {
   font-weight: bold;
   position: relative;
-  color: var(--primary-color); /* Primary green */
+  color: var(--primary-color);
 }
 
-/* On small devices, show full day name using data-full attribute */
 @media (max-width: 575.98px) {
   .openingHoursDay {
-      color: transparent;
+    color: transparent;
   }
   .openingHoursDay::before {
-      content: attr(data-full);
-      position: absolute;
-      left: 0;
-      color: var(--primary-color);
-      font-weight: bold;
+    content: attr(data-full);
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: bold;
   }
 }
 
@@ -193,10 +192,10 @@ This file contains the complete styles for the footer section, including styles 
   margin-bottom: 10px;
 }
 
-/* Adjusted icon positioning: fixed width, centered vertically */
+/* Fixed width icons, aligned vertically next to text */
 .f-item.contact .icon {
   display: inline-block;
-  width: 30px; /* Use 30px as per reference for large screens */
+  width: 30px;
   vertical-align: top;
   margin-right: 10px;
   font-size: 1.2rem;
@@ -226,7 +225,7 @@ This file contains the complete styles for the footer section, including styles 
   color: var(--primary-color);
 }
 
-/* The address remains in two lines */
+/* Address stays in two lines */
 .f-item.contact .contact-widget li:first-child .content {
   display: flex;
   flex-direction: column;
@@ -354,72 +353,71 @@ input[type="checkbox"]:checked {
 }
 
 /* ===== Responsive Adjustments ===== */
-
 /* Medium screens (max-width: 991.98px) */
 @media (max-width: 991.98px) {
-  .footer-style-one {
-      padding: 40px 20px;
-      flex-direction: column;
-      align-items: center;
+  .footerContainer {
+    padding: 40px 20px;
+    flex-direction: column;
+    align-items: center;
   }
-  .footer-item {
-      flex: 1 1 100%;
-      margin-bottom: 30px;
-      text-align: center;
+  .footerColumn {
+    flex: 1 1 100%;
+    margin-bottom: 30px;
+    text-align: center;
   }
 }
 
 /* Small screens (max-width: 767.98px) */
 @media (max-width: 767.98px) {
-  .footer-style-one {
-      padding: 30px 15px;
-      flex-direction: column;
-      align-items: center;
+  .footerContainer {
+    padding: 30px 15px;
+    flex-direction: column;
+    align-items: center;
   }
-  .footer-item {
-      flex: 1 1 100%;
-      margin-bottom: 30px;
-      text-align: center;
+  .footerColumn {
+    flex: 1 1 100%;
+    margin-bottom: 30px;
+    text-align: center;
   }
   .footer-bottom {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
   .footer-developed-by {
-      margin-top: 15px;
+    margin-top: 15px;
   }
   .newsletter-controls {
-      align-items: center;
+    align-items: center;
   }
   .newsletter-controls .btn-small {
-      width: 100%;
+    width: 100%;
   }
   /* Adjusted Contact Info Styling for Mobile */
   .f-item.contact .contact-widget {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   .f-item.contact .contact-widget li {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
   }
   .f-item.contact .icon {
-      margin-right: 0;
-      margin-bottom: 5px;
+    margin-right: 0;
+    margin-bottom: 5px;
   }
   .f-item.contact .content {
-      text-align: center;
+    text-align: center;
   }
 }
 
 /* Large screens (min-width: 992px) */
 @media (min-width: 992px) {
   .footer-bottom {
-      justify-content: center;
+    justify-content: center;
   }
 }
 
