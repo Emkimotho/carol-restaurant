@@ -41,10 +41,19 @@
     margin-bottom: 1rem;
   }
   
+  /* Widget Titles: Opening Hours, Quick Links, Contact Info, Newsletter, Sponsored by */
   .widgetTitle {
     font-size: 1.25rem;
     margin-bottom: 0.5rem;
     text-transform: uppercase;
+    color: #28a745; /* Primary green */
+    text-decoration: underline;
+    text-decoration-color: #ffcc00; /* Underline in secondary color */
+    transition: color 0.3s ease;
+  }
+  
+  .widgetTitle:hover {
+    color: #ffcc00; /* Hover to secondary */
   }
   
   /* Opening Hours */
@@ -61,9 +70,11 @@
     border-bottom: 1px dashed #555;
   }
   
+  /* Day names: default green */
   .openingHoursDay {
     font-weight: bold;
     position: relative;
+    color: #28a745;
   }
   
   /* On small devices, show full day name using data-full attribute */
@@ -75,14 +86,14 @@
       content: attr(data-full);
       position: absolute;
       left: 0;
-      color: #fff;
+      color: #28a745;
       font-weight: bold;
     }
   }
   
   .openingHoursTime {
     text-align: right;
-    color: #fff;
+    color: #28a745;
   }
   
   /* ================================
@@ -99,7 +110,7 @@
   }
   
   .quickLinksLink {
-    color: #fff;
+    color: #28a745;
     text-decoration: none;
     transition: color 0.3s ease;
   }
@@ -123,10 +134,18 @@
     margin-bottom: 0.75rem;
   }
   
+  /* Ensure icons have a fixed width and are centered vertically */
   .contactIcon {
-    /* Removed gap between icon and text */
-    margin-right: 0;
     font-size: 1.25rem;
+    width: 2rem;
+    text-align: center;
+    margin-right: 0.5rem;
+    color: #28a745;
+    transition: color 0.3s ease;
+  }
+  
+  .contactIcon:hover {
+    color: #ffcc00;
   }
   
   /* For the address, display in two lines */
@@ -137,12 +156,12 @@
   }
   
   .contactContent {
-    color: #fff;
+    color: #28a745;
     text-align: left;
   }
   
   .contactLink {
-    color: #fff;
+    color: #28a745;
     text-decoration: none;
   }
   
@@ -196,11 +215,24 @@
     margin-right: 0.5rem;
   }
   
-  .formCheckLabel {
-    font-size: 0.875rem;
+  /* When checkbox is checked, use primary green */
+  input[type="checkbox"]:checked {
+    accent-color: #28a745;
   }
   
-  /* Button Styling */
+  .formCheckLabel {
+    font-size: 0.875rem;
+    color: #28a745;
+    transition: color 0.3s ease;
+  }
+  
+  .formCheckLabel:hover {
+    color: #ffcc00;
+  }
+  
+  /* ================================
+     Button Styling
+     ================================ */
   .btnSmall {
     padding: 0.5rem 1rem;
     border: none;
@@ -235,7 +267,7 @@
   }
   
   .footerSocialLink {
-    color: #fff;
+    color: #28a745;
     font-size: 1.25rem;
     transition: color 0.3s ease;
   }
@@ -276,12 +308,13 @@
     .logoAndHours {
       text-align: center;
     }
-    /* For contact items, center the entire group while ensuring the icon and text are left aligned together */
+    /* For contact items, center the group but keep icon+text aligned */
     .contactItem {
       justify-content: center;
     }
     .contactIcon {
-      margin-right: 0;
+      width: 2rem;
+      text-align: center;
     }
     .contactContent {
       text-align: left;
