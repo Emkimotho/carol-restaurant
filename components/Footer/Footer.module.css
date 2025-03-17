@@ -124,7 +124,8 @@
   }
   
   .contactIcon {
-    margin-right: 0.5rem;
+    /* Removed gap between icon and text */
+    margin-right: 0;
     font-size: 1.25rem;
   }
   
@@ -275,16 +276,15 @@
     .logoAndHours {
       text-align: center;
     }
-    /* For contact items, ensure icons remain left and content is centered */
+    /* For contact items, center the entire group while ensuring the icon and text are left aligned together */
     .contactItem {
       justify-content: center;
     }
     .contactIcon {
-      flex-shrink: 0;
+      margin-right: 0;
     }
     .contactContent {
-      flex-grow: 1;
-      text-align: center;
+      text-align: left;
     }
     .sponsoredBy {
       justify-content: center;
