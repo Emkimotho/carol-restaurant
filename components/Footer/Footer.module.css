@@ -274,7 +274,7 @@ This file contains the complete styles for the footer section, including styles 
   color: #ddd;
 }
 
-input[type="checkbox"]:checked {
+:global(input[type="checkbox"]:checked) {
   accent-color: var(--primary-color);
 }
 
