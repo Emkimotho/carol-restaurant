@@ -59,7 +59,7 @@ const Footer: React.FC = () => {
               <ul className={styles.openingHours}>
                 {Object.entries(openingHours).map(([day, hours]) => (
                   <li key={day} className={styles.openingHoursItem}>
-                    <span 
+                    <span
                       className={styles.openingHoursDay}
                       data-full={fullDayMapping[day] || day}
                     >
@@ -134,7 +134,6 @@ const Footer: React.FC = () => {
                 </div>
               </li>
             </ul>
-
             {/* Sponsored By */}
             <div className={styles.sponsoredBy}>
               <h4 className={styles.widgetTitle}>Sponsored by</h4>
@@ -147,7 +146,7 @@ const Footer: React.FC = () => {
                 <Image
                   src="/images/harambee54-logo.png"
                   alt="Harambee54"
-                  width={120}
+                  width={120}  // Recommended: 120px x 40px
                   height={40}
                 />
               </a>
@@ -268,8 +267,7 @@ const Footer: React.FC = () => {
             </li>
           </ul>
           <p className={styles.footerBottomText}>
-            © {new Date().getFullYear()} The 19th Hole Restaurant and Bar at Black Rock.
-            All Rights Reserved.
+            © {new Date().getFullYear()} The 19th Hole Restaurant and Bar at Black Rock. All Rights Reserved.
           </p>
           <p className={styles.footerDevelopedBy}>
             Developed by{' '}
