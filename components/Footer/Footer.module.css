@@ -225,7 +225,7 @@ This file contains the complete styles for the footer section, including styles 
   color: var(--primary-color);
 }
 
-/* Address stays in two lines */
+/* Address remains in two lines */
 .f-item.contact .contact-widget li:first-child .content {
   display: flex;
   flex-direction: column;
@@ -267,15 +267,16 @@ This file contains the complete styles for the footer section, including styles 
   cursor: pointer;
 }
 
+/* Scope the global checkbox rule to the footer container */
+.footer :global(input[type="checkbox"]:checked) {
+  accent-color: var(--primary-color);
+}
+
 .checkbox-wrapper .form-check-label {
   font-size: 0.75rem;
   line-height: 1.2;
   position: relative;
   color: #ddd;
-}
-
-:global(input[type="checkbox"]:checked) {
-  accent-color: var(--primary-color);
 }
 
 .newsletter-controls .btn-small {
