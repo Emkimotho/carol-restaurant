@@ -111,15 +111,17 @@
   .custom-navbar {
     justify-content: space-between;
   }
-  /* Ensure logo container is left aligned */
+  /* Push logo further left */
   .navbar-logo {
     justify-content: flex-start;
+    margin-left: -10px;  /* Adjust this value as needed */
   }
-  /* Show toggler on small screens */
+  /* Show toggler on small screens and push it to the far right */
   .custom-navbar-toggler {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
+    margin-left: auto;
     width: 45px;
     height: 45px;
     background: transparent;
@@ -195,5 +197,5 @@
 
 /* Optional additional styles for very small screens */
 @media (max-width: 767px) {
-  /* Add any further adjustments if needed */
+  /* Additional adjustments if needed */
 }
