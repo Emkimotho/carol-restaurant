@@ -42,9 +42,9 @@ const Footer: React.FC = () => {
     <footer id="footer" className={styles.footer}>
       <div className={styles.footerContainer}>
         <div className={styles.footerGrid}>
-          {/* Column 1: Explore More Info (Logo and Opening Hours) */}
+          {/* Column 1: About and Opening Hours */}
           <div className={styles.footerColumn}>
-            <h4 className={styles.columnTitle}>Explore More Info</h4>
+            <h4 className={styles.columnTitle}>About The 19th Hole</h4>
             <div className={styles.logoAndHours}>
               <Image
                 src="/images/19th-hole-logo-footer.png"
@@ -104,26 +104,27 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 3: Contact Info, Sponsored by, and Newsletter */}
+          {/* Column 3: Contact Info and Sponsored by */}
           <div className={styles.footerColumn}>
             <h4 className={styles.widgetTitle}>Contact Info</h4>
             <ul className={styles.contactWidget}>
               <li className={styles.contactItem}>
+                <FaMapMarkerAlt className={styles.contactIcon} />
                 <div className={styles.contactContent}>
                   <div>2025 Mount Aetna Road,</div>
                   <div>Hagerstown, MD 21742</div>
                 </div>
-                <FaMapMarkerAlt className={styles.contactIcon} />
               </li>
               <li className={styles.contactItem}>
+                <FaPhone className={styles.contactIcon} />
                 <div className={styles.contactContent}>
                   <a href="tel:2403132819" className={styles.contactLink}>
                     (240) 313-2819
                   </a>
                 </div>
-                <FaPhone className={styles.contactIcon} />
               </li>
               <li className={styles.contactItem}>
+                <FaEnvelope className={styles.contactIcon} />
                 <div className={styles.contactContent}>
                   <a
                     href="mailto:19thholeblackrock@gmail.com"
@@ -132,7 +133,6 @@ const Footer: React.FC = () => {
                     19thholeblackrock@gmail.com
                   </a>
                 </div>
-                <FaEnvelope className={styles.contactIcon} />
               </li>
             </ul>
             <div className={styles.sponsoredBy}>
@@ -146,46 +146,48 @@ const Footer: React.FC = () => {
                 <span className={styles.sponsorText}>Harambee54</span>
               </Link>
             </div>
-            <div className={styles.newsletterForm}>
-              <h4 className={styles.widgetTitle}>Newsletter</h4>
-              <p>
-                Join our subscribers list to get the latest news and special offers.
-              </p>
-              <form action="#">
-                <input
-                  type="email"
-                  placeholder="Your Email"
-                  className={`${styles.newsletterInput} form-control mb-2`}
-                  name="email"
-                  aria-label="Your Email"
-                  required
-                />
-                <div className={styles.newsletterControls}>
-                  <div className={styles.checkboxWrapper}>
-                    <input
-                      type="checkbox"
-                      className={`${styles.formCheckInput} form-check-input me-2`}
-                      id="privacy"
-                      name="privacy"
-                      required
-                    />
-                    <label
-                      className={`${styles.formCheckLabel} form-check-label small-checkbox-label`}
-                      htmlFor="privacy"
-                    >
-                      I agree to the Privacy Policy
-                    </label>
-                  </div>
-                  <button
-                    className={`${styles.btnSmall} btn btn-primary`}
-                    type="submit"
-                    aria-label="Subscribe"
+          </div>
+
+          {/* Column 4: Newsletter Subscription */}
+          <div className={styles.footerColumn}>
+            <h4 className={styles.widgetTitle}>Newsletter</h4>
+            <p>
+              Join our subscribers list to get the latest news and special offers.
+            </p>
+            <form action="#" className={styles.newsletterForm}>
+              <input
+                type="email"
+                placeholder="Your Email"
+                className={`${styles.newsletterInput} form-control mb-2`}
+                name="email"
+                aria-label="Your Email"
+                required
+              />
+              <div className={styles.newsletterControls}>
+                <div className={styles.checkboxWrapper}>
+                  <input
+                    type="checkbox"
+                    className={`${styles.formCheckInput} form-check-input me-2`}
+                    id="privacy"
+                    name="privacy"
+                    required
+                  />
+                  <label
+                    className={`${styles.formCheckLabel} form-check-label small-checkbox-label`}
+                    htmlFor="privacy"
                   >
-                    Subscribe
-                  </button>
+                    I agree to the Privacy Policy
+                  </label>
                 </div>
-              </form>
-            </div>
+                <button
+                  className={`${styles.btnSmall} btn btn-primary`}
+                  type="submit"
+                  aria-label="Subscribe"
+                >
+                  Subscribe
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
@@ -261,13 +263,8 @@ const Footer: React.FC = () => {
           </ul>
           <div className={styles.footerSeparator}></div>
           <p className={styles.footerBottomText}>
-            © {new Date().getFullYear()} The 19th Hole Restaurant and Bar at Black Rock.
+            © {new Date().getFullYear()} The 19th Hole Restaurant and Bar at Black Rock. All Rights Reserved.
           </p>
-          <br />
-          <p className={styles.footerBottomText}>
-            All Rights Reserved.
-          </p>
-          <br />
           <p className={styles.footerDevelopedBy}>
             Developed by{' '}
             <a
