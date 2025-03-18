@@ -44,7 +44,7 @@ const Footer: React.FC = () => {
         <div className={styles.footerGrid}>
           {/* Column 1: More Info and Opening Hours */}
           <div className={styles.footerColumn}>
-            <h4 className={styles.widgetTitle}>More Info</h4>
+            <h4 className={`${styles.widgetTitle} ${styles.leftAlign}`}>More Info</h4>
             <div className={styles.logoAndHours}>
               <Image
                 src="/images/19th-hole-logo-footer.png"
@@ -78,7 +78,7 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Column 2: Quick Links */}
-          <div className={styles.footerColumn}>
+          <div className={`${styles.footerColumn} ${styles.quickLinksColumn}`}>
             <h4 className={styles.widgetTitle}>Quick Links</h4>
             <ul className={styles.quickLinksList}>
               <li className={styles.quickLinksItem}>
@@ -104,7 +104,7 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 3: Contact Info and Sponsored by */}
+          {/* Column 3: Contact Info and Sponsored By */}
           <div className={styles.footerColumn}>
             <h4 className={styles.widgetTitle}>Contact Info</h4>
             <ul className={styles.contactWidget}>
@@ -135,30 +135,34 @@ const Footer: React.FC = () => {
                 </div>
               </li>
             </ul>
-            <div className={styles.sponsoredBy}>
-              <h4 className={styles.widgetTitle}>Sponsored by</h4>
-              <Link
-                href="https://harambee54.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.sponsorLogoLink}
-              >
-                <Image
-                  src="/images/harambee54-logo.png"
-                  alt="Harambee54 Logo"
-                  width={100}
-                  height={50}
-                  className={styles.sponsorLogo}
-                />
-              </Link>
-              <Link
-                href="https://harambee54.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.sponsorLogoLink}
-              >
-                <span className={styles.sponsorText}>Harambee54</span>
-              </Link>
+            <div className={styles.sponsoredByContainer}>
+              <h4 className={styles.sponsoredByTitle}>Sponsored by</h4>
+              <div className={styles.sponsorContent}>
+                <Link
+                  href="https://harambee54.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.sponsorLogoLink}
+                >
+                  <Image
+                    src="/images/harambee54-logo.png"
+                    alt="Harambee54 Logo"
+                    width={100}
+                    height={50}
+                    className={styles.sponsorLogo}
+                  />
+                </Link>
+              </div>
+              <div className={styles.sponsorTextContainer}>
+                <Link
+                  href="https://harambee54.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.sponsorTextLink}
+                >
+                  <span className={styles.sponsorText}>Harambee54</span>
+                </Link>
+              </div>
             </div>
           </div>
 

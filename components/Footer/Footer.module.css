@@ -36,6 +36,11 @@
   min-width: 220px;
 }
 
+/* Additional adjustment for Quick Links column */
+.quickLinksColumn {
+  margin-left: 20px;
+}
+
 /* ===== Widget Titles Styling ===== */
 .widgetTitle {
   font-size: 1.5rem;
@@ -45,11 +50,16 @@
   position: relative;
   display: inline-block;
 }
+
+/* Optional left alignment override */
+.leftAlign {
+  display: block;
+  text-align: left;
+}
 .widgetTitle::after {
   content: "";
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   bottom: -5px;
   width: 50px;
   height: 3px;
@@ -58,7 +68,7 @@
 
 /* ===== Logo and About Section ===== */
 .logoAndHours {
-  text-align: center;
+  text-align: left;
 }
 .footerLogo {
   width: 100%;
@@ -84,48 +94,21 @@
   font-size: 1rem;
   font-family: var(--font-body);
 }
-.openingHours li {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1px 0;
-  border-bottom: 1px solid var(--secondary-color);
-  word-wrap: break-word;
-  text-align: center;
-}
-.openingHours li span:first-child {
-  font-weight: bold;
-  font-size: 1rem;
-  color: var(--primary-color);
-  margin-bottom: 1px;
-}
-/* For TSX selectors */
 .openingHoursItem {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 0.25rem 0;
   border-bottom: 1px dashed #555;
 }
 .openingHoursDay {
   font-weight: bold;
-  position: relative;
   color: var(--primary-color);
-}
-@media (max-width: 575.98px) {
-  .openingHoursDay {
-    color: transparent;
-  }
-  .openingHoursDay::before {
-    content: attr(data-full);
-    position: absolute;
-    left: 0;
-    color: var(--primary-color);
-    font-weight: bold;
-  }
+  text-align: left;
 }
 .openingHoursTime {
-  text-align: right;
   color: var(--white);
+  text-align: right;
 }
 
 /* ===== Quick Links Styling ===== */
@@ -316,33 +299,43 @@
 }
 
 /* ===== Sponsored By Styling ===== */
-.sponsoredBy {
+.sponsoredByContainer {
   margin-top: 20px;
   text-align: center;
 }
-.sponsoredBy .widgetTitle {
+.sponsoredByTitle {
+  font-size: 1.5rem;
   color: var(--white);
+  margin-bottom: 10px;
+  font-family: var(--font-heading);
+}
+.sponsorContent {
+  margin-bottom: 10px;
 }
 .sponsorLogoLink {
-  margin-left: 10px;
   text-decoration: none;
   display: inline-block;
-}
-.sponsorText {
-  color: var(--primary-color);
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-.sponsorText:hover {
-  color: var(--secondary-color);
 }
 .sponsorLogo {
   transition: transform 0.3s ease;
 }
 .sponsorLogo:hover {
   transform: scale(1.1);
+}
+.sponsorTextContainer {
+  text-align: center;
+}
+.sponsorTextLink {
+  text-decoration: none;
+}
+.sponsorText {
+  color: var(--primary-color);
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  transition: color 0.3s ease;
+}
+.sponsorText:hover {
+  color: var(--secondary-color);
 }
 
 /* ===== Responsive Adjustments ===== */
