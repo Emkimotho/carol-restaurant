@@ -95,11 +95,9 @@
 .custom-navbar-toggler.open .custom-navbar-toggler-icon {
   transform: rotate(45deg);
 }
-
 .custom-navbar-toggler.open .custom-navbar-toggler-icon::before {
   transform: rotate(90deg);
 }
-
 .custom-navbar-toggler.open .custom-navbar-toggler-icon::after {
   opacity: 0;
 }
@@ -126,13 +124,13 @@
   }
   
   /* Upgrade the hamburger icon styling */
-  /* Replace the default single-line style with one that uses pseudo-elements */
+  /* Using pseudo-elements to create top and bottom lines */
   .custom-navbar-toggler-icon {
     position: relative;
     display: block;
     width: 24px;
     height: 3px;
-    background-color: var(--primary-color); /* Green lines */
+    background-color: var(--primary-color); /* Green line for middle */
     transition: transform 0.35s ease, opacity 0.35s ease;
   }
   .custom-navbar-toggler-icon::before,
@@ -154,7 +152,7 @@
   
   /* When toggled open, transform into an "X" */
   .custom-navbar-toggler.open .custom-navbar-toggler-icon {
-    background-color: transparent; /* Hide the middle line */
+    background-color: transparent; /* Hide middle line */
   }
   .custom-navbar-toggler.open .custom-navbar-toggler-icon::before {
     transform: translateY(8px) rotate(45deg);
@@ -176,16 +174,13 @@
     padding: 10px 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
-  
   .custom-navbar-collapse.show {
     display: flex;
   }
-  
   .custom-navbar-nav {
     flex-direction: column;
     gap: 10px;
   }
-  
   .custom-nav-link {
     color: #000; /* Black text */
   }
