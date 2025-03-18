@@ -8,7 +8,6 @@ import { FaShoppingCart } from "react-icons/fa";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
-// Hook to detect mobile view at or below a chosen breakpoint
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -31,10 +30,10 @@ const Header: React.FC = () => {
   const pathname = usePathname();
   const { cartItems, openSidebarCart } = useContext(CartContext)!;
 
-  // Calculate total cart quantity
+  // Calculate total items
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close menu if user clicks outside it
+  // Close menu if clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
@@ -45,10 +44,8 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Close mobile menu
+  // Helpers
   const closeMobileMenu = () => setMobileMenuOpen(false);
-
-  // On cart click
   const handleCartClick = () => {
     closeMobileMenu();
     openSidebarCart();
@@ -84,7 +81,7 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
-      {/* Middle: Nav List */}
+      {/* Middle: Nav Links */}
       <ul className={styles.navList}>
         {navItems.map(({ href, label, external }) => {
           const isActive = !external && pathname === href;
@@ -135,7 +132,7 @@ const Header: React.FC = () => {
   const mobileHeader = (
     <>
       <nav className={styles.mobileNavbar} ref={navbarRef}>
-        {/* Left: Logo (moved further left via padding in CSS) */}
+        {/* Left: Logo */}
         <div className={styles.mobileLogo}>
           <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
             <Image
@@ -161,7 +158,7 @@ const Header: React.FC = () => {
           )}
         </button>
 
-        {/* Right: Hamburger (3 green lines) toggles open/close */}
+        {/* Right: Hamburger */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"
@@ -206,7 +203,7 @@ const Header: React.FC = () => {
         </ul>
       </div>
 
-      {/* Overlay behind mobile menu */}
+      {/* Dark overlay */}
       {mobileMenuOpen && (
         <div className={styles.mobileOverlay} onClick={closeMobileMenu}></div>
       )}

@@ -1,6 +1,6 @@
-/*******************************************
+/**************************************
  * HEADER WRAPPER
- *******************************************/
+ **************************************/
  .header {
   position: fixed;
   top: 0;
@@ -12,74 +12,53 @@
   font-family: var(--font-body);
 }
 
-/*******************************************
+/**************************************
  * DESKTOP NAVBAR
- *******************************************/
+ **************************************/
 .desktopNavbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  /*
-   * Adjust to move logo further left or give more space on the right
-   * The smaller the left padding, the closer the logo is to the edge.
-   */
-  padding: 0 1.5rem; /* Try 1rem or even 0.5rem if you need more left shift */
+  padding: 0 1.5rem; /* adjust to move logo further left or right */
   height: var(--navbar-height);
   background-color: var(--white);
 }
 
-/* Container for the logo on desktop */
 .logoContainer {
   flex-shrink: 0;
 }
 
-/* Logo link and image */
 .logoLink {
   display: inline-block;
 }
+
 .logoImage {
   height: auto;
   width: auto;
   object-fit: contain;
 }
 
-/*******************************************
- * DESKTOP NAV LINKS
- *******************************************/
+/**************************************
+ * DESKTOP NAV
+ **************************************/
 .navList {
   display: flex;
   align-items: center;
   margin: 0;
   padding: 0;
   list-style: none;
-
-  /*
-   * Reduced gap to help "About Us" fit on a single line
-   * Adjust smaller if you still need more space
-   */
-  gap: 0.6rem;
-
-  /* Force items to remain on one line if space allows */
+  gap: 0.6rem; /* slightly reduced gap to keep "About Us" in one line */
   white-space: nowrap;
 }
 
-/* Single nav item */
 .navItem {
   list-style: none;
 }
 
-/* Nav link text in primary color */
 .navLink {
   display: block;
   font-family: var(--font-heading);
-
-  /*
-   * Slightly reduced font-size so that "About Us"
-   * plus other items are more likely to fit in a single row
-   */
-  font-size: 0.95rem;
-
+  font-size: 0.95rem; /* small enough to help "About Us" fit on one line */
   color: var(--primary-color);
   padding: 0.75rem 0.5rem;
   transition: color 0.3s ease;
@@ -89,14 +68,13 @@
   color: var(--secondary-color);
 }
 
-/* Active link shares the same color as hover */
 .activeLink {
   color: var(--secondary-color) !important;
 }
 
-/*******************************************
- * DESKTOP CART
- *******************************************/
+/**************************************
+ * DESKTOP CART BUTTON
+ **************************************/
 .cartButton {
   background-color: transparent;
   border: none;
@@ -124,9 +102,9 @@
   font-size: 1rem;
 }
 
-/*******************************************
+/**************************************
  * MOBILE NAVBAR
- *******************************************/
+ **************************************/
 @media (max-width: 991px) {
   .desktopNavbar {
     display: none;
@@ -137,14 +115,7 @@
     align-items: center;
     justify-content: space-between;
     height: var(--navbar-height);
-
-    /*
-     * Adjust to move mobile logo further left:
-     * The smaller you make the left part of the padding,
-     * the closer it gets to the screen's edge.
-     */
-    padding: 0 0.5rem; /* Decrease for even more left shift */
-
+    padding: 0 0.5rem; /* adjust to move logo further left (smaller -> more left) */
     background-color: var(--white);
     box-shadow: var(--box-shadow-primary);
     position: relative;
@@ -154,7 +125,7 @@
     flex-shrink: 0;
   }
 
-  /* Mobile cart in the middle */
+  /* Cart in the center */
   .mobileCartButton {
     background-color: transparent;
     border: none;
@@ -172,20 +143,17 @@
     font-weight: 700;
   }
 
-  /*******************************************
-   * HAMBURGER ICON
-   *******************************************/
+  /**************************************
+   * HAMBURGER BUTTON
+   **************************************/
   .hamburgerButton {
-    /* 
-     * If it was invisible, ensure we keep a neutral background 
-     * or no background, but keep the lines large enough
-     */
-    background-color: transparent;
-    border: none; /* Remove default border to avoid green square */
-    width: 40px;
-    height: 40px;
+    /* Light border so we can see the button area if needed */
+    border: 1px solid #ccc; /* adjust as you wish */
+    background-color: #fff; /* white BG ensures lines stand out */
     border-radius: 4px;
 
+    width: 40px;
+    height: 40px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -194,24 +162,24 @@
     position: relative;
   }
 
-  /* Thicker, green lines so they're clearly visible */
+  /*
+   * Force the lines to be a bright green color,
+   * and use !important to ensure they don't get overridden.
+   */
   .hamburgerBar {
-    width: 30px; /* Increase if needed for more visibility */
-    height: 3px; /* Thicker line so it doesn't disappear */
-    background-color: var(--primary-color); /* Green lines by default */
-    margin: 3px 0;
+    width: 30px;  /* thickness for line length */
+    height: 3px;  /* thickness of each line */
+    background-color: #00BF63 !important; /* bright green, forced */
+    margin: 4px 0;
     transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
   }
 
-  /* On hover, lines become secondary color */
+  /* On hover, lines become secondary color. You can remove !important if desired. */
   .hamburgerButton:hover .hamburgerBar {
-    background-color: var(--secondary-color);
+    background-color: var(--secondary-color) !important;
   }
 
-  /*
-   * When mobileMenuOpen is true, .hamburgerOpen is applied,
-   * turning the 3 lines into an "X"
-   */
+  /* Transform to "X" when open */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
   }
@@ -222,9 +190,9 @@
     transform: translateY(-8px) rotate(-45deg);
   }
 
-  /*******************************************
-   * MOBILE SLIDE-OUT MENU
-   *******************************************/
+  /**************************************
+   * SLIDE-OUT MENU
+   **************************************/
   .mobileMenu {
     position: fixed;
     top: 0;
@@ -241,12 +209,10 @@
     flex-direction: column;
   }
 
-  /* Slide the menu in from right if open */
   .mobileMenuOpen {
     right: 0;
   }
 
-  /* The nav list in the mobile menu */
   .mobileNavList {
     list-style: none;
     margin: 0;
@@ -256,14 +222,11 @@
     gap: 1.25rem;
   }
 
-  /* Basic slide/fade in for each item */
   .mobileNavItem {
     transform: translateX(15px);
     opacity: 0;
     animation: fadeInRight 0.3s forwards;
   }
-
-  /* Staggered delays for consecutive items */
   .mobileNavItem:nth-child(1) {
     animation-delay: 0.05s;
   }
@@ -296,7 +259,7 @@
     color: var(--secondary-color);
   }
 
-  /* Dark overlay behind the open mobile menu */
+  /* Dark overlay behind the open menu */
   .mobileOverlay {
     position: fixed;
     inset: 0;
@@ -305,7 +268,6 @@
   }
 }
 
-/* Hide mobile elements on desktop */
 @media (min-width: 992px) {
   .mobileNavbar {
     display: none;
