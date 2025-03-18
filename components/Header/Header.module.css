@@ -31,15 +31,15 @@
   height: auto;
 }
 
-/* Mobile Cart Icon */
+/* Mobile Cart Icon (default desktop hidden) */
 .mobile-cart {
   display: none;
   margin-left: 20px;
 }
 .cart-button {
   background-color: #fff; /* white background */
-  border: 2px solid green; /* green box */
-  color: #000; /* icon rendered in black */
+  border: 2px solid green; /* green border */
+  color: #000; /* cart icon in black */
   cursor: pointer;
   padding: 5px;
   display: inline-flex;
@@ -151,31 +151,50 @@
   .mobile-cart {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex: 1;
   }
   .desktop-cart {
     display: none;
   }
-  /* Show toggler on small screens */
+  /* Mobile Header: Logo on left, Cart in center, Toggler on right */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+  }
+  .mobile-logo {
+    flex: 1;
+    text-align: left;
+  }
+  .mobile-cart {
+    flex: 1;
+    text-align: center;
+  }
+  /* Increase cart size to match the hamburger */
+  .cart-button {
+    width: 45px;
+    height: 45px;
+    padding: 0;
+  }
+  .cart-button svg {
+    font-size: 1.5rem; /* Larger icon for better visibility */
+  }
+  /* Hamburger Toggler for mobile */
   .custom-navbar-toggler {
     display: flex;
     align-items: center;
-    justify-content: center;
-    margin-left: auto;
-    width: 45px;
-    height: 45px;
+    justify-content: flex-end;
+    flex: 1;
     background: transparent;
     border: 2px solid var(--primary-color);
     border-radius: 8px;
-    cursor: pointer;
-    position: relative;
+    width: 45px;
+    height: 45px;
     padding: 0;
   }
-  .custom-navbar-toggler-label {
-    display: none;
-  }
   .custom-navbar-toggler-icon {
-    position: relative;
-    display: block;
     width: 24px;
     height: 3px;
     background-color: var(--primary-color);
