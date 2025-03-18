@@ -13,25 +13,19 @@ const Header: React.FC = () => {
   const navbarRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
-  // Retrieve cart items and openSidebarCart from context.
   const { cartItems, openSidebarCart } = useContext(CartContext)!;
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Toggle the navbar open/close state.
   const handleToggle = () => {
     setNavbarOpen((prev) => !prev);
   };
 
-  // Close the menu.
   const closeMenu = () => {
     setNavbarOpen(false);
   };
 
-  // Listen for clicks outside the navbar and close it if clicked outside.
   useEffect(() => {
     const handleClickOutside = (event: Event) => {
-      // Optionally, cast event to MouseEvent if needed:
-      // const mouseEvent = event as MouseEvent;
       if (navbarRef.current && !navbarRef.current.contains(event.target as Node)) {
         setNavbarOpen(false);
       }
@@ -42,7 +36,6 @@ const Header: React.FC = () => {
     };
   }, []);
 
-  // When the cart icon is clicked, close the menu and open the cart sidebar.
   const handleCartClick = () => {
     closeMenu();
     openSidebarCart();
@@ -51,7 +44,7 @@ const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <nav className={styles["custom-navbar"]} ref={navbarRef}>
-        {/* Logo Section */}
+        {/* Logo and Mobile Cart Container */}
         <div className={styles["navbar-logo"]}>
           <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
             <Image
@@ -63,6 +56,19 @@ const Header: React.FC = () => {
               priority
             />
           </Link>
+          {/* Mobile Cart Icon (visible on small screens only) */}
+          <div className={styles["mobile-cart"]}>
+            <button
+              onClick={handleCartClick}
+              aria-label="Open Cart Sidebar"
+              className={styles["cart-button"]}
+            >
+              <FaShoppingCart style={{ fontSize: "1.2rem" }} />
+              {totalItems > 0 && (
+                <span className={styles["cart-badge"]}>{totalItems}</span>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu Toggler */}
@@ -167,8 +173,8 @@ const Header: React.FC = () => {
                 Login
               </Link>
             </li>
-            {/* Cart Icon */}
-            <li className={styles["custom-nav-item"]} style={{ position: "relative" }}>
+            {/* Desktop Cart Icon (visible on larger screens only) */}
+            <li className={`${styles["custom-nav-item"]} ${styles["desktop-cart"]}`} style={{ position: "relative" }}>
               <button
                 onClick={handleCartClick}
                 aria-label="Open Cart Sidebar"
@@ -177,22 +183,7 @@ const Header: React.FC = () => {
                 <div style={{ position: "relative", display: "inline-block" }}>
                   <FaShoppingCart style={{ fontSize: "1.2rem" }} />
                   {totalItems > 0 && (
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: "-6px",
-                        right: "-10px",
-                        backgroundColor: "#dc3545",
-                        color: "#fff",
-                        width: "18px",
-                        height: "18px",
-                        fontSize: "0.75rem",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
+                    <span className={styles["cart-badge"]}>
                       {totalItems}
                     </span>
                   )}
