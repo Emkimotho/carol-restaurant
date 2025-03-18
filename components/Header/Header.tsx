@@ -43,10 +43,14 @@ const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <nav className={styles["custom-navbar"]} ref={navbarRef}>
-        {/* Desktop Navigation – visible on screens above 991px */}
-        <div className={styles["desktop-navbar"]}>
+        {/* Desktop Navigation – visible only on screens 992px and wider */}
+        <div className={`${styles.desktopOnly} ${styles["desktop-navbar"]}`}>
           <div className={styles["navbar-logo"]}>
-            <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
+            <Link
+              href="/"
+              onClick={closeMenu}
+              className={styles["custom-logo-link"]}
+            >
               <Image
                 src="/images/logo.png"
                 alt="Logo"
@@ -62,7 +66,9 @@ const Header: React.FC = () => {
               <Link
                 href="/"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/" ? styles.active : ""
+                }`}
               >
                 Home
               </Link>
@@ -71,7 +77,9 @@ const Header: React.FC = () => {
               <Link
                 href="/menu"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/menu" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/menu" ? styles.active : ""
+                }`}
               >
                 Menu
               </Link>
@@ -80,7 +88,9 @@ const Header: React.FC = () => {
               <Link
                 href="/reservation"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/reservation" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/reservation" ? styles.active : ""
+                }`}
               >
                 Reservation
               </Link>
@@ -89,7 +99,9 @@ const Header: React.FC = () => {
               <Link
                 href="/catering"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/catering" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/catering" ? styles.active : ""
+                }`}
               >
                 Catering
               </Link>
@@ -98,7 +110,9 @@ const Header: React.FC = () => {
               <Link
                 href="/events"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/events" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/events" ? styles.active : ""
+                }`}
               >
                 Events
               </Link>
@@ -118,7 +132,9 @@ const Header: React.FC = () => {
               <Link
                 href="/careers"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/careers" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/careers" ? styles.active : ""
+                }`}
               >
                 Careers
               </Link>
@@ -127,7 +143,9 @@ const Header: React.FC = () => {
               <Link
                 href="/about"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/about" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/about" ? styles.active : ""
+                }`}
               >
                 About Us
               </Link>
@@ -136,7 +154,9 @@ const Header: React.FC = () => {
               <Link
                 href="/login"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/login" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/login" ? styles.active : ""
+                }`}
               >
                 Login
               </Link>
@@ -157,10 +177,14 @@ const Header: React.FC = () => {
           </ul>
         </div>
 
-        {/* Mobile Navigation – visible on screens 991px and below */}
-        <div className={styles["mobile-header"]}>
+        {/* Mobile Navigation – visible only on screens 991px and below */}
+        <div className={`${styles.mobileOnly} ${styles["mobile-header"]}`}>
           <div className={styles["mobile-logo"]}>
-            <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
+            <Link
+              href="/"
+              onClick={closeMenu}
+              className={styles["custom-logo-link"]}
+            >
               <Image
                 src="/images/logo.png"
                 alt="Logo"
@@ -190,7 +214,9 @@ const Header: React.FC = () => {
             aria-controls="customNavbarMenu"
             aria-expanded={navbarOpen}
             aria-label="Toggle navigation"
-            className={`${styles["custom-navbar-toggler"]} ${navbarOpen ? styles.open : ""}`}
+            className={`${styles["custom-navbar-toggler"]} ${
+              navbarOpen ? styles.open : ""
+            }`}
           >
             <span className={styles["custom-navbar-toggler-icon"]}></span>
             <span className={styles["custom-navbar-toggler-label"]}>Menu</span>
@@ -200,14 +226,18 @@ const Header: React.FC = () => {
         {/* Mobile Navigation Links */}
         <div
           id="customNavbarMenu"
-          className={`${styles["custom-navbar-collapse"]} ${navbarOpen ? styles.show : ""}`}
+          className={`${styles["custom-navbar-collapse"]} ${
+            navbarOpen ? styles.show : ""
+          }`}
         >
           <ul className={styles["custom-navbar-nav"]}>
             <li className={styles["custom-nav-item"]}>
               <Link
                 href="/"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/" ? styles.active : ""
+                }`}
               >
                 Home
               </Link>
@@ -216,7 +246,9 @@ const Header: React.FC = () => {
               <Link
                 href="/menu"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/menu" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/menu" ? styles.active : ""
+                }`}
               >
                 Menu
               </Link>
@@ -225,7 +257,9 @@ const Header: React.FC = () => {
               <Link
                 href="/reservation"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/reservation" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/reservation" ? styles.active : ""
+                }`}
               >
                 Reservation
               </Link>
@@ -234,7 +268,9 @@ const Header: React.FC = () => {
               <Link
                 href="/catering"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/catering" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/catering" ? styles.active : ""
+                }`}
               >
                 Catering
               </Link>
@@ -243,7 +279,9 @@ const Header: React.FC = () => {
               <Link
                 href="/events"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/events" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/events" ? styles.active : ""
+                }`}
               >
                 Events
               </Link>
@@ -263,7 +301,9 @@ const Header: React.FC = () => {
               <Link
                 href="/careers"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/careers" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/careers" ? styles.active : ""
+                }`}
               >
                 Careers
               </Link>
@@ -272,7 +312,9 @@ const Header: React.FC = () => {
               <Link
                 href="/about"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/about" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/about" ? styles.active : ""
+                }`}
               >
                 About Us
               </Link>
@@ -281,7 +323,9 @@ const Header: React.FC = () => {
               <Link
                 href="/login"
                 onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${pathname === "/login" ? styles.active : ""}`}
+                className={`${styles["custom-nav-link"]} ${
+                  pathname === "/login" ? styles.active : ""
+                }`}
               >
                 Login
               </Link>

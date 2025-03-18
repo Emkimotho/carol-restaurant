@@ -1,3 +1,19 @@
+/* Helper classes to show/hide content on desktop vs. mobile */
+.desktopOnly {
+  display: block;
+}
+.mobileOnly {
+  display: none;
+}
+@media (max-width: 991px) {
+  .desktopOnly {
+    display: none;
+  }
+  .mobileOnly {
+    display: block;
+  }
+}
+
 /* General Styles */
 .header {
   position: fixed;
@@ -125,12 +141,7 @@
 
 /* Mobile Styles */
 @media (max-width: 991px) {
-  /* Hide Desktop Navbar */
-  .desktop-navbar {
-    display: none;
-  }
-  
-  /* Mobile Header: hidden by default on desktop, shown only on small screens */
+  /* Mobile Header Container */
   .mobile-header {
     display: flex;
     position: relative;
