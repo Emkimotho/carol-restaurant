@@ -19,7 +19,6 @@
   background-color: var(--white);
 }
 
-/* Logo Container */
 .logoContainer {
   flex-shrink: 0;
 }
@@ -34,18 +33,14 @@
   object-fit: contain;
 }
 
-/* Center section with green background for nav items */
+/* Nav List: no special background, let the text color stand out */
 .navList {
   display: flex;
+  align-items: center;
   margin: 0;
   padding: 0;
-  /* 
-    Because we want a separate green "bar" for the menu items,
-    we can wrap them in an inline-flex or an artificial container.
-    We'll just add a background to the <ul> for simplicity:
-  */
-  background-color: var(--primary-color);
-  border-radius: 4px;
+  list-style: none;
+  gap: 1rem;
 }
 
 .navItem {
@@ -54,35 +49,30 @@
 
 .navLink {
   display: block;
-  padding: 0.75rem 1rem;
-  color: var(--white);
   font-family: var(--font-heading);
   font-size: 1rem;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  color: var(--primary-color);
+  padding: 0.75rem 0.5rem;
+  transition: color 0.3s ease;
 }
 
 .navLink:hover {
-  background-color: var(--primary-color-hover);
-  color: var(--white);
+  color: var(--secondary-color);
 }
 
+/* Active link shares the same hover color */
 .activeLink {
-  background-color: var(--primary-color-hover) !important;
+  color: var(--secondary-color) !important;
 }
 
-/* Cart on the right side */
-.cartWrapper {
-  position: relative;
-}
-
-/* Desktop Cart Button */
+/* Desktop Cart Button (right side) */
 .cartButton {
-  position: relative;
   background-color: transparent;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
+  position: relative;
   padding: 0;
 }
 
@@ -96,26 +86,22 @@
   color: var(--primary-color);
 }
 
-.cartBadge {
-  position: absolute;
-  top: -8px;
-  right: -10px;
-  background-color: #dc3545;
-  color: var(--white);
-  border-radius: 50%;
-  padding: 0 6px;
-  font-size: 0.75rem;
-  line-height: 1.5;
+/* Text-based cart count in secondary color */
+.cartCount {
+  margin-left: 0.5rem;
+  color: var(--secondary-color);
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 /* -------------------- MOBILE STYLES -------------------- */
 @media (max-width: 991px) {
-  /* Hide the desktop navbar in mobile */
+  /* Hide the desktop nav */
   .desktopNavbar {
     display: none;
   }
 
-  /* The main mobile navbar container (logo-left, cart-center, hamburger-right) */
+  /* Show the mobile nav */
   .mobileNavbar {
     display: flex;
     align-items: center;
@@ -131,41 +117,30 @@
     flex-shrink: 0;
   }
 
-  /* Cart in center for mobile */
-  .cartButtonMobile {
+  /* Cart in the middle by absolute positioning */
+  .mobileCartButton {
     background-color: transparent;
     border: none;
+    cursor: pointer;
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    cursor: pointer;
-    padding: 0;
     display: flex;
     align-items: center;
   }
 
-  .cartIcon {
-    font-size: 1.4rem;
+  .mobileCartCount {
+    margin-left: 0.4rem;
+    color: var(--secondary-color);
+    font-weight: 700;
   }
 
-  .cartBadgeMobile {
-    position: absolute;
-    top: -8px;
-    right: -10px;
-    background-color: #dc3545;
-    color: var(--white);
-    border-radius: 50%;
-    padding: 0 6px;
-    font-size: 0.75rem;
-    line-height: 1.5;
-  }
-
-  /* Hamburger Button */
+  /* Hamburger on the right */
   .hamburgerButton {
     width: 40px;
     height: 40px;
     background-color: transparent;
-    border: 2px solid var(--primary-color);
+    border: 2px solid var(--secondary-color);
     border-radius: 4px;
     display: flex;
     flex-direction: column;
@@ -177,30 +152,34 @@
   }
 
   .hamburgerButton:hover {
-    border-color: var(--primary-color-hover);
+    border-color: var(--primary-color);
   }
 
   .hamburgerBar {
     width: 70%;
     height: 2px;
-    background-color: var(--primary-color);
+    background-color: var(--secondary-color);
     margin: 4px 0;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
   }
 
+  /* On hover, lines become primary color */
+  .hamburgerButton:hover .hamburgerBar {
+    background-color: var(--primary-color);
+  }
+
+  /* When the hamburger is open */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
   }
-
   .hamburgerOpen .hamburgerBar:nth-child(2) {
     opacity: 0;
   }
-
   .hamburgerOpen .hamburgerBar:nth-child(3) {
     transform: translateY(-8px) rotate(-45deg);
   }
 
-  /* Slide-out mobile menu */
+  /* Drawer Menu */
   .mobileMenu {
     position: fixed;
     top: 0;
@@ -224,6 +203,8 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    margin: 0;
+    padding: 0;
   }
 
   .mobileNavItem {
@@ -243,7 +224,7 @@
     color: var(--primary-color);
   }
 
-  /* Overlay behind the mobile menu */
+  /* Overlay behind the drawer */
   .mobileOverlay {
     position: fixed;
     inset: 0;
@@ -252,7 +233,7 @@
   }
 }
 
-/* Hide the mobile navbar in desktop view */
+/* Hide mobile nav in desktop */
 @media (min-width: 992px) {
   .mobileNavbar {
     display: none;

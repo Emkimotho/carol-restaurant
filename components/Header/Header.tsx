@@ -9,8 +9,8 @@ import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
 /* 
-  Custom hook to detect mobile view based on a given breakpoint.
-  Returns boolean: true if window width is <= breakpoint.
+  Hook to detect if we’re in "mobile" view (<= 991px).
+  Returns a boolean.
 */
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
@@ -19,12 +19,9 @@ const useIsMobile = (breakpoint = 991) => {
     const checkWidth = () => {
       setIsMobile(window.innerWidth <= breakpoint);
     };
-    checkWidth(); // initial check
+    checkWidth(); // initial
     window.addEventListener("resize", checkWidth);
-
-    return () => {
-      window.removeEventListener("resize", checkWidth);
-    };
+    return () => window.removeEventListener("resize", checkWidth);
   }, [breakpoint]);
 
   return isMobile;
@@ -37,10 +34,10 @@ const Header: React.FC = () => {
   const pathname = usePathname();
   const { cartItems, openSidebarCart } = useContext(CartContext)!;
 
-  // Calculate total cart item quantity
+  // Sum up the cart items
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close mobile menu if user clicks outside of it
+  // Close mobile menu if user clicks outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
@@ -48,21 +45,18 @@ const Header: React.FC = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Utility to close menu
+  // Helper to close the mobile drawer
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
-  // Handle cart click
+  // On cart click
   const handleCartClick = () => {
     closeMobileMenu();
     openSidebarCart();
   };
 
-  // Navigation items
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/menu", label: "Menu" },
@@ -75,7 +69,7 @@ const Header: React.FC = () => {
     { href: "/login", label: "Login" },
   ];
 
-  /* --------------- Desktop Layout --------------- */
+  /* ----------- DESKTOP NAV ----------- */
   const desktopHeader = (
     <nav className={styles.desktopNavbar} ref={navbarRef}>
       {/* Left: Logo */}
@@ -92,12 +86,10 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
-      {/* Middle: Nav Links (Green background) */}
+      {/* Middle: Navigation Links */}
       <ul className={styles.navList}>
         {navItems.map(({ href, label, external }) => {
-          // Check if the current path is active
           const isActive = !external && pathname === href;
-
           return (
             <li key={label} className={styles.navItem}>
               {external ? (
@@ -128,22 +120,20 @@ const Header: React.FC = () => {
       </ul>
 
       {/* Right: Cart */}
-      <div className={styles.cartWrapper}>
-        <button
-          onClick={handleCartClick}
-          aria-label="Open Cart"
-          className={styles.cartButton}
-        >
-          <FaShoppingCart className={styles.cartIcon} />
-          {totalItems > 0 && (
-            <span className={styles.cartBadge}>{totalItems}</span>
-          )}
-        </button>
-      </div>
+      <button
+        onClick={handleCartClick}
+        aria-label="Open Cart"
+        className={styles.cartButton}
+      >
+        <FaShoppingCart className={styles.cartIcon} />
+        {totalItems > 0 && (
+          <span className={styles.cartCount}>{totalItems}</span>
+        )}
+      </button>
     </nav>
   );
 
-  /* --------------- Mobile Layout --------------- */
+  /* ----------- MOBILE NAV ----------- */
   const mobileHeader = (
     <>
       <nav className={styles.mobileNavbar} ref={navbarRef}>
@@ -165,11 +155,11 @@ const Header: React.FC = () => {
         <button
           onClick={handleCartClick}
           aria-label="Open Cart"
-          className={styles.cartButtonMobile}
+          className={styles.mobileCartButton}
         >
           <FaShoppingCart className={styles.cartIcon} />
           {totalItems > 0 && (
-            <span className={styles.cartBadgeMobile}>{totalItems}</span>
+            <span className={styles.mobileCartCount}>{totalItems}</span>
           )}
         </button>
 
@@ -187,7 +177,7 @@ const Header: React.FC = () => {
         </button>
       </nav>
 
-      {/* Slide-out mobile menu */}
+      {/* Slide-Out Drawer */}
       <div
         className={`${styles.mobileMenu} ${
           mobileMenuOpen ? styles.mobileMenuOpen : ""
@@ -218,18 +208,14 @@ const Header: React.FC = () => {
         </ul>
       </div>
 
-      {/* Dark overlay behind the mobile menu */}
+      {/* Dark Overlay */}
       {mobileMenuOpen && (
         <div className={styles.mobileOverlay} onClick={closeMobileMenu}></div>
       )}
     </>
   );
 
-  return (
-    <header className={styles.header}>
-      {isMobile ? mobileHeader : desktopHeader}
-    </header>
-  );
+  return <header className={styles.header}>{isMobile ? mobileHeader : desktopHeader}</header>;
 };
 
 export default Header;
