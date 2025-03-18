@@ -5,6 +5,7 @@ Description:
 This file contains the styles for the footer section in Next.js 13 CSS Modules format.
 */
 
+/* Global Footer Container */
 .footer {
   background-color: var(--dark-gray);
   color: #fff;
@@ -15,21 +16,28 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   clear: both;
 }
 
-.footerStyleOne {
-  max-width: 1200px;
+/* Footer inner container */
+.footerContainer {
+  max-width: var(--container-width, 1200px);
   margin: 0 auto;
   padding: 60px 20px;
+}
+
+/* Footer grid for columns */
+.footerGrid {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
 }
 
-.footerItem {
+/* Footer columns */
+.footerColumn {
   flex: 1 1 220px;
   margin-bottom: 30px;
   min-width: 220px;
 }
 
+/* Footer Logo */
 .footerLogo {
   width: 100%;
   height: auto;
@@ -38,10 +46,11 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 
 @media (min-width: 992px) {
   .footerLogo {
-      max-width: 300px;
+    max-width: 300px;
   }
 }
 
+/* Widget Title */
 .widgetTitle {
   font-size: 1.5rem;
   color: var(--primary-color);
@@ -62,6 +71,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   background-color: var(--secondary-color);
 }
 
+/* Opening Hours - New Layout */
 .openingHours {
   list-style: none;
   padding: 0;
@@ -73,29 +83,52 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 
 .openingHours li {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  padding: 1px 0;
+  padding: 4px 0;
   border-bottom: 1px solid var(--secondary-color);
-  text-align: center;
 }
 
-.fItem {
+.openingHours li:last-child {
+  border-bottom: none;
+}
+
+.openingHours .openingHoursDay {
+  color: var(--primary-color);
+  /* Align text to the left */
+  text-align: left;
+  width: 40%;
+}
+
+.openingHours .openingHoursTime {
+  color: #fff;
+  /* Align text to the right */
+  text-align: right;
+  width: 60%;
+}
+
+/* Quick Links */
+.quickLinksList {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.fItem a {
+.quickLinksItem {
+  margin-bottom: 10px;
+}
+
+.quickLinksLink {
   color: #fff;
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
-.fItem a:hover {
+.quickLinksLink:hover {
   color: var(--secondary-color);
 }
 
+/* Contact Widget */
 .contactWidget {
   list-style: none;
   padding: 0;
@@ -115,6 +148,12 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   color: var(--primary-color);
 }
 
+/* Sponsored by */
+.sponsoredBy {
+  margin-top: 20px;
+}
+
+/* Newsletter */
 .newsletterForm {
   display: flex;
   flex-direction: column;
@@ -129,6 +168,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   margin-bottom: 0.5rem;
 }
 
+/* Footer Bottom */
 .footerBottom {
   border-top: 1px solid var(--secondary-color);
   width: 100%;
@@ -141,29 +181,50 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   text-align: center;
 }
 
+/* Social Icons - Horizontal */
+.footerSocial {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 15px;
+}
+
+.footerSocialLink {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  transition: color 0.3s ease;
+}
+
+.footerSocialLink:hover {
+  color: var(--secondary-color);
+}
+
+/* Responsive Adjustments */
 @media (max-width: 991.98px) {
-  .footerStyleOne {
-      padding: 40px 20px;
-      flex-direction: column;
-      align-items: center;
+  .footerContainer {
+    padding: 40px 20px;
   }
 
-  .footerItem {
-      flex: 1 1 100%;
-      margin-bottom: 30px;
-      text-align: center;
+  .footerGrid {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .footerColumn {
+    flex: 1 1 100%;
+    margin-bottom: 30px;
+    text-align: center;
   }
 }
 
 @media (max-width: 767.98px) {
-  .footerStyleOne {
-      padding: 30px 15px;
-      flex-direction: column;
-      align-items: center;
+  .footerContainer {
+    padding: 30px 15px;
   }
 
   .footerBottom {
-      flex-direction: column;
-      align-items: center;
+    flex-direction: column;
+    align-items: center;
   }
 }
