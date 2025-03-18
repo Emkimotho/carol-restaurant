@@ -4,8 +4,9 @@
   top: 0;
   width: 100%;
   z-index: 1000;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--white);
   backdrop-filter: blur(10px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Desktop Navigation */
@@ -13,7 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  padding: 1rem 2rem;
 }
 
 .navbarLogo {
@@ -33,7 +34,7 @@
 .navbarNav {
   list-style: none;
   display: flex;
-  gap: 20px;
+  gap: 1.25rem;
   margin: 0;
   padding: 0;
 }
@@ -43,7 +44,7 @@
 }
 
 .navLink {
-  color: #000;
+  color: var(--dark-gray);
   text-decoration: none;
   font-size: 1rem;
   font-family: var(--font-heading);
@@ -58,9 +59,9 @@
 .navLink.active::after {
   content: "";
   position: absolute;
-  bottom: -5px;
+  bottom: -0.25rem;
   left: 0;
-  height: 2px;
+  height: 0.125rem;
   width: 100%;
   background-color: var(--primary-color);
 }
@@ -68,24 +69,24 @@
 /* Desktop Cart Button */
 .cartButton {
   position: relative;
-  background-color: #fff;
-  border: 2px solid green;
-  color: #000;
+  background-color: var(--white);
+  border: 2px solid var(--primary-color);
+  color: var(--dark-gray);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px;
+  padding: 0.5rem;
 }
 
 .cartBadge {
   position: absolute;
-  top: -6px;
-  right: -10px;
+  top: -0.25rem;
+  right: -0.5rem;
   background-color: #dc3545;
-  color: #fff;
-  width: 18px;
-  height: 18px;
+  color: var(--white);
+  width: 1.125rem;
+  height: 1.125rem;
   font-size: 0.75rem;
   border-radius: 50%;
   display: flex;
@@ -98,7 +99,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  padding: 10px 20px;
+  padding: 0.75rem 1.5rem;
 }
 
 .mobileLogo {
@@ -112,22 +113,48 @@
   z-index: 2;
 }
 
+/* Reuse cartButton class for mobile; override for green background */
+.cartButton {
+  /* Desktop: white background & border; Mobile: override if needed */
+  /* For mobile, we'll override using media queries below */
+}
+
+@media (max-width: 991px) {
+  .cartButton {
+    background-color: var(--primary-color);
+    border: none;
+    width: 2.8125rem; /* 45px */
+    height: 2.8125rem; /* 45px */
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cartCount {
+    margin-left: 0.25rem;
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 1rem;
+  }
+}
+
+/* Hamburger Toggler (Mobile) */
 .navbarToggler {
   display: flex;
   z-index: 2;
   background: transparent;
   border: 2px solid var(--primary-color);
-  border-radius: 8px;
-  width: 45px;
-  height: 45px;
+  border-radius: 0.5rem;
+  width: 2.8125rem; /* 45px */
+  height: 2.8125rem; /* 45px */
   align-items: center;
   justify-content: center;
   padding: 0;
 }
 
 .togglerIcon {
-  width: 24px;
-  height: 3px;
+  width: 1.5rem;
+  height: 0.1875rem;
   background-color: var(--primary-color);
   position: relative;
   transition: transform 0.35s ease, opacity 0.35s ease;
@@ -138,18 +165,18 @@
   content: "";
   position: absolute;
   left: 0;
-  width: 24px;
-  height: 3px;
+  width: 1.5rem;
+  height: 0.1875rem;
   background-color: var(--primary-color);
   transition: transform 0.35s ease, opacity 0.35s ease;
 }
 
 .togglerIcon::before {
-  top: -8px;
+  top: -0.5rem;
 }
 
 .togglerIcon::after {
-  top: 8px;
+  top: 0.5rem;
 }
 
 .navbarToggler.open .togglerIcon {
@@ -157,13 +184,18 @@
 }
 
 .navbarToggler.open .togglerIcon::before {
-  transform: translateY(8px) rotate(45deg);
+  transform: translateY(0.5rem) rotate(45deg);
 }
 
 .navbarToggler.open .togglerIcon::after {
-  transform: translateY(-8px) rotate(-45deg);
+  transform: translateY(-0.5rem) rotate(-45deg);
 }
 
+.togglerLabel {
+  display: none;
+}
+
+/* Mobile Navigation Collapse */
 .navbarCollapse {
   display: none;
   flex-direction: column;
@@ -171,32 +203,12 @@
   top: 100%;
   right: 0;
   width: 100%;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--white);
   backdrop-filter: blur(10px);
-  padding: 10px 20px;
+  padding: 1.25rem 1.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .navbarCollapse.show {
   display: flex;
-}
-
-/* Mobile Cart Button override */
-@media (max-width: 991px) {
-  .cartButton {
-    background-color: green;
-    border: none;
-    width: 45px;
-    height: 45px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .cartCount {
-    margin-left: 4px;
-    color: red;
-    font-weight: bold;
-    font-size: 1rem;
-  }
 }
