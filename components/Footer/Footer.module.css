@@ -1,6 +1,7 @@
 /* ===========================
     Footer Styles (Footer.module.css)
 =========================== */
+
 /* ===== Footer Container Styles ===== */
 .footer {
   background-color: var(--dark-gray);
@@ -87,10 +88,11 @@
 .openingHours {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0 auto; /* center the container */
   max-width: 300px;
   font-size: 1rem;
   font-family: var(--font-body);
+  /* maintain left/right split in each row */
   text-align: left;
 }
 .openingHoursItem {
@@ -147,7 +149,9 @@
 .contactWidget {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0 auto; /* center the container */
+  max-width: 300px;
+  text-align: left;
 }
 .contactItem {
   display: flex;
@@ -162,7 +166,6 @@
   font-size: 1.2rem;
   color: var(--primary-color);
   transition: color 0.3s ease;
-  align-self: flex-start;
 }
 .contactIcon:hover {
   color: var(--secondary-color);
@@ -295,7 +298,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-sizing: border-box;
   text-align: center;
 }
 .footerSocial {
@@ -355,6 +357,7 @@
     text-align: center;
   }
 }
+
 /* Small screens (max-width: 767.98px) */
 @media (max-width: 767.98px) {
   .footerContainer {
@@ -370,39 +373,29 @@
   .footerBottom {
     flex-direction: column;
     align-items: center;
-    text-align: center;
   }
   .footerDevelopedBy {
     margin-top: 15px;
   }
-  .newsletterControls {
-    align-items: center;
-  }
   .btnSmall {
     width: 100%;
   }
+  /* Center Opening Hours container */
+  .openingHours {
+    margin: 0 auto;
+  }
+  /* For Contact Info, center the container while keeping the items left aligned */
   .contactWidget {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    margin: 0 auto;
+    text-align: left;
   }
   .contactItem {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 10px;
-    width: 100%;
-  }
-  .contactIcon {
-    margin-right: 10px;
-    margin-left: 0;
+    justify-content: flex-start;
   }
   .contactContent {
-    text-align: center;
-    flex: 1;
+    text-align: left;
   }
-  /* Center the logo and opening hours on small screens */
+  /* Keep logoAndHours left aligned on larger screens but center on small */
   .logoAndHours {
     text-align: center;
   }
@@ -410,11 +403,8 @@
   .newsletterContainer {
     text-align: center;
   }
-  /* Center the opening hours list items */
-  .openingHours {
-    text-align: center;
-  }
 }
+
 /* Large screens (min-width: 992px) */
 @media (min-width: 992px) {
   .footerBottom {
