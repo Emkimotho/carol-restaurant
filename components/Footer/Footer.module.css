@@ -395,7 +395,7 @@
   .contactContent {
     text-align: left;
   }
-  /* Keep logoAndHours centered on small devices */
+  /* Center the logoAndHours container on small devices */
   .logoAndHours {
     text-align: center;
   }
@@ -403,9 +403,13 @@
   .newsletterContainer {
     text-align: center;
   }
-  /* Center the "More Info" title on small devices */
+  /* Center the "More Info" title and adjust its underline */
   .footerColumn .leftAlign {
     text-align: center;
+  }
+  .footerColumn .leftAlign::after {
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
 
