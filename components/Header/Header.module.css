@@ -153,52 +153,45 @@
   /**************************************
    * HAMBURGER BUTTON
    **************************************/
+  /*
+    REPLACED with your old snippet's styling:
+    - Slightly bigger button: 2.8125rem x 2.8125rem (45px)
+    - 2px solid var(--primary-color)
+    - 3 bars of 0.1875rem thickness
+    - "open" state transforms them into an "X"
+  */
   .hamburgerButton {
-    /* A green border + white background ensures we can clearly see the button box */
-    background-color: #fff;
-    border: 2px solid #00BF63;
-    border-radius: 4px;
-
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    position: relative;
-
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    justify-content: space-between;
+    width: 2.8125rem; /* 45px */
+    height: 2.8125rem; /* 45px */
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 0.3rem;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .hamburgerBar {
+    height: 0.1875rem; /* 3px thick line (0.1875rem if root font-size=16px) */
+    width: 100%;
+    background-color: var(--primary-color);
+    transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
   /*
-    Each line is a "bar" with bright green color,
-    and 4px thickness so it's easily visible.
+    Transform to "X" on .hamburgerOpen (replacing your old .open logic)
   */
-  .hamburgerBar {
-    display: block;
-    width: 30px;
-    height: 4px;
-    background-color: #00BF63 !important;
-    margin: 3px 0;
-    transition: transform 0.3s ease,
-                opacity 0.3s ease,
-                background-color 0.3s ease;
-  }
-
-  /* On hover, lines become secondary color */
-  .hamburgerButton:hover .hamburgerBar {
-    background-color: var(--secondary-color) !important;
-  }
-
-  /* Transform the 3 lines into an "X" when open */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
-    transform: translateY(8px) rotate(45deg);
+    transform: translateY(0.6rem) rotate(45deg);
   }
   .hamburgerOpen .hamburgerBar:nth-child(2) {
     opacity: 0;
   }
   .hamburgerOpen .hamburgerBar:nth-child(3) {
-    transform: translateY(-8px) rotate(-45deg);
+    transform: translateY(-0.6rem) rotate(-45deg);
   }
 
   /**************************************
