@@ -58,7 +58,8 @@
 .widgetTitle::after {
   content: "";
   position: absolute;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: -5px;
   width: 50px;
   height: 3px;
