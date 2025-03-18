@@ -41,7 +41,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 .footerLogo {
   width: 100%;
   height: auto;
-  margin-bottom: 15px;
+  margin-bottom: 10px; /* Reduced margin for better alignment */
 }
 
 @media (min-width: 992px) {
@@ -71,7 +71,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   background-color: var(--secondary-color);
 }
 
-/* Opening Hours - New Layout */
+/* Opening Hours - Horizontal Layout */
 .openingHours {
   list-style: none;
   padding: 0;
@@ -95,14 +95,12 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 
 .openingHours .openingHoursDay {
   color: var(--primary-color);
-  /* Align text to the left */
   text-align: left;
   width: 40%;
 }
 
 .openingHours .openingHoursTime {
   color: #fff;
-  /* Align text to the right */
   text-align: right;
   width: 60%;
 }
@@ -148,9 +146,15 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   color: var(--primary-color);
 }
 
-/* Sponsored by */
+/* Sponsored by - Centered */
 .sponsoredBy {
   margin-top: 20px;
+  text-align: center;
+}
+
+.sponsorLogoLink {
+  display: block;
+  margin: 0 auto;
 }
 
 /* Newsletter */
@@ -175,13 +179,14 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   padding-top: 20px;
   margin-top: 40px;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column; /* Stack vertically */
   justify-content: center;
   align-items: center;
   text-align: center;
+  gap: 10px;
 }
 
-/* Social Icons - Horizontal */
+/* Social Icons - Displayed Horizontally on Top */
 .footerSocial {
   list-style: none;
   padding: 0;
@@ -198,6 +203,13 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 
 .footerSocialLink:hover {
   color: var(--secondary-color);
+}
+
+/* Footer Bottom Texts */
+.footerBottomText,
+.footerDevelopedBy {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 /* Responsive Adjustments */
