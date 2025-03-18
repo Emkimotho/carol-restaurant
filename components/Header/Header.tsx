@@ -8,10 +8,7 @@ import { FaShoppingCart } from "react-icons/fa";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
-/*
-  Hook to detect mobile view (<= 991px).
-  Returns a boolean: true if window width <= breakpoint.
-*/
+/* Detect mobile view at or below 'breakpoint' (default = 991px) */
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -37,7 +34,7 @@ const Header: React.FC = () => {
   // Sum up quantity of all cart items
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close mobile menu if user clicks outside of it
+  // Close the mobile menu if user clicks outside of it
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
@@ -48,10 +45,10 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Utility to close the mobile drawer
+  // Helper to close the mobile drawer
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
-  // Clicking the cart icon
+  // Clicking cart icon
   const handleCartClick = () => {
     closeMobileMenu();
     openSidebarCart();
@@ -70,7 +67,7 @@ const Header: React.FC = () => {
     { href: "/login", label: "Login" },
   ];
 
-  // ------------------- DESKTOP NAV ------------------- //
+  // ----------- DESKTOP NAVBAR ----------- //
   const desktopHeader = (
     <nav className={styles.desktopNavbar} ref={navbarRef}>
       {/* Left: Logo */}
@@ -87,7 +84,7 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
-      {/* Middle: Nav Items */}
+      {/* Middle: Nav List */}
       <ul className={styles.navList}>
         {navItems.map(({ href, label, external }) => {
           const isActive = !external && pathname === href;
@@ -134,7 +131,7 @@ const Header: React.FC = () => {
     </nav>
   );
 
-  // ------------------- MOBILE NAV ------------------- //
+  // ----------- MOBILE NAVBAR ----------- //
   const mobileHeader = (
     <>
       <nav className={styles.mobileNavbar} ref={navbarRef}>
@@ -164,7 +161,7 @@ const Header: React.FC = () => {
           )}
         </button>
 
-        {/* Right: Hamburger (transforms into X) */}
+        {/* Right: Hamburger (3 bars => X) */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"
@@ -184,6 +181,15 @@ const Header: React.FC = () => {
           mobileMenuOpen ? styles.mobileMenuOpen : ""
         }`}
       >
+        {/* The "X" button in top-right corner */}
+        <button
+          className={styles.closeMenuButton}
+          onClick={closeMobileMenu}
+          aria-label="Close Menu"
+        >
+          X
+        </button>
+
         <ul className={styles.mobileNavList}>
           {navItems.map(({ href, label, external }) => (
             <li key={label} className={styles.mobileNavItem}>
@@ -209,7 +215,7 @@ const Header: React.FC = () => {
         </ul>
       </div>
 
-      {/* Dark Overlay behind the slide-out menu */}
+      {/* Dark overlay behind the slide-out menu */}
       {mobileMenuOpen && (
         <div className={styles.mobileOverlay} onClick={closeMobileMenu}></div>
       )}

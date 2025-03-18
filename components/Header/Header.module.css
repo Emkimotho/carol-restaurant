@@ -120,7 +120,8 @@
     height: var(--navbar-height);
     /*
       Adjust to move mobile logo further left
-      The smaller this left/right padding, the closer the logo is to the edge.
+      The smaller this left/right padding, 
+      the closer the logo is to the edge.
     */
     padding: 0 0.5rem;
     background-color: var(--white);
@@ -153,13 +154,6 @@
   /**************************************
    * HAMBURGER BUTTON
    **************************************/
-  /*
-    REPLACED with your old snippet's styling:
-    - Slightly bigger button: 2.8125rem x 2.8125rem (45px)
-    - 2px solid var(--primary-color)
-    - 3 bars of 0.1875rem thickness
-    - "open" state transforms them into an "X"
-  */
   .hamburgerButton {
     display: flex;
     flex-direction: column;
@@ -175,15 +169,13 @@
   }
 
   .hamburgerBar {
-    height: 0.1875rem; /* 3px thick line (0.1875rem if root font-size=16px) */
+    height: 0.1875rem;
     width: 100%;
     background-color: var(--primary-color);
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
-  /*
-    Transform to "X" on .hamburgerOpen (replacing your old .open logic)
-  */
+  /* The "X" transform on open */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
     transform: translateY(0.6rem) rotate(45deg);
   }
@@ -204,17 +196,46 @@
     width: 80%;
     max-width: 300px;
     height: 100%;
-    background-color: var(--white);
+
+    /* 
+      SLEEK GRADIENT BACKGROUND 
+      (adjust colors or direction as desired)
+    */
+    background: linear-gradient(
+      135deg,
+      #00bf63 0%,
+      #009f53 100%
+    );
+
+    /* 
+      If you want a darker approach, try:
+      background: linear-gradient(135deg, #111 0%, #333 100%);
+      color: #fff;
+    */
+
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
     transition: right 0.3s ease;
     z-index: 999;
     padding: 2rem 1rem;
     display: flex;
     flex-direction: column;
+    color: #fff; /* Ensures any text inside is white */
   }
 
   .mobileMenuOpen {
     right: 0;
+  }
+
+  /* X button to close menu, in top-right corner */
+  .closeMenuButton {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: #fff; /* White text for "X" */
+    font-size: 1.5rem;
+    cursor: pointer;
   }
 
   .mobileNavList {
@@ -224,6 +245,8 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    /* Add extra top padding so links are below the "X" if you prefer */
+    padding-top: 3rem;
   }
 
   /* Slight fade/slide-in animation for each nav item */
@@ -255,13 +278,15 @@
   .mobileNavLink {
     font-family: var(--font-heading);
     font-size: 1.125rem;
-    color: var(--primary-color);
     text-decoration: none;
+    /* White text to contrast gradient background */
+    color: #fff;
     transition: color 0.3s ease;
   }
 
   .mobileNavLink:hover {
-    color: var(--secondary-color);
+    /* A lighter white or slightly transparent for hover effect */
+    color: rgba(255, 255, 255, 0.8);
   }
 
   /* Dark overlay behind the open menu */
