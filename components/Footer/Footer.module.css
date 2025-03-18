@@ -1,10 +1,6 @@
 /* ===========================
     Footer Styles (Footer.module.css)
-===========================
-Description:
-This file contains the complete styles for the footer section, including styles for logo, links, contact info, opening hours, and newsletter form. It also includes custom styling for the checkbox and additional visual enhancements for a professional appearance.
-*/
-
+=========================== */
 /* ===== Footer Container Styles ===== */
 .footer {
   background-color: var(--dark-gray);
@@ -40,13 +36,24 @@ This file contains the complete styles for the footer section, including styles 
   min-width: 220px;
 }
 
-/* ===== Column Title for First Column ===== */
-.columnTitle {
+/* ===== Widget Titles Styling ===== */
+.widgetTitle {
   font-size: 1.5rem;
-  color: var(--white);
+  color: var(--primary-color);
+  margin-bottom: 20px;
   font-family: var(--font-heading);
-  margin-bottom: 10px;
-  text-align: center;
+  position: relative;
+  display: inline-block;
+}
+.widgetTitle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -5px;
+  width: 50px;
+  height: 3px;
+  background-color: var(--secondary-color);
 }
 
 /* ===== Logo and About Section ===== */
@@ -66,26 +73,6 @@ This file contains the complete styles for the footer section, including styles 
 .aboutParagraph {
   margin-bottom: 1rem;
   color: #ddd;
-}
-
-/* ===== Widget Titles Styling ===== */
-.widgetTitle {
-  font-size: 1.5rem;
-  color: var(--primary-color);
-  margin-bottom: 20px;
-  font-family: var(--font-heading);
-  position: relative;
-  display: inline-block;
-}
-.widgetTitle::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: -5px;
-  width: 50px;
-  height: 3px;
-  background-color: var(--secondary-color);
 }
 
 /* ===== Opening Hours Styling ===== */
@@ -138,25 +125,25 @@ This file contains the complete styles for the footer section, including styles 
 }
 .openingHoursTime {
   text-align: right;
-  color: var(--white);  /* Time text in white */
+  color: var(--white);
 }
 
 /* ===== Quick Links Styling ===== */
-.f-item.link ul {
+.quickLinksList {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-.f-item.link ul li {
+.quickLinksItem {
   margin-bottom: 10px;
 }
-.f-item.link ul li a {
+.quickLinksLink {
   color: #fff;
   text-decoration: none;
   transition: color 0.3s ease;
   position: relative;
 }
-.f-item.link ul li a::after {
+.quickLinksLink::after {
   content: "";
   position: absolute;
   width: 0;
@@ -167,26 +154,25 @@ This file contains the complete styles for the footer section, including styles 
   background: var(--secondary-color);
   transition: width 0.3s ease;
 }
-.f-item.link ul li a:hover::after {
+.quickLinksLink:hover::after {
   width: 100%;
 }
-.f-item.link ul li a:hover {
+.quickLinksLink:hover {
   color: var(--secondary-color);
 }
 
 /* ===== Contact Info Styling ===== */
-.f-item.contact .contact-widget {
+.contactWidget {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-.f-item.contact .contact-widget li {
+.contactItem {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
   justify-content: flex-start;
 }
-.f-item.contact .icon,
 .contactIcon {
   display: inline-block;
   width: 30px;
@@ -196,38 +182,35 @@ This file contains the complete styles for the footer section, including styles 
   transition: color 0.3s ease;
   align-self: flex-start;
 }
-.f-item.contact .icon:hover,
 .contactIcon:hover {
   color: var(--secondary-color);
 }
-.f-item.contact .content,
 .contactContent {
   flex: 1;
   text-align: left;
   color: #ddd;
   word-wrap: break-word;
 }
-.f-item.contact a {
+.contactLink {
   color: #fff;
   text-decoration: none;
   transition: color 0.3s ease;
 }
-.f-item.contact a:hover {
+.contactLink:hover {
   color: var(--primary-color);
 }
-/* Address stays in two lines */
-.f-item.contact .contact-widget li:first-child .content {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+.contactContent a[href^="mailto:"] {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 /* ===== Newsletter Form Styling ===== */
-.newsletter-form {
+.newsletterForm {
   display: flex;
   flex-direction: column;
 }
-.newsletter-form input[type="email"] {
+.newsletterInput {
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -235,34 +218,33 @@ This file contains the complete styles for the footer section, including styles 
   width: 100%;
   margin-bottom: 0.5rem;
 }
-.newsletter-controls {
+.newsletterControls {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
 }
-.checkbox-wrapper {
+.checkboxWrapper {
   display: flex;
   align-items: center;
   position: relative;
 }
-.checkbox-wrapper .form-check-input {
+.formCheckInput {
   margin-right: 10px;
   width: 18px;
   height: 18px;
   cursor: pointer;
 }
-/* Scope global checkbox styling to footer */
 .footer :global(input[type="checkbox"]:checked) {
   accent-color: var(--primary-color);
 }
-.checkbox-wrapper .form-check-label {
+.formCheckLabel {
   font-size: 0.75rem;
   line-height: 1.2;
   color: #ddd;
   position: relative;
 }
-.newsletter-controls .btn-small {
+.btnSmall {
   padding: 0.3rem 0.8rem;
   font-size: 0.875rem;
   border-radius: 4px;
@@ -273,13 +255,13 @@ This file contains the complete styles for the footer section, including styles 
   transition: background-color 0.3s ease, color 0.3s ease;
   align-self: stretch;
 }
-.newsletter-controls .btn-small:hover {
+.btnSmall:hover {
   background-color: var(--secondary-color);
   color: #fff;
 }
 
 /* ===== Footer Bottom Section ===== */
-.footer-bottom {
+.footerBottom {
   border-top: 1px solid var(--secondary-color);
   width: 100%;
   padding-top: 20px;
@@ -317,18 +299,18 @@ This file contains the complete styles for the footer section, including styles 
   font-size: 0.875rem;
   width: 100%;
 }
-.footer-developed-by {
+.footerDevelopedBy {
   font-size: 0.875rem;
   margin-top: 10px;
 }
-.footer-developed-by a {
+.footerDevelopedByLink {
   font-weight: bold;
   color: var(--primary-color);
   text-decoration: none;
   border-bottom: 2px solid var(--secondary-color);
   transition: color 0.3s ease, border-color 0.3s ease;
 }
-.footer-developed-by a:hover {
+.footerDevelopedByLink:hover {
   color: var(--secondary-color);
   border-color: var(--primary-color);
 }
@@ -342,8 +324,9 @@ This file contains the complete styles for the footer section, including styles 
   color: var(--white);
 }
 .sponsorLogoLink {
-  margin-left: 10px; /* Space before sponsor text */
+  margin-left: 10px;
   text-decoration: none;
+  display: inline-block;
 }
 .sponsorText {
   color: var(--primary-color);
@@ -354,6 +337,12 @@ This file contains the complete styles for the footer section, including styles 
 }
 .sponsorText:hover {
   color: var(--secondary-color);
+}
+.sponsorLogo {
+  transition: transform 0.3s ease;
+}
+.sponsorLogo:hover {
+  transform: scale(1.1);
 }
 
 /* ===== Responsive Adjustments ===== */
@@ -370,7 +359,6 @@ This file contains the complete styles for the footer section, including styles 
     text-align: center;
   }
 }
-
 /* Small screens (max-width: 767.98px) */
 @media (max-width: 767.98px) {
   .footerContainer {
@@ -383,27 +371,26 @@ This file contains the complete styles for the footer section, including styles 
     margin-bottom: 30px;
     text-align: center;
   }
-  .footer-bottom {
+  .footerBottom {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
-  .footer-developed-by {
+  .footerDevelopedBy {
     margin-top: 15px;
   }
-  .newsletter-controls {
+  .newsletterControls {
     align-items: center;
   }
-  .newsletter-controls .btn-small {
+  .btnSmall {
     width: 100%;
   }
-  /* Adjusted Contact Info Styling for Mobile */
-  .f-item.contact .contact-widget {
+  .contactWidget {
     display: flex;
     flex-direction: column;
     align-items: center;
   }
-  .f-item.contact .contact-widget li {
+  .contactItem {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
@@ -411,21 +398,18 @@ This file contains the complete styles for the footer section, including styles 
     margin-bottom: 10px;
     width: 100%;
   }
-  .f-item.contact .icon,
   .contactIcon {
     margin-right: 10px;
     margin-left: 0;
   }
-  .f-item.contact .content,
   .contactContent {
     text-align: left;
     flex: 1;
   }
 }
-
 /* Large screens (min-width: 992px) */
 @media (min-width: 992px) {
-  .footer-bottom {
+  .footerBottom {
     justify-content: center;
   }
 }
@@ -437,11 +421,4 @@ This file contains the complete styles for the footer section, including styles 
 }
 .footer a:hover {
   color: var(--primary-color);
-}
-
-/* ===== Fix for Email Overflow ===== */
-.f-item.contact .content a[href^="mailto:"] {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
 }

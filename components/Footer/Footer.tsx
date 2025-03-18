@@ -42,9 +42,9 @@ const Footer: React.FC = () => {
     <footer id="footer" className={styles.footer}>
       <div className={styles.footerContainer}>
         <div className={styles.footerGrid}>
-          {/* Column 1: About and Opening Hours */}
+          {/* Column 1: More Info and Opening Hours */}
           <div className={styles.footerColumn}>
-            <h4 className={styles.columnTitle}>About The 19th Hole</h4>
+            <h4 className={styles.widgetTitle}>More Info</h4>
             <div className={styles.logoAndHours}>
               <Image
                 src="/images/19th-hole-logo-footer.png"
@@ -137,6 +137,20 @@ const Footer: React.FC = () => {
             </ul>
             <div className={styles.sponsoredBy}>
               <h4 className={styles.widgetTitle}>Sponsored by</h4>
+              <Link
+                href="https://harambee54.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.sponsorLogoLink}
+              >
+                <Image
+                  src="/images/harambee54-logo.png"
+                  alt="Harambee54 Logo"
+                  width={100}
+                  height={50}
+                  className={styles.sponsorLogo}
+                />
+              </Link>
               <Link
                 href="https://harambee54.com"
                 target="_blank"
