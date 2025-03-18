@@ -147,9 +147,12 @@
    * HAMBURGER BUTTON
    **************************************/
   .hamburgerButton {
-    /* Light border so we can see the button area if needed */
-    border: 1px solid #ccc; /* adjust as you wish */
-    background-color: #fff; /* white BG ensures lines stand out */
+    /* 
+     * Green border and white background to ensure 
+     * the hamburger lines are fully visible 
+     */
+    background-color: #fff;       /* White BG ensures lines stand out */
+    border: 2px solid #00BF63;    /* A bold green border */
     border-radius: 4px;
 
     width: 40px;
@@ -163,23 +166,28 @@
   }
 
   /*
-   * Force the lines to be a bright green color,
-   * and use !important to ensure they don't get overridden.
+   * The actual hamburger lines:
+   * Thicker (4px) and bright green (#00BF63)
+   * so they're clearly visible
    */
   .hamburgerBar {
-    width: 30px;  /* thickness for line length */
-    height: 3px;  /* thickness of each line */
-    background-color: #00BF63 !important; /* bright green, forced */
+    width: 30px;  /* line width */
+    height: 4px;  /* thickness of each line */
+    background-color: #00BF63; /* bright green */
     margin: 4px 0;
-    transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
+    transition: transform 0.3s ease, 
+                opacity 0.3s ease, 
+                background-color 0.3s ease;
   }
 
-  /* On hover, lines become secondary color. You can remove !important if desired. */
+  /* On hover, lines become your secondary color variable */
   .hamburgerButton:hover .hamburgerBar {
-    background-color: var(--secondary-color) !important;
+    background-color: var(--secondary-color);
   }
 
-  /* Transform to "X" when open */
+  /*
+   * Transform to "X" when open
+   */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
   }
