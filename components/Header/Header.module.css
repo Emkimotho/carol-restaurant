@@ -37,9 +37,14 @@
   margin-left: 20px;
 }
 .cart-button {
-  background: none;
-  border: none;
+  background-color: #fff; /* white background */
+  border: 2px solid green; /* green box */
+  color: #000; /* icon rendered in black */
   cursor: pointer;
+  padding: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .cart-badge {
   position: absolute;
