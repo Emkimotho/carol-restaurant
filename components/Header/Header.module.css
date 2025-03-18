@@ -114,7 +114,7 @@
   /* Push logo further left */
   .navbar-logo {
     justify-content: flex-start;
-    margin-left: -40px;  /* Adjust this value as needed */
+    margin-left: -45px;  /* Adjust this value as needed */
   }
   /* Show toggler on small screens and push it to the far right */
   .custom-navbar-toggler {
