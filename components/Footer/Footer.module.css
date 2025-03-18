@@ -41,7 +41,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 .footerLogo {
   width: 100%;
   height: auto;
-  margin-bottom: 10px; /* Reduced margin for better alignment */
+  margin-bottom: 5px; /* Reduced to move logo upward */
 }
 
 @media (min-width: 992px) {
@@ -135,15 +135,29 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 
 .contactWidget li {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* Align icons to the top */
   margin-bottom: 10px;
 }
 
-.icon {
+.contactIcon {
   width: 30px;
   margin-right: 10px;
   font-size: 1.2rem;
   color: var(--primary-color);
+  margin-top: 2px; /* Nudge icon down slightly to align with first line */
+}
+
+/* Force contact links (phone/email) and Kimtech text to be white */
+.contactLink,
+.footerDevelopedByLink {
+  color: #fff !important;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.contactLink:hover,
+.footerDevelopedByLink:hover {
+  color: var(--secondary-color) !important;
 }
 
 /* Sponsored by - Centered */
@@ -226,6 +240,12 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   .footerColumn {
     flex: 1 1 100%;
     margin-bottom: 30px;
+    text-align: center;
+  }
+
+  /* Center the opening hours on small screens */
+  .openingHours {
+    margin: 0 auto;
     text-align: center;
   }
 }
