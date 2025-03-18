@@ -34,7 +34,7 @@ const NeonSign: React.FC = () => {
           // Restaurant will open later today
           setStatus({
             isOpen: false,
-            message: `Will opens on today at ${convertTo12Hour(todayHours.open)}`,
+            message: `Opens today at ${convertTo12Hour(todayHours.open)}`,
           });
           return;
         } else if (currentTime >= openTime && currentTime < closeTime) {
@@ -59,7 +59,7 @@ const NeonSign: React.FC = () => {
         if (nextHours && nextHours.open !== 'Closed') {
           setStatus({
             isOpen: false,
-            message: `Opens ${nextDay} at ${convertTo12Hour(nextHours.open)}`,
+            message: `Will open ${nextDay} at ${convertTo12Hour(nextHours.open)}`,
           });
           return;
         }
