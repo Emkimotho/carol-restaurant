@@ -35,8 +35,6 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   flex: 1 1 220px;
   margin-bottom: 30px;
   min-width: 220px;
-  /* Adjust top padding to lower columns on small devices (desktop remains unchanged) */
-  padding-top: 0; /* Default desktop value; see mobile override below */
 }
 
 /* Footer Logo */
@@ -137,7 +135,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 
 .contactWidget li {
   display: flex;
-  align-items: flex-start; /* Align icons to top */
+  align-items: flex-start; /* Align icons to the top */
   margin-bottom: 10px;
 }
 
@@ -146,45 +144,31 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   margin-right: 10px;
   font-size: 1.2rem;
   color: var(--primary-color);
-  margin-top: 2px; /* Nudge icon to align with first line of text */
+  margin-top: 2px; /* Nudge icon down slightly to align with first line */
 }
 
-/* Force phone and email links to be white */
-.contactLink {
+/* Force contact links (phone/email) and Kimtech text to be white */
+.contactLink,
+.footerDevelopedByLink {
   color: #fff !important;
   text-decoration: none;
   transition: color 0.3s ease;
 }
-.contactLink:hover {
+
+.contactLink:hover,
+.footerDevelopedByLink:hover {
   color: var(--secondary-color) !important;
 }
 
-/* Sponsored by - Centered and with gap */
+/* Sponsored by - Centered */
 .sponsoredBy {
-  margin-top: 40px; /* Increase gap to push Sponsored by lower */
+  margin-top: 20px;
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
-/* For desktop, sponsor logo below the text */
 .sponsorLogoLink {
   display: block;
-  margin-top: 10px; /* Gap between Sponsored by text and logo */
-}
-
-/* On small devices, adjust sponsored by to show text and icon on same line */
-@media (max-width: 991.98px) {
-  .sponsoredBy {
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 10px; /* Gap between text and icon */
-  }
-  .sponsorLogoLink {
-    margin-top: 0; /* Remove top margin */
-  }
+  margin: 0 auto;
 }
 
 /* Newsletter */
@@ -242,23 +226,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   font-size: 0.9rem;
 }
 
-/* Underline Kimtech Solutions with secondary color */
-.footerDevelopedByLink {
-  color: #fff !important;
-  text-decoration: none;
-  position: relative;
-}
-.footerDevelopedByLink::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -2px;
-  width: 100%;
-  height: 2px;
-  background-color: var(--secondary-color);
-}
-
-/* Increase top padding for columns (except first column) on small devices to align with Column 1 */
+/* Responsive Adjustments */
 @media (max-width: 991.98px) {
   .footerContainer {
     padding: 40px 20px;
@@ -273,8 +241,6 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
     flex: 1 1 100%;
     margin-bottom: 30px;
     text-align: center;
-    /* Increase top padding for columns 2,3,4 */
-    padding-top: 50px;  /* Adjust this value as needed */
   }
 
   /* Center the opening hours on small screens */
