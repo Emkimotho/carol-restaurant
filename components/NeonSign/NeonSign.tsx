@@ -59,7 +59,7 @@ const NeonSign: React.FC = () => {
         if (nextHours && nextHours.open !== 'Closed') {
           setStatus({
             isOpen: false,
-            message: `Opens on ${nextDay} at ${convertTo12Hour(nextHours.open)}`,
+            message: `Opens ${nextDay} at ${convertTo12Hour(nextHours.open)}`,
           });
           return;
         }
