@@ -395,12 +395,16 @@
   .contactContent {
     text-align: left;
   }
-  /* Keep logoAndHours left aligned on larger screens but center on small */
+  /* Keep logoAndHours centered on small devices */
   .logoAndHours {
     text-align: center;
   }
   /* Center the newsletter container */
   .newsletterContainer {
+    text-align: center;
+  }
+  /* Center the "More Info" title on small devices */
+  .footerColumn .leftAlign {
     text-align: center;
   }
 }
