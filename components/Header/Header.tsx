@@ -31,9 +31,7 @@ const Header: React.FC = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleCartClick = () => {
@@ -142,19 +140,17 @@ const Header: React.FC = () => {
                 Login
               </Link>
             </li>
+            {/* Desktop Cart Icon */}
             <li className={styles["custom-nav-item"]}>
               <button
                 onClick={handleCartClick}
                 aria-label="Open Cart Sidebar"
-                className={styles["custom-nav-link"]}
-                style={{ position: "relative" }}
+                className={styles["cart-button"]}
               >
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <FaShoppingCart style={{ fontSize: "1.2rem" }} />
-                  {totalItems > 0 && (
-                    <span className={styles["cart-badge"]}>{totalItems}</span>
-                  )}
-                </div>
+                <FaShoppingCart style={{ fontSize: "1.2rem" }} />
+                {totalItems > 0 && (
+                  <span className={styles["cart-badge"]}>{totalItems}</span>
+                )}
               </button>
             </li>
           </ul>
@@ -174,13 +170,14 @@ const Header: React.FC = () => {
               />
             </Link>
           </div>
+          {/* Centered Cart Button */}
           <div className={styles["mobile-cart"]}>
             <button
               onClick={handleCartClick}
               aria-label="Open Cart Sidebar"
               className={styles["cart-button"]}
             >
-              <FaShoppingCart />
+              <FaShoppingCart style={{ fontSize: "1.5rem" }} />
               {totalItems > 0 && (
                 <span className={styles["cart-badge"]}>{totalItems}</span>
               )}
