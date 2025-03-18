@@ -58,8 +58,7 @@
 .widgetTitle::after {
   content: "";
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0; /* Desktop: underline starts at left edge */
   bottom: -5px;
   width: 50px;
   height: 3px;
@@ -93,8 +92,7 @@
   max-width: 300px;
   font-size: 1rem;
   font-family: var(--font-body);
-  /* maintain left/right split in each row */
-  text-align: left;
+  text-align: left; /* keep internal row split intact */
 }
 .openingHoursItem {
   display: flex;
@@ -385,7 +383,7 @@
   .openingHours {
     margin: 0 auto;
   }
-  /* For Contact Info, center the container while keeping the items left aligned */
+  /* For Contact Info, center the container while keeping items left aligned */
   .contactWidget {
     margin: 0 auto;
     text-align: left;
@@ -404,7 +402,7 @@
   .newsletterContainer {
     text-align: center;
   }
-  /* Center the "More Info" title and adjust its underline */
+  /* Center the "More Info" title and override underline positioning */
   .footerColumn .leftAlign {
     text-align: center;
   }
