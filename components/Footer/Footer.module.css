@@ -41,7 +41,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 .footerLogo {
   width: 100%;
   height: auto;
-  margin-bottom: 0px; /* Reduced to move logo upward */
+  margin-bottom: -10px; /* Reduced to move logo upward */
 }
 
 @media (min-width: 992px) {
