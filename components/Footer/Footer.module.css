@@ -91,6 +91,7 @@
   max-width: 300px;
   font-size: 1rem;
   font-family: var(--font-body);
+  text-align: left;
 }
 .openingHoursItem {
   display: flex;
@@ -388,8 +389,8 @@
   .contactItem {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    justify-content: flex-start;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 10px;
     width: 100%;
   }
@@ -398,8 +399,20 @@
     margin-left: 0;
   }
   .contactContent {
-    text-align: left;
+    text-align: center;
     flex: 1;
+  }
+  /* Center the logo and opening hours on small screens */
+  .logoAndHours {
+    text-align: center;
+  }
+  /* Center the newsletter container */
+  .newsletterContainer {
+    text-align: center;
+  }
+  /* Center the opening hours list items */
+  .openingHours {
+    text-align: center;
   }
 }
 /* Large screens (min-width: 992px) */
