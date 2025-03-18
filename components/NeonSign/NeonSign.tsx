@@ -24,48 +24,56 @@ const NeonSign: React.FC = () => {
       const currentTime = now.getHours() + now.getMinutes() / 60;
       const todayHours = openingHours[dayOfWeek];
 
-      // If no opening hours for today or the place is closed, determine the next opening time.
-      if (!todayHours || todayHours.open === 'Closed') {
-        findNextOpening();
-        return;
-      }
+      // If there are opening hours for today and the day is not "Closed"
+      if (todayHours && todayHours.open !== 'Closed') {
+        const [openHourStr, openMinuteStr] = todayHours.open.split(':');
+        const [closeHourStr, closeMinuteStr] = todayHours.close.split(':');
+        const openTime = parseInt(openHourStr, 10) + parseInt(openMinuteStr, 10) / 60;
+        const closeTime = parseInt(closeHourStr, 10) + parseInt(closeMinuteStr, 10) / 60;
 
-      const [openHourStr, openMinuteStr] = todayHours.open.split(':');
-      const [closeHourStr, closeMinuteStr] = todayHours.close.split(':');
-      const openTime = parseInt(openHourStr, 10) + parseInt(openMinuteStr, 10) / 60;
-      const closeTime = parseInt(closeHourStr, 10) + parseInt(closeMinuteStr, 10) / 60;
-
-      if (currentTime >= openTime && currentTime < closeTime) {
-        // Place is currently open
-        setStatus({
-          isOpen: true,
-          message: `Open until ${convertTo12Hour(todayHours.close)}`,
-        });
+        if (currentTime < openTime) {
+          // Restaurant will open later today
+          setStatus({
+            isOpen: false,
+            message: `Opens today at ${convertTo12Hour(todayHours.open)}`,
+          });
+        } else if (currentTime >= openTime && currentTime < closeTime) {
+          // Restaurant is currently open
+          setStatus({
+            isOpen: true,
+            message: `Open until ${convertTo12Hour(todayHours.close)}`,
+          });
+        } else {
+          // Already past closing time; look for the next opening
+          findNextOpening();
+        }
       } else {
-        // Outside today's operating hours
+        // No opening hours for today or marked as closed, so find next available opening
         findNextOpening();
       }
     };
 
     const findNextOpening = () => {
       const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      let nextDayIndex = (new Date().getDay() + 1) % 7;
-
-      for (let i = 0; i < 7; i++) {
+      let currentDayIndex = new Date().getDay();
+      
+      // Look ahead for the next day with valid opening hours
+      for (let i = 1; i <= 7; i++) {
+        const nextDayIndex = (currentDayIndex + i) % 7;
         const nextDay = daysOfWeek[nextDayIndex];
         const nextHours = openingHours[nextDay];
-        
         if (nextHours && nextHours.open !== 'Closed') {
+          const openTimeStr = convertTo12Hour(nextHours.open);
           setStatus({
             isOpen: false,
-            message: `Opens on ${nextDay} at ${convertTo12Hour(nextHours.open)}`,
+            message: nextDay === daysOfWeek[currentDayIndex + 1] && i === 1
+              ? `Opens today at ${openTimeStr}` // if the very next slot is still today (edge case)
+              : `Opens on ${nextDay} at ${openTimeStr}`,
           });
           return;
         }
-        nextDayIndex = (nextDayIndex + 1) % 7;
       }
-
-      // Fallback message if no opening hours are available.
+      // Fallback message if no openings are found
       setStatus({ isOpen: false, message: 'Closed until further notice' });
     };
 
@@ -79,12 +87,12 @@ const NeonSign: React.FC = () => {
       {status.isOpen ? (
         <div className={styles.statusContainer}>
           <FaUtensils className={styles.statusIcon} />
-          <span>{status.message}</span>
+          <span style={{ fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{status.message}</span>
         </div>
       ) : (
         <div className={styles.statusContainer}>
           <FaStopCircle className={styles.statusIcon} />
-          <span>{status.message}</span>
+          <span style={{ fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{status.message}</span>
         </div>
       )}
     </div>
