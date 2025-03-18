@@ -44,6 +44,7 @@ const Footer: React.FC = () => {
         <div className={styles.footerGrid}>
           {/* Column 1: About and Opening Hours */}
           <div className={styles.footerColumn}>
+            <h4 className={styles.columnTitle}>About The 19th Hole</h4>
             <div className={styles.logoAndHours}>
               <Image
                 src="/images/19th-hole-logo-footer.png"
@@ -260,6 +261,7 @@ const Footer: React.FC = () => {
               </a>
             </li>
           </ul>
+          <div className={styles.footerSeparator}></div>
           <p className={styles.footerBottomText}>
             © {new Date().getFullYear()} The 19th Hole Restaurant and Bar at Black Rock. All Rights Reserved.
           </p>
