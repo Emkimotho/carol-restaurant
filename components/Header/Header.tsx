@@ -31,7 +31,8 @@ const Header: React.FC = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleCartClick = () => {
@@ -42,7 +43,7 @@ const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <nav className={styles["custom-navbar"]} ref={navbarRef}>
-        {/* Desktop Navbar */}
+        {/* Desktop Navigation – visible on larger screens */}
         <div className={styles["desktop-navbar"]}>
           <div className={styles["navbar-logo"]}>
             <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
@@ -140,7 +141,7 @@ const Header: React.FC = () => {
                 Login
               </Link>
             </li>
-            {/* Desktop Cart Icon */}
+            {/* Desktop Cart Icon (unchanged) */}
             <li className={styles["custom-nav-item"]}>
               <button
                 onClick={handleCartClick}
@@ -156,7 +157,7 @@ const Header: React.FC = () => {
           </ul>
         </div>
 
-        {/* Mobile Header */}
+        {/* Mobile Navigation – visible on screens below 991px */}
         <div className={styles["mobile-header"]}>
           <div className={styles["mobile-logo"]}>
             <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
@@ -170,18 +171,18 @@ const Header: React.FC = () => {
               />
             </Link>
           </div>
-          {/* Centered Cart Button */}
+          {/* Absolutely centered mobile cart container */}
           <div className={styles["mobile-cart"]}>
             <button
               onClick={handleCartClick}
               aria-label="Open Cart Sidebar"
               className={styles["cart-button"]}
             >
-              <FaShoppingCart style={{ fontSize: "1.5rem" }} />
-              {totalItems > 0 && (
-                <span className={styles["cart-badge"]}>{totalItems}</span>
-              )}
+              <FaShoppingCart style={{ fontSize: "1.5rem", color: "#000" }} />
             </button>
+            {totalItems > 0 && (
+              <span className={styles["cart-count"]}>{totalItems}</span>
+            )}
           </div>
           <button
             type="button"

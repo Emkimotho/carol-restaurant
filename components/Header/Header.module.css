@@ -70,9 +70,10 @@
   background-color: var(--primary-color);
 }
 
-/* Cart Button & Badge (applies to both desktop and mobile) */
+/* Cart Button & Badge (applies to desktop cart as well) */
 .cart-button {
   position: relative;
+  /* Desktop cart styling remains as before */
   background-color: #fff;
   border: 2px solid green;
   color: #000;
@@ -118,7 +119,7 @@
   display: none;
 }
 
-/* Navbar collapse (for mobile) */
+/* Navbar collapse (for mobile links) */
 .custom-navbar-collapse {
   display: flex;
 }
@@ -186,19 +187,32 @@
   .custom-navbar-toggler.open .custom-navbar-toggler-icon::after {
     transform: translateY(-8px) rotate(-45deg);
   }
-  /* Center Mobile Cart */
+  /* Center Mobile Cart Container */
   .mobile-cart {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    width: 45px;
-    height: 45px;
+    display: flex;
+    align-items: center;
     z-index: 2;
   }
+  /* Mobile Cart Button: remove white background and use green */
   .cart-button {
-    width: 100%;
-    height: 100%;
+    background-color: green;
+    border: none;
+    width: 45px;
+    height: 45px;
     padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* New mobile cart count: positioned to the right of the icon */
+  .cart-count {
+    margin-left: 8px;
+    color: red;
+    font-weight: bold;
+    font-size: 1rem;
   }
   /* Mobile Navigation Collapse */
   .custom-navbar-collapse {
