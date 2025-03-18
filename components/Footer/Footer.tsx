@@ -104,8 +104,9 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 3: Contact Info and Sponsored By */}
+          {/* Column 3: Contact Info, Sponsored By & Newsletter */}
           <div className={styles.footerColumn}>
+            {/* Contact Info */}
             <h4 className={styles.widgetTitle}>Contact Info</h4>
             <ul className={styles.contactWidget}>
               <li className={styles.contactItem}>
@@ -135,6 +136,8 @@ const Footer: React.FC = () => {
                 </div>
               </li>
             </ul>
+
+            {/* Sponsored By */}
             <div className={styles.sponsoredByContainer}>
               <h4 className={styles.sponsoredByTitle}>Sponsored by</h4>
               <div className={styles.sponsorContent}>
@@ -164,48 +167,48 @@ const Footer: React.FC = () => {
                 </Link>
               </div>
             </div>
-          </div>
 
-          {/* Column 4: Newsletter Subscription */}
-          <div className={styles.footerColumn}>
-            <h4 className={styles.widgetTitle}>Newsletter</h4>
-            <p>
-              Join our subscribers list to get the latest news and special offers.
-            </p>
-            <form action="#" className={styles.newsletterForm}>
-              <input
-                type="email"
-                placeholder="Your Email"
-                className={`${styles.newsletterInput} form-control mb-2`}
-                name="email"
-                aria-label="Your Email"
-                required
-              />
-              <div className={styles.newsletterControls}>
-                <div className={styles.checkboxWrapper}>
-                  <input
-                    type="checkbox"
-                    className={`${styles.formCheckInput} form-check-input me-2`}
-                    id="privacy"
-                    name="privacy"
-                    required
-                  />
-                  <label
-                    className={`${styles.formCheckLabel} form-check-label small-checkbox-label`}
-                    htmlFor="privacy"
+            {/* Newsletter */}
+            <div className={styles.newsletterContainer}>
+              <h4 className={styles.widgetTitle}>Newsletter</h4>
+              <p>
+                Join our subscribers list to get the latest news and special offers.
+              </p>
+              <form action="#" className={styles.newsletterForm}>
+                <input
+                  type="email"
+                  placeholder="Your Email"
+                  className={`${styles.newsletterInput} form-control mb-2`}
+                  name="email"
+                  aria-label="Your Email"
+                  required
+                />
+                <div className={styles.newsletterControls}>
+                  <div className={styles.checkboxWrapper}>
+                    <input
+                      type="checkbox"
+                      className={`${styles.formCheckInput} form-check-input me-2`}
+                      id="privacy"
+                      name="privacy"
+                      required
+                    />
+                    <label
+                      className={`${styles.formCheckLabel} form-check-label small-checkbox-label`}
+                      htmlFor="privacy"
+                    >
+                      I agree to the Privacy Policy
+                    </label>
+                  </div>
+                  <button
+                    className={`${styles.btnSmall} btn btn-primary`}
+                    type="submit"
+                    aria-label="Subscribe"
                   >
-                    I agree to the Privacy Policy
-                  </label>
+                    Subscribe
+                  </button>
                 </div>
-                <button
-                  className={`${styles.btnSmall} btn btn-primary`}
-                  type="submit"
-                  aria-label="Subscribe"
-                >
-                  Subscribe
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
 
