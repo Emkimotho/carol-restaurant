@@ -42,7 +42,7 @@ const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <nav className={styles["custom-navbar"]} ref={navbarRef}>
-        {/* Desktop Navigation – visible on screens above 991px */}
+        {/* Desktop Navigation – visible on larger screens */}
         <div className={styles["desktop-navbar"]}>
           <div className={styles["navbar-logo"]}>
             <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
@@ -170,7 +170,7 @@ const Header: React.FC = () => {
               />
             </Link>
           </div>
-          {/* Centered Mobile Cart Button */}
+          {/* Centered Mobile Cart Button with inline count in brackets */}
           <div className={styles["mobile-cart"]}>
             <button
               onClick={handleCartClick}

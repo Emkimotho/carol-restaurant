@@ -130,11 +130,9 @@
     display: none;
   }
   
-  /* Hide mobile header on desktop */
-  @media (min-width: 992px) {
-    .mobile-header {
-      display: none;
-    }
+  /* Ensure mobile header is hidden on desktop */
+  .mobile-header {
+    display: flex;
   }
   
   /* Mobile Header Container */
@@ -256,6 +254,13 @@
   
   .custom-nav-link {
     color: #000;
+  }
+}
+
+/* Hide Mobile Header on Desktop */
+@media (min-width: 992px) {
+  .mobile-header {
+    display: none;
   }
 }
 
