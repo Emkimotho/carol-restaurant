@@ -103,7 +103,7 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 3: Contact Info + Sponsored by */}
+          {/* Column 3: Contact Info and Sponsored by */}
           <div className={styles.footerColumn}>
             <h4 className={styles.widgetTitle}>Contact Info</h4>
             <ul className={styles.contactWidget}>
@@ -134,7 +134,6 @@ const Footer: React.FC = () => {
                 </div>
               </li>
             </ul>
-            {/* Sponsored By */}
             <div className={styles.sponsoredBy}>
               <h4 className={styles.widgetTitle}>Sponsored by</h4>
               <a
@@ -146,7 +145,7 @@ const Footer: React.FC = () => {
                 <Image
                   src="/images/harambee54-logo.png"
                   alt="Harambee54"
-                  width={120}  // Recommended: 120px x 40px
+                  width={120}
                   height={40}
                 />
               </a>
@@ -198,6 +197,7 @@ const Footer: React.FC = () => {
 
         {/* Footer Bottom */}
         <div className={styles.footerBottom}>
+          {/* Social Icons (Centered Above Footer Text) */}
           <ul className={styles.footerSocial}>
             <li>
               <a
