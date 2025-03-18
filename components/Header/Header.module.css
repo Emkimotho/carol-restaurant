@@ -1,19 +1,3 @@
-/* Helper classes to show/hide content on desktop vs. mobile */
-.desktopOnly {
-  display: block;
-}
-.mobileOnly {
-  display: none;
-}
-@media (max-width: 991px) {
-  .desktopOnly {
-    display: none;
-  }
-  .mobileOnly {
-    display: block;
-  }
-}
-
 /* General Styles */
 .header {
   position: fixed;
@@ -24,34 +8,29 @@
   backdrop-filter: blur(10px);
 }
 
-.custom-navbar {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Desktop Navbar */
-.desktop-navbar {
+/* Desktop Navigation */
+.desktopNavbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
 }
 
-.navbar-logo {
+.navbarLogo {
   display: flex;
   align-items: center;
 }
 
-.custom-logo-link {
+.customLogoLink {
   display: inline-block;
 }
 
-.custom-logo {
+.customLogo {
   width: auto;
   height: auto;
 }
 
-.custom-navbar-nav {
+.navbarNav {
   list-style: none;
   display: flex;
   gap: 20px;
@@ -59,11 +38,11 @@
   padding: 0;
 }
 
-.custom-nav-item {
+.navItem {
   position: relative;
 }
 
-.custom-nav-link {
+.navLink {
   color: #000;
   text-decoration: none;
   font-size: 1rem;
@@ -71,12 +50,12 @@
   transition: color 0.3s ease;
 }
 
-.custom-nav-link:hover,
-.custom-nav-link.active {
+.navLink:hover,
+.navLink.active {
   color: var(--primary-color);
 }
 
-.custom-nav-link.active::after {
+.navLink.active::after {
   content: "";
   position: absolute;
   bottom: -5px;
@@ -86,8 +65,8 @@
   background-color: var(--primary-color);
 }
 
-/* Cart Button & Badge for Desktop */
-.cart-button {
+/* Desktop Cart Button */
+.cartButton {
   position: relative;
   background-color: #fff;
   border: 2px solid green;
@@ -99,7 +78,7 @@
   padding: 5px;
 }
 
-.cart-badge {
+.cartBadge {
   position: absolute;
   top: -6px;
   right: -10px;
@@ -114,110 +93,97 @@
   justify-content: center;
 }
 
-/* Mobile Menu Toggler */
-.custom-navbar-toggler {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
+/* Mobile Navigation */
+.mobileNavbar {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 10px 20px;
 }
 
-.custom-navbar-toggler-icon {
-  width: 25px;
+.mobileLogo {
+  z-index: 2;
+}
+
+.mobileCart {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.navbarToggler {
+  display: flex;
+  z-index: 2;
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  width: 45px;
+  height: 45px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.togglerIcon {
+  width: 24px;
   height: 3px;
-  background-color: #000;
-  display: block;
-  margin: 5px 0;
+  background-color: var(--primary-color);
+  position: relative;
+  transition: transform 0.35s ease, opacity 0.35s ease;
 }
 
-.custom-navbar-toggler-label {
+.togglerIcon::before,
+.togglerIcon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 24px;
+  height: 3px;
+  background-color: var(--primary-color);
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.togglerIcon::before {
+  top: -8px;
+}
+
+.togglerIcon::after {
+  top: 8px;
+}
+
+.navbarToggler.open .togglerIcon {
+  background-color: transparent;
+}
+
+.navbarToggler.open .togglerIcon::before {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.navbarToggler.open .togglerIcon::after {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+.navbarCollapse {
   display: none;
+  flex-direction: column;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 10px 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Navbar Collapse (for mobile links) */
-.custom-navbar-collapse {
+.navbarCollapse.show {
   display: flex;
 }
 
-/* Mobile Styles */
+/* Mobile Cart Button override */
 @media (max-width: 991px) {
-  /* Mobile Header Container */
-  .mobile-header {
-    display: flex;
-    position: relative;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 20px;
-  }
-  
-  /* Mobile Logo (left) */
-  .mobile-logo {
-    z-index: 2;
-  }
-  
-  /* Hamburger Toggler (right) */
-  .custom-navbar-toggler {
-    display: flex;
-    z-index: 2;
-    background: transparent;
-    border: 2px solid var(--primary-color);
-    border-radius: 8px;
-    width: 45px;
-    height: 45px;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-  }
-  
-  .custom-navbar-toggler-icon {
-    width: 24px;
-    height: 3px;
-    background-color: var(--primary-color);
-    position: relative;
-    transition: transform 0.35s ease, opacity 0.35s ease;
-  }
-  
-  .custom-navbar-toggler-icon::before,
-  .custom-navbar-toggler-icon::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    width: 24px;
-    height: 3px;
-    background-color: var(--primary-color);
-    transition: transform 0.35s ease, opacity 0.35s ease;
-  }
-  
-  .custom-navbar-toggler-icon::before {
-    top: -8px;
-  }
-  
-  .custom-navbar-toggler-icon::after {
-    top: 8px;
-  }
-  
-  .custom-navbar-toggler.open .custom-navbar-toggler-icon {
-    background-color: transparent;
-  }
-  
-  .custom-navbar-toggler.open .custom-navbar-toggler-icon::before {
-    transform: translateY(8px) rotate(45deg);
-  }
-  
-  .custom-navbar-toggler.open .custom-navbar-toggler-icon::after {
-    transform: translateY(-8px) rotate(-45deg);
-  }
-  
-  /* Mobile Cart Button: centered container */
-  .mobile-cart {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-  }
-  
-  /* Mobile Cart Button: green background with inline count in brackets */
-  .cart-button {
+  .cartButton {
     background-color: green;
     border: none;
     width: 45px;
@@ -227,38 +193,10 @@
     align-items: center;
     justify-content: center;
   }
-  
-  .cart-count {
+  .cartCount {
     margin-left: 4px;
     color: red;
     font-weight: bold;
     font-size: 1rem;
-  }
-  
-  /* Mobile Navigation Collapse */
-  .custom-navbar-collapse {
-    display: none;
-    flex-direction: column;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    width: 100%;
-    background-color: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    padding: 10px 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .custom-navbar-collapse.show {
-    display: flex;
-  }
-  
-  .custom-navbar-nav {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .custom-nav-link {
-    color: #000;
   }
 }

@@ -8,7 +8,26 @@ import { FaShoppingCart } from "react-icons/fa";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
+// A hook to detect if the viewport is mobile-sized.
+const useIsMobile = (breakpoint = 991) => {
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= breakpoint);
+    };
+
+    // Set initial value
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [breakpoint]);
+
+  return isMobile;
+};
+
 const Header: React.FC = () => {
+  const isMobile = useIsMobile();
   const [navbarOpen, setNavbarOpen] = useState(false);
   const navbarRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -40,301 +59,254 @@ const Header: React.FC = () => {
     openSidebarCart();
   };
 
-  return (
-    <header className={styles.header}>
-      <nav className={styles["custom-navbar"]} ref={navbarRef}>
-        {/* Desktop Navigation – visible only on screens 992px and wider */}
-        <div className={`${styles.desktopOnly} ${styles["desktop-navbar"]}`}>
-          <div className={styles["navbar-logo"]}>
-            <Link
-              href="/"
-              onClick={closeMenu}
-              className={styles["custom-logo-link"]}
-            >
-              <Image
-                src="/images/logo.png"
-                alt="Logo"
-                className={styles["custom-logo"]}
-                width={120}
-                height={40}
-                priority
-              />
-            </Link>
-          </div>
-          <ul className={styles["custom-navbar-nav"]}>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/" ? styles.active : ""
-                }`}
-              >
-                Home
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/menu"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/menu" ? styles.active : ""
-                }`}
-              >
-                Menu
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/reservation"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/reservation" ? styles.active : ""
-                }`}
-              >
-                Reservation
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/catering"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/catering" ? styles.active : ""
-                }`}
-              >
-                Catering
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/events"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/events" ? styles.active : ""
-                }`}
-              >
-                Events
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <a
-                href="https://harambee54.com"
-                onClick={closeMenu}
-                className={styles["custom-nav-link"]}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Harambee54
-              </a>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/careers"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/careers" ? styles.active : ""
-                }`}
-              >
-                Careers
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/about"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/about" ? styles.active : ""
-                }`}
-              >
-                About Us
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/login"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/login" ? styles.active : ""
-                }`}
-              >
-                Login
-              </Link>
-            </li>
-            {/* Desktop Cart Icon */}
-            <li className={styles["custom-nav-item"]}>
-              <button
-                onClick={handleCartClick}
-                aria-label="Open Cart Sidebar"
-                className={styles["cart-button"]}
-              >
-                <FaShoppingCart style={{ fontSize: "1.2rem" }} />
-                {totalItems > 0 && (
-                  <span className={styles["cart-badge"]}>{totalItems}</span>
-                )}
-              </button>
-            </li>
-          </ul>
-        </div>
-
-        {/* Mobile Navigation – visible only on screens 991px and below */}
-        <div className={`${styles.mobileOnly} ${styles["mobile-header"]}`}>
-          <div className={styles["mobile-logo"]}>
-            <Link
-              href="/"
-              onClick={closeMenu}
-              className={styles["custom-logo-link"]}
-            >
-              <Image
-                src="/images/logo.png"
-                alt="Logo"
-                className={styles["custom-logo"]}
-                width={120}
-                height={40}
-                priority
-              />
-            </Link>
-          </div>
-          {/* Centered Mobile Cart Button with inline count in brackets */}
-          <div className={styles["mobile-cart"]}>
-            <button
-              onClick={handleCartClick}
-              aria-label="Open Cart Sidebar"
-              className={styles["cart-button"]}
-            >
-              <FaShoppingCart style={{ fontSize: "1.5rem", color: "#000" }} />
-              {totalItems > 0 && (
-                <span className={styles["cart-count"]}>({totalItems})</span>
-              )}
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={handleToggle}
-            aria-controls="customNavbarMenu"
-            aria-expanded={navbarOpen}
-            aria-label="Toggle navigation"
-            className={`${styles["custom-navbar-toggler"]} ${
-              navbarOpen ? styles.open : ""
-            }`}
+  // Desktop Header (when not mobile)
+  const desktopHeader = (
+    <nav className={styles.desktopNavbar} ref={navbarRef}>
+      <div className={styles.navbarLogo}>
+        <Link href="/" onClick={closeMenu} className={styles.customLogoLink}>
+          <Image
+            src="/images/logo.png"
+            alt="Logo"
+            className={styles.customLogo}
+            width={120}
+            height={40}
+            priority
+          />
+        </Link>
+      </div>
+      <ul className={styles.navbarNav}>
+        <li className={styles.navItem}>
+          <Link
+            href="/"
+            onClick={closeMenu}
+            className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
           >
-            <span className={styles["custom-navbar-toggler-icon"]}></span>
-            <span className={styles["custom-navbar-toggler-label"]}>Menu</span>
+            Home
+          </Link>
+        </li>
+        <li className={styles.navItem}>
+          <Link
+            href="/menu"
+            onClick={closeMenu}
+            className={`${styles.navLink} ${pathname === "/menu" ? styles.active : ""}`}
+          >
+            Menu
+          </Link>
+        </li>
+        <li className={styles.navItem}>
+          <Link
+            href="/reservation"
+            onClick={closeMenu}
+            className={`${styles.navLink} ${pathname === "/reservation" ? styles.active : ""}`}
+          >
+            Reservation
+          </Link>
+        </li>
+        <li className={styles.navItem}>
+          <Link
+            href="/catering"
+            onClick={closeMenu}
+            className={`${styles.navLink} ${pathname === "/catering" ? styles.active : ""}`}
+          >
+            Catering
+          </Link>
+        </li>
+        <li className={styles.navItem}>
+          <Link
+            href="/events"
+            onClick={closeMenu}
+            className={`${styles.navLink} ${pathname === "/events" ? styles.active : ""}`}
+          >
+            Events
+          </Link>
+        </li>
+        <li className={styles.navItem}>
+          <a
+            href="https://harambee54.com"
+            onClick={closeMenu}
+            className={styles.navLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Harambee54
+          </a>
+        </li>
+        <li className={styles.navItem}>
+          <Link
+            href="/careers"
+            onClick={closeMenu}
+            className={`${styles.navLink} ${pathname === "/careers" ? styles.active : ""}`}
+          >
+            Careers
+          </Link>
+        </li>
+        <li className={styles.navItem}>
+          <Link
+            href="/about"
+            onClick={closeMenu}
+            className={`${styles.navLink} ${pathname === "/about" ? styles.active : ""}`}
+          >
+            About Us
+          </Link>
+        </li>
+        <li className={styles.navItem}>
+          <Link
+            href="/login"
+            onClick={closeMenu}
+            className={`${styles.navLink} ${pathname === "/login" ? styles.active : ""}`}
+          >
+            Login
+          </Link>
+        </li>
+        {/* Desktop Cart */}
+        <li className={styles.navItem}>
+          <button
+            onClick={handleCartClick}
+            aria-label="Open Cart Sidebar"
+            className={styles.cartButton}
+          >
+            <FaShoppingCart style={{ fontSize: "1.2rem" }} />
+            {totalItems > 0 && (
+              <span className={styles.cartBadge}>{totalItems}</span>
+            )}
           </button>
-        </div>
-
-        {/* Mobile Navigation Links */}
-        <div
-          id="customNavbarMenu"
-          className={`${styles["custom-navbar-collapse"]} ${
-            navbarOpen ? styles.show : ""
-          }`}
-        >
-          <ul className={styles["custom-navbar-nav"]}>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/" ? styles.active : ""
-                }`}
-              >
-                Home
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/menu"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/menu" ? styles.active : ""
-                }`}
-              >
-                Menu
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/reservation"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/reservation" ? styles.active : ""
-                }`}
-              >
-                Reservation
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/catering"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/catering" ? styles.active : ""
-                }`}
-              >
-                Catering
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/events"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/events" ? styles.active : ""
-                }`}
-              >
-                Events
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <a
-                href="https://harambee54.com"
-                onClick={closeMenu}
-                className={styles["custom-nav-link"]}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Harambee54
-              </a>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/careers"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/careers" ? styles.active : ""
-                }`}
-              >
-                Careers
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/about"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/about" ? styles.active : ""
-                }`}
-              >
-                About Us
-              </Link>
-            </li>
-            <li className={styles["custom-nav-item"]}>
-              <Link
-                href="/login"
-                onClick={closeMenu}
-                className={`${styles["custom-nav-link"]} ${
-                  pathname === "/login" ? styles.active : ""
-                }`}
-              >
-                Login
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </header>
+        </li>
+      </ul>
+    </nav>
   );
+
+  // Mobile Header (when isMobile is true)
+  const mobileHeader = (
+    <nav className={styles.mobileNavbar} ref={navbarRef}>
+      <div className={styles.mobileLogo}>
+        <Link href="/" onClick={closeMenu} className={styles.customLogoLink}>
+          <Image
+            src="/images/logo.png"
+            alt="Logo"
+            className={styles.customLogo}
+            width={120}
+            height={40}
+            priority
+          />
+        </Link>
+      </div>
+      <div className={styles.mobileCart}>
+        <button
+          onClick={handleCartClick}
+          aria-label="Open Cart Sidebar"
+          className={styles.cartButton}
+        >
+          <FaShoppingCart style={{ fontSize: "1.5rem", color: "#000" }} />
+          {totalItems > 0 && (
+            <span className={styles.cartCount}>({totalItems})</span>
+          )}
+        </button>
+      </div>
+      <button
+        type="button"
+        onClick={handleToggle}
+        aria-controls="mobileNavbarMenu"
+        aria-expanded={navbarOpen}
+        aria-label="Toggle navigation"
+        className={`${styles.navbarToggler} ${navbarOpen ? styles.open : ""}`}
+      >
+        <span className={styles.togglerIcon}></span>
+        <span className={styles.togglerLabel}>Menu</span>
+      </button>
+      <div
+        id="mobileNavbarMenu"
+        className={`${styles.navbarCollapse} ${navbarOpen ? styles.show : ""}`}
+      >
+        <ul className={styles.navbarNav}>
+          <li className={styles.navItem}>
+            <Link
+              href="/"
+              onClick={closeMenu}
+              className={`${styles.navLink} ${pathname === "/" ? styles.active : ""}`}
+            >
+              Home
+            </Link>
+          </li>
+          <li className={styles.navItem}>
+            <Link
+              href="/menu"
+              onClick={closeMenu}
+              className={`${styles.navLink} ${pathname === "/menu" ? styles.active : ""}`}
+            >
+              Menu
+            </Link>
+          </li>
+          <li className={styles.navItem}>
+            <Link
+              href="/reservation"
+              onClick={closeMenu}
+              className={`${styles.navLink} ${pathname === "/reservation" ? styles.active : ""}`}
+            >
+              Reservation
+            </Link>
+          </li>
+          <li className={styles.navItem}>
+            <Link
+              href="/catering"
+              onClick={closeMenu}
+              className={`${styles.navLink} ${pathname === "/catering" ? styles.active : ""}`}
+            >
+              Catering
+            </Link>
+          </li>
+          <li className={styles.navItem}>
+            <Link
+              href="/events"
+              onClick={closeMenu}
+              className={`${styles.navLink} ${pathname === "/events" ? styles.active : ""}`}
+            >
+              Events
+            </Link>
+          </li>
+          <li className={styles.navItem}>
+            <a
+              href="https://harambee54.com"
+              onClick={closeMenu}
+              className={styles.navLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Harambee54
+            </a>
+          </li>
+          <li className={styles.navItem}>
+            <Link
+              href="/careers"
+              onClick={closeMenu}
+              className={`${styles.navLink} ${pathname === "/careers" ? styles.active : ""}`}
+            >
+              Careers
+            </Link>
+          </li>
+          <li className={styles.navItem}>
+            <Link
+              href="/about"
+              onClick={closeMenu}
+              className={`${styles.navLink} ${pathname === "/about" ? styles.active : ""}`}
+            >
+              About Us
+            </Link>
+          </li>
+          <li className={styles.navItem}>
+            <Link
+              href="/login"
+              onClick={closeMenu}
+              className={`${styles.navLink} ${pathname === "/login" ? styles.active : ""}`}
+            >
+              Login
+            </Link>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  );
+
+  return <header className={styles.header}>{isMobile ? mobileHeader : desktopHeader}</header>;
 };
 
 export default Header;
