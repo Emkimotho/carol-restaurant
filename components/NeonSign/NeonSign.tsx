@@ -34,13 +34,13 @@ const NeonSign: React.FC = () => {
           // Restaurant will open later today
           setStatus({
             isOpen: false,
-            message: `Opens today at ${convertTo12Hour(todayHours.open)}`,
+            message: `Opens Today at ${convertTo12Hour(todayHours.open)}`,
           });
           return;
         } else if (currentTime >= openTime && currentTime < closeTime) {
           setStatus({
             isOpen: true,
-            message: `Open until ${convertTo12Hour(todayHours.close)}`,
+            message: `Open Until ${convertTo12Hour(todayHours.close)}`,
           });
           return;
         }
@@ -50,7 +50,7 @@ const NeonSign: React.FC = () => {
     };
 
     const findNextOpening = () => {
-      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const currentDayIndex = new Date().getDay();
       for (let i = 1; i < 7; i++) {
         const nextIndex = (currentDayIndex + i) % 7;
