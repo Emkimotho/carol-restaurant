@@ -41,7 +41,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 .footerLogo {
   width: 100%;
   height: auto;
-  margin-bottom: 2px; /* Reduced to move logo upward */
+  margin-bottom: 0px; /* Reduced to move logo upward */
 }
 
 @media (min-width: 992px) {
@@ -150,7 +150,7 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
 /* Force contact links (phone/email) and Kimtech text to be white */
 .contactLink,
 .footerDevelopedByLink {
-  color: #fff !important;
+  color: var(--primary-color) !important;
   text-decoration: none;
   transition: color 0.3s ease;
 }
