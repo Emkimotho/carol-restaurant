@@ -70,10 +70,9 @@
   background-color: var(--primary-color);
 }
 
-/* Cart Button & Badge (applies to desktop cart as well) */
+/* Cart Button & Badge for Desktop */
 .cart-button {
   position: relative;
-  /* Desktop cart styling remains as before */
   background-color: #fff;
   border: 2px solid green;
   color: #000;
@@ -119,7 +118,7 @@
   display: none;
 }
 
-/* Navbar collapse (for mobile links) */
+/* Navbar Collapse (for mobile links) */
 .custom-navbar-collapse {
   display: flex;
 }
@@ -130,6 +129,14 @@
   .desktop-navbar {
     display: none;
   }
+  
+  /* Hide mobile header on desktop */
+  @media (min-width: 992px) {
+    .mobile-header {
+      display: none;
+    }
+  }
+  
   /* Mobile Header Container */
   .mobile-header {
     position: relative;
@@ -138,10 +145,12 @@
     justify-content: space-between;
     padding: 10px 20px;
   }
+  
   /* Mobile Logo (left) */
   .mobile-logo {
     z-index: 2;
   }
+  
   /* Hamburger Toggler (right) */
   .custom-navbar-toggler {
     z-index: 2;
@@ -155,6 +164,7 @@
     justify-content: center;
     padding: 0;
   }
+  
   .custom-navbar-toggler-icon {
     width: 24px;
     height: 3px;
@@ -162,6 +172,7 @@
     position: relative;
     transition: transform 0.35s ease, opacity 0.35s ease;
   }
+  
   .custom-navbar-toggler-icon::before,
   .custom-navbar-toggler-icon::after {
     content: "";
@@ -172,31 +183,36 @@
     background-color: var(--primary-color);
     transition: transform 0.35s ease, opacity 0.35s ease;
   }
+  
   .custom-navbar-toggler-icon::before {
     top: -8px;
   }
+  
   .custom-navbar-toggler-icon::after {
     top: 8px;
   }
+  
   .custom-navbar-toggler.open .custom-navbar-toggler-icon {
     background-color: transparent;
   }
+  
   .custom-navbar-toggler.open .custom-navbar-toggler-icon::before {
     transform: translateY(8px) rotate(45deg);
   }
+  
   .custom-navbar-toggler.open .custom-navbar-toggler-icon::after {
     transform: translateY(-8px) rotate(-45deg);
   }
-  /* Center Mobile Cart Container */
+  
+  /* Mobile Cart Button: centered container */
   .mobile-cart {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    align-items: center;
     z-index: 2;
   }
-  /* Mobile Cart Button: remove white background and use green */
+  
+  /* Mobile Cart Button: green background with inline count in brackets */
   .cart-button {
     background-color: green;
     border: none;
@@ -207,13 +223,14 @@
     align-items: center;
     justify-content: center;
   }
-  /* New mobile cart count: positioned to the right of the icon */
+  
   .cart-count {
-    margin-left: 8px;
+    margin-left: 4px;
     color: red;
     font-weight: bold;
     font-size: 1rem;
   }
+  
   /* Mobile Navigation Collapse */
   .custom-navbar-collapse {
     display: none;
@@ -227,13 +244,16 @@
     padding: 10px 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
+  
   .custom-navbar-collapse.show {
     display: flex;
   }
+  
   .custom-navbar-nav {
     flex-direction: column;
     gap: 10px;
   }
+  
   .custom-nav-link {
     color: #000;
   }

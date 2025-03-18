@@ -31,8 +31,7 @@ const Header: React.FC = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleCartClick = () => {
@@ -43,7 +42,7 @@ const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <nav className={styles["custom-navbar"]} ref={navbarRef}>
-        {/* Desktop Navigation – visible on larger screens */}
+        {/* Desktop Navigation – visible on screens above 991px */}
         <div className={styles["desktop-navbar"]}>
           <div className={styles["navbar-logo"]}>
             <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
@@ -141,7 +140,7 @@ const Header: React.FC = () => {
                 Login
               </Link>
             </li>
-            {/* Desktop Cart Icon (unchanged) */}
+            {/* Desktop Cart Icon */}
             <li className={styles["custom-nav-item"]}>
               <button
                 onClick={handleCartClick}
@@ -171,7 +170,7 @@ const Header: React.FC = () => {
               />
             </Link>
           </div>
-          {/* Absolutely centered mobile cart container */}
+          {/* Centered Mobile Cart Button */}
           <div className={styles["mobile-cart"]}>
             <button
               onClick={handleCartClick}
@@ -179,10 +178,10 @@ const Header: React.FC = () => {
               className={styles["cart-button"]}
             >
               <FaShoppingCart style={{ fontSize: "1.5rem", color: "#000" }} />
+              {totalItems > 0 && (
+                <span className={styles["cart-count"]}>({totalItems})</span>
+              )}
             </button>
-            {totalItems > 0 && (
-              <span className={styles["cart-count"]}>{totalItems}</span>
-            )}
           </div>
           <button
             type="button"
