@@ -1,11 +1,11 @@
-/* =========================== 
+/* ===========================
     Footer Styles (Footer.module.css)
 ===========================
 Description:
-This file contains the styles for the footer section in Next.js 13 CSS Modules format.
+This file contains the complete styles for the footer section, including styles for logo, links, contact info, opening hours, and newsletter form. It also includes custom styling for the checkbox and additional visual enhancements for a professional appearance.
 */
 
-/* Global Footer Container */
+/* ===== Footer Container Styles ===== */
 .footer {
   background-color: var(--dark-gray);
   color: #fff;
@@ -16,32 +16,38 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   clear: both;
 }
 
-/* Footer inner container */
+/* ===== Footer Content Wrapper ===== */
 .footerContainer {
-  max-width: var(--container-width, 1200px);
+  max-width: 1200px;
   margin: 0 auto;
   padding: 60px 20px;
-}
-
-/* Footer grid for columns */
-.footerGrid {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
 }
 
-/* Footer columns */
+/* ===== Footer Item Styling ===== */
+.footerGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
 .footerColumn {
   flex: 1 1 220px;
   margin-bottom: 30px;
   min-width: 220px;
 }
 
-/* Footer Logo */
+/* ===== Logo and Opening Hours Section ===== */
+.logoAndHours {
+  text-align: center;
+}
+
 .footerLogo {
   width: 100%;
   height: auto;
-  margin-bottom: 5px; /* Reduced to move logo upward */
+  margin-bottom: 15px;
 }
 
 @media (min-width: 992px) {
@@ -50,7 +56,12 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   }
 }
 
-/* Widget Title */
+.aboutParagraph {
+  margin-bottom: 1rem;
+  color: #ddd;
+}
+
+/* ===== Widget Titles Styling ===== */
 .widgetTitle {
   font-size: 1.5rem;
   color: var(--primary-color);
@@ -71,8 +82,8 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   background-color: var(--secondary-color);
 }
 
-/* Opening Hours - Horizontal Layout */
-.openingHours {
+/* ===== Opening Hours Styling ===== */
+.opening-hours {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -81,103 +92,159 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   font-family: var(--font-body);
 }
 
-.openingHours li {
+.opening-hours li {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  padding: 4px 0;
+  padding: 1px 0;
   border-bottom: 1px solid var(--secondary-color);
-}
-
-.openingHours li:last-child {
-  border-bottom: none;
-}
-
-.openingHours .openingHoursDay {
-  color: var(--primary-color);
-  text-align: left;
-  width: 40%;
-}
-
-.openingHours .openingHoursTime {
-  color: #fff;
-  text-align: right;
-  width: 60%;
-}
-
-/* Quick Links */
-.quickLinksList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.quickLinksItem {
-  margin-bottom: 10px;
-}
-
-.quickLinksLink {
-  color: #fff;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.quickLinksLink:hover {
-  color: var(--secondary-color);
-}
-
-/* Contact Widget */
-.contactWidget {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.contactWidget li {
-  display: flex;
-  align-items: flex-start; /* Align icons to the top */
-  margin-bottom: 10px;
-}
-
-.contactIcon {
-  width: 30px;
-  margin-right: 10px;
-  font-size: 1.2rem;
-  color: var(--primary-color);
-  margin-top: 2px; /* Nudge icon down slightly to align with first line */
-}
-
-/* Force contact links (phone/email) and Kimtech text to be white */
-.contactLink,
-.footerDevelopedByLink {
-  color: #fff !important;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.contactLink:hover,
-.footerDevelopedByLink:hover {
-  color: var(--secondary-color) !important;
-}
-
-/* Sponsored by - Centered */
-.sponsoredBy {
-  margin-top: 20px;
+  word-wrap: break-word;
   text-align: center;
 }
 
-.sponsorLogoLink {
-  display: block;
-  margin: 0 auto;
+.opening-hours li span:first-child {
+  font-weight: bold;
+  font-size: 1rem;
+  color: var(--primary-color);
+  margin-bottom: 1px;
 }
 
-/* Newsletter */
-.newsletterForm {
+/* For our previous TSX selectors */
+.openingHours {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.openingHoursItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed #555;
+}
+
+.openingHoursDay {
+  font-weight: bold;
+  position: relative;
+  color: var(--primary-color);
+}
+
+@media (max-width: 575.98px) {
+  .openingHoursDay {
+    color: transparent;
+  }
+  .openingHoursDay::before {
+    content: attr(data-full);
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: bold;
+  }
+}
+
+.openingHoursTime {
+  text-align: right;
+  color: var(--primary-color);
+}
+
+/* ===== Quick Links Styling ===== */
+.f-item.link ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.f-item.link ul li {
+  margin-bottom: 10px;
+}
+
+.f-item.link ul li a {
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  position: relative;
+}
+
+.f-item.link ul li a::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  display: block;
+  margin-top: 5px;
+  right: 0;
+  background: var(--secondary-color);
+  transition: width 0.3s ease;
+}
+
+.f-item.link ul li a:hover::after {
+  width: 100%;
+}
+
+.f-item.link ul li a:hover {
+  color: var(--secondary-color);
+}
+
+/* ===== Contact Info Styling ===== */
+.f-item.contact .contact-widget {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.f-item.contact .contact-widget li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Fixed width icons, aligned vertically next to text */
+.f-item.contact .icon {
+  display: inline-block;
+  width: 30px;
+  vertical-align: top;
+  margin-right: 10px;
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  transition: color 0.3s ease;
+}
+
+.f-item.contact .icon:hover {
+  color: var(--secondary-color);
+}
+
+.f-item.contact .content {
+  display: inline-block;
+  vertical-align: top;
+  max-width: calc(100% - 40px);
+  color: #ddd;
+  word-wrap: break-word;
+}
+
+.f-item.contact a {
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.f-item.contact a:hover {
+  color: var(--primary-color);
+}
+
+/* Address stays in two lines */
+.f-item.contact .contact-widget li:first-child .content {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+/* ===== Newsletter Form Styling ===== */
+.newsletter-form {
   display: flex;
   flex-direction: column;
 }
 
-.newsletterInput {
+.newsletter-form input[type="email"] {
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -186,77 +253,205 @@ This file contains the styles for the footer section in Next.js 13 CSS Modules f
   margin-bottom: 0.5rem;
 }
 
-/* Footer Bottom */
-.footerBottom {
+.newsletter-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.checkbox-wrapper .form-check-input {
+  margin-right: 10px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* Scope global checkbox styling to footer */
+.footer :global(input[type="checkbox"]:checked) {
+  accent-color: var(--primary-color);
+}
+
+.checkbox-wrapper .form-check-label {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  position: relative;
+  color: #ddd;
+}
+
+.newsletter-controls .btn-small {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  align-self: stretch;
+}
+
+.newsletter-controls .btn-small:hover {
+  background-color: var(--secondary-color);
+  color: #fff;
+}
+
+/* ===== Footer Bottom Section ===== */
+.footer-bottom {
   border-top: 1px solid var(--secondary-color);
   width: 100%;
   padding-top: 20px;
   margin-top: 40px;
   display: flex;
-  flex-direction: column; /* Stack vertically */
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
   text-align: center;
-  gap: 10px;
 }
 
-/* Social Icons - Displayed Horizontally on Top */
-.footerSocial {
+.footer-bottom p {
+  margin: 0;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.footer-developed-by {
+  font-size: 0.875rem;
+  margin-top: 10px;
+}
+
+.footer-developed-by a {
+  color: var(--primary-color);
+  text-decoration: none;
+  border-bottom: 2px solid var(--secondary-color);
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.footer-developed-by a:hover {
+  color: var(--secondary-color);
+  border-color: var(--primary-color);
+}
+
+/* ===== Social Icons Styling ===== */
+.footer-social {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 20px auto 0;
   display: flex;
   gap: 15px;
+  justify-content: center;
 }
 
-.footerSocialLink {
+.footer-social li a {
   color: var(--primary-color);
   font-size: 1.5rem;
   transition: color 0.3s ease;
 }
 
-.footerSocialLink:hover {
+.footer-social li a:hover {
   color: var(--secondary-color);
 }
 
-/* Footer Bottom Texts */
-.footerBottomText,
-.footerDevelopedBy {
-  margin: 0;
-  font-size: 0.9rem;
+/* ===== Sponsored By Text Styling ===== */
+.sponsorText {
+  color: var(--primary-color);
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+.sponsorText:hover {
+  color: var(--secondary-color);
 }
 
-/* Responsive Adjustments */
+/* ===== Responsive Adjustments ===== */
+/* Medium screens (max-width: 991.98px) */
 @media (max-width: 991.98px) {
   .footerContainer {
     padding: 40px 20px;
-  }
-
-  .footerGrid {
     flex-direction: column;
     align-items: center;
   }
-
   .footerColumn {
     flex: 1 1 100%;
     margin-bottom: 30px;
     text-align: center;
   }
+}
 
-  /* Center the opening hours on small screens */
-  .openingHours {
-    margin: 0 auto;
+/* Small screens (max-width: 767.98px) */
+@media (max-width: 767.98px) {
+  .footerContainer {
+    padding: 30px 15px;
+    flex-direction: column;
+    align-items: center;
+  }
+  .footerColumn {
+    flex: 1 1 100%;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .footer-developed-by {
+    margin-top: 15px;
+  }
+  .newsletter-controls {
+    align-items: center;
+  }
+  .newsletter-controls .btn-small {
+    width: 100%;
+  }
+  /* Adjusted Contact Info Styling for Mobile */
+  .f-item.contact .contact-widget {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .f-item.contact .contact-widget li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .f-item.contact .icon {
+    margin-right: 0;
+    margin-bottom: 5px;
+  }
+  .f-item.contact .content {
     text-align: center;
   }
 }
 
-@media (max-width: 767.98px) {
-  .footerContainer {
-    padding: 30px 15px;
+/* Large screens (min-width: 992px) */
+@media (min-width: 992px) {
+  .footer-bottom {
+    justify-content: center;
   }
+}
 
-  .footerBottom {
-    flex-direction: column;
-    align-items: center;
-  }
+/* ===== Additional Footer Link Styles ===== */
+.footer a {
+  color: inherit;
+  text-decoration: none;
+}
+.footer a:hover {
+  color: var(--primary-color);
+}
+
+/* ===== Fix for Email Overflow ===== */
+.f-item.contact .content a[href^="mailto:"] {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
