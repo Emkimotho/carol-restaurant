@@ -1,209 +1,260 @@
-/* General Header Styles */
 .header {
   position: fixed;
   top: 0;
+  left: 0;
   width: 100%;
   z-index: 1000;
   background-color: var(--white);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow-primary);
   font-family: var(--font-body);
 }
 
-/* --------- Desktop Styles --------- */
+/* -------------------- DESKTOP STYLES -------------------- */
 .desktopNavbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
+  height: var(--navbar-height);
+  padding: 0 1.5rem;
+  background-color: var(--white);
 }
 
-.navbarLogo {
-  display: flex;
-  align-items: center;
+/* Logo Container */
+.logoContainer {
+  flex-shrink: 0;
 }
 
-.customLogoLink {
+.logoLink {
   display: inline-block;
 }
 
-.customLogo {
-  height: 40px;
+.logoImage {
+  height: auto;
   width: auto;
+  object-fit: contain;
 }
 
-.navbarNav {
-  list-style: none;
+/* Center section with green background for nav items */
+.navList {
   display: flex;
-  gap: 1.5rem;
   margin: 0;
   padding: 0;
+  /* 
+    Because we want a separate green "bar" for the menu items,
+    we can wrap them in an inline-flex or an artificial container.
+    We'll just add a background to the <ul> for simplicity:
+  */
+  background-color: var(--primary-color);
+  border-radius: 4px;
+}
+
+.navItem {
+  list-style: none;
 }
 
 .navLink {
-  font-family: var(--font-heading);
-  color: var(--dark-gray);
-  text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.3s ease;
-}
-
-.navLink:hover,
-.navLink.active {
-  color: var(--primary-color);
-}
-
-.navLink.active::after {
-  content: "";
   display: block;
-  margin-top: 0.25rem;
-  height: 2px;
-  background-color: var(--primary-color);
+  padding: 0.75rem 1rem;
+  color: var(--white);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navLink:hover {
+  background-color: var(--primary-color-hover);
+  color: var(--white);
+}
+
+.activeLink {
+  background-color: var(--primary-color-hover) !important;
+}
+
+/* Cart on the right side */
+.cartWrapper {
+  position: relative;
 }
 
 /* Desktop Cart Button */
 .cartButton {
   position: relative;
-  background-color: var(--white);
-  border: 2px solid var(--primary-color);
-  padding: 0.5rem;
-  border-radius: 4px;
+  background-color: transparent;
+  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
+  padding: 0;
+}
+
+.cartIcon {
+  font-size: 1.4rem;
+  color: var(--dark-gray);
+  transition: color 0.3s ease;
+}
+
+.cartButton:hover .cartIcon {
+  color: var(--primary-color);
 }
 
 .cartBadge {
   position: absolute;
-  top: -0.25rem;
-  right: -0.5rem;
+  top: -8px;
+  right: -10px;
   background-color: #dc3545;
   color: var(--white);
   border-radius: 50%;
-  padding: 0 0.25rem;
+  padding: 0 6px;
   font-size: 0.75rem;
+  line-height: 1.5;
 }
 
-/* --------- Mobile Styles --------- */
-.mobileNavbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-  position: relative;
-}
-
-.mobileLogo {
-  flex-shrink: 0;
-}
-
-.rightIcons {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-/* Use same cartButton and cartBadge as desktop */
-.hamburger {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  width: 2.8125rem; /* 45px */
-  height: 2.8125rem; /* 45px */
-  background: transparent;
-  border: 2px solid var(--primary-color);
-  border-radius: 4px;
-  padding: 0.3rem;
-  cursor: pointer;
-}
-
-.bar {
-  height: 0.1875rem;
-  width: 100%;
-  background-color: var(--primary-color);
-  transition: transform 0.3s ease;
-}
-
-.bar.open:nth-child(1) {
-  transform: translateY(0.6rem) rotate(45deg);
-}
-
-.bar.open:nth-child(2) {
-  opacity: 0;
-}
-
-.bar.open:nth-child(3) {
-  transform: translateY(-0.6rem) rotate(-45deg);
-}
-
-/* Mobile Sidebar (Off-canvas menu) */
-.mobileSidebar {
-  position: fixed;
-  top: 0;
-  right: -100%;
-  width: 70%;
-  max-width: 300px;
-  height: 100%;
-  background-color: var(--white);
-  box-shadow: -4px 0 6px rgba(0,0,0,0.1);
-  transition: transform 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  padding: 2rem 1.5rem;
-  z-index: 1100;
-}
-
-.sidebarOpen {
-  transform: translateX(-100%);
-}
-
-.mobileNavList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.mobileNavLink {
-  font-family: var(--font-heading);
-  color: var(--dark-gray);
-  text-decoration: none;
-  font-size: 1.125rem;
-  transition: color 0.3s ease;
-}
-
-.mobileNavLink:hover,
-.mobileNavLink.active {
-  color: var(--primary-color);
-}
-
-/* Overlay for Mobile Sidebar */
-.sidebarOverlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 1050;
-}
-
-/* Mobile Cart Button Override */
+/* -------------------- MOBILE STYLES -------------------- */
 @media (max-width: 991px) {
-  .cartButton {
+  /* Hide the desktop navbar in mobile */
+  .desktopNavbar {
+    display: none;
+  }
+
+  /* The main mobile navbar container (logo-left, cart-center, hamburger-right) */
+  .mobileNavbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--navbar-height);
+    padding: 0 1rem;
     background-color: var(--white);
-    border: 2px solid var(--primary-color);
-    width: 2.8125rem; /* 45px */
-    height: 2.8125rem; /* 45px */
+    box-shadow: var(--box-shadow-primary);
+    position: relative;
+  }
+
+  .mobileLogo {
+    flex-shrink: 0;
+  }
+
+  /* Cart in center for mobile */
+  .cartButtonMobile {
+    background-color: transparent;
+    border: none;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: pointer;
     padding: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
   }
-  .cartCount {
-    margin-left: 0.25rem;
-    color: #dc3545;
-    font-weight: bold;
-    font-size: 1rem;
+
+  .cartIcon {
+    font-size: 1.4rem;
+  }
+
+  .cartBadgeMobile {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background-color: #dc3545;
+    color: var(--white);
+    border-radius: 50%;
+    padding: 0 6px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  /* Hamburger Button */
+  .hamburgerButton {
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.3s ease;
+  }
+
+  .hamburgerButton:hover {
+    border-color: var(--primary-color-hover);
+  }
+
+  .hamburgerBar {
+    width: 70%;
+    height: 2px;
+    background-color: var(--primary-color);
+    margin: 4px 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  .hamburgerOpen .hamburgerBar:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .hamburgerOpen .hamburgerBar:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburgerOpen .hamburgerBar:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* Slide-out mobile menu */
+  .mobileMenu {
+    position: fixed;
+    top: 0;
+    right: -80%;
+    width: 80%;
+    max-width: 300px;
+    height: 100%;
+    background-color: var(--white);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease;
+    z-index: 999;
+    padding: 2rem 1rem;
+  }
+
+  .mobileMenuOpen {
+    right: 0;
+  }
+
+  .mobileNavList {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .mobileNavItem {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  .mobileNavLink {
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+    color: var(--dark-gray);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .mobileNavLink:hover {
+    color: var(--primary-color);
+  }
+
+  /* Overlay behind the mobile menu */
+  .mobileOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 998;
+  }
+}
+
+/* Hide the mobile navbar in desktop view */
+@media (min-width: 992px) {
+  .mobileNavbar {
+    display: none;
   }
 }

@@ -8,45 +8,61 @@ import { FaShoppingCart } from "react-icons/fa";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
-// Custom hook to detect mobile view (at or below 991px)
+/* 
+  Custom hook to detect mobile view based on a given breakpoint.
+  Returns boolean: true if window width is <= breakpoint.
+*/
 const useIsMobile = (breakpoint = 991) => {
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
-    const checkWidth = () => setIsMobile(window.innerWidth <= breakpoint);
-    checkWidth();
+    const checkWidth = () => {
+      setIsMobile(window.innerWidth <= breakpoint);
+    };
+    checkWidth(); // initial check
     window.addEventListener("resize", checkWidth);
-    return () => window.removeEventListener("resize", checkWidth);
+
+    return () => {
+      window.removeEventListener("resize", checkWidth);
+    };
   }, [breakpoint]);
+
   return isMobile;
 };
 
 const Header: React.FC = () => {
   const isMobile = useIsMobile();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navbarRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { cartItems, openSidebarCart } = useContext(CartContext)!;
+
+  // Calculate total cart item quantity
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close mobile sidebar if clicked outside
+  // Close mobile menu if user clicks outside of it
   useEffect(() => {
-    const handleClickOutside = (e: Event) => {
+    const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
         setMobileMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () =>
+    return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
-  const closeOverlays = () => setMobileMenuOpen(false);
+  // Utility to close menu
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  // Handle cart click
   const handleCartClick = () => {
-    closeOverlays();
+    closeMobileMenu();
     openSidebarCart();
   };
 
-  // Navigation items list
+  // Navigation items
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/menu", label: "Menu" },
@@ -59,112 +75,140 @@ const Header: React.FC = () => {
     { href: "/login", label: "Login" },
   ];
 
-  // Desktop Header: logo on left, nav links and cart on right.
+  /* --------------- Desktop Layout --------------- */
   const desktopHeader = (
     <nav className={styles.desktopNavbar} ref={navbarRef}>
-      <div className={styles.navbarLogo}>
-        <Link href="/" onClick={closeOverlays} className={styles.customLogoLink}>
+      {/* Left: Logo */}
+      <div className={styles.logoContainer}>
+        <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
           <Image
             src="/images/logo.png"
-            alt="Logo"
-            className={styles.customLogo}
+            alt="Your Logo"
+            className={styles.logoImage}
             width={120}
             height={40}
             priority
           />
         </Link>
       </div>
-      <ul className={styles.navbarNav}>
-        {navItems.map(({ href, label, external }) => (
-          <li key={href} className={styles.navItem}>
-            {external ? (
-              <a
-                href={href}
-                onClick={closeOverlays}
-                className={`${styles.navLink} ${pathname === href ? styles.active : ""}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {label}
-              </a>
-            ) : (
-              <Link href={href}>
-                <a
-                  onClick={closeOverlays}
-                  className={`${styles.navLink} ${pathname === href ? styles.active : ""}`}
-                >
-                  {label}
-                </a>
-              </Link>
-            )}
-          </li>
-        ))}
-        <li className={styles.navItem}>
-          <button onClick={handleCartClick} aria-label="Open Cart Sidebar" className={styles.cartButton}>
-            <FaShoppingCart style={{ fontSize: "1.2rem" }} />
-            {totalItems > 0 && <span className={styles.cartBadge}>{totalItems}</span>}
-          </button>
-        </li>
-      </ul>
-    </nav>
-  );
 
-  // Mobile Header: logo on left, cart (same style as desktop) and hamburger on the right.
-  // The mobile menu opens as a right-side sidebar.
-  const mobileHeader = (
-    <>
-      <nav className={styles.mobileNavbar} ref={navbarRef}>
-        <div className={styles.mobileLogo}>
-          <Link href="/" onClick={closeOverlays} className={styles.customLogoLink}>
-            <Image
-              src="/images/logo.png"
-              alt="Logo"
-              className={styles.customLogo}
-              width={120}
-              height={40}
-              priority
-            />
-          </Link>
-        </div>
-        <div className={styles.rightIcons}>
-          <button onClick={handleCartClick} aria-label="Open Cart Sidebar" className={styles.cartButton}>
-            <FaShoppingCart style={{ fontSize: "1.2rem" }} />
-            {totalItems > 0 && <span className={styles.cartBadge}>{totalItems}</span>}
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-label="Toggle Menu"
-            className={styles.hamburger}
-          >
-            <span className={`${styles.bar} ${mobileMenuOpen ? styles.open : ""}`}></span>
-            <span className={`${styles.bar} ${mobileMenuOpen ? styles.open : ""}`}></span>
-            <span className={`${styles.bar} ${mobileMenuOpen ? styles.open : ""}`}></span>
-          </button>
-        </div>
-      </nav>
-      {/* Mobile Sidebar Menu (slides in from right) */}
-      <div
-        className={`${styles.mobileSidebar} ${mobileMenuOpen ? styles.sidebarOpen : ""}`}
-      >
-        <ul className={styles.mobileNavList}>
-          {navItems.map(({ href, label, external }) => (
-            <li key={href} className={styles.mobileNavItem}>
+      {/* Middle: Nav Links (Green background) */}
+      <ul className={styles.navList}>
+        {navItems.map(({ href, label, external }) => {
+          // Check if the current path is active
+          const isActive = !external && pathname === href;
+
+          return (
+            <li key={label} className={styles.navItem}>
               {external ? (
                 <a
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={styles.mobileNavLink}
-                  onClick={() => setMobileMenuOpen(false)}
+                  className={`${styles.navLink} ${
+                    isActive ? styles.activeLink : ""
+                  }`}
                 >
                   {label}
                 </a>
               ) : (
                 <Link href={href}>
                   <a
-                    className={styles.mobileNavLink}
-                    onClick={() => setMobileMenuOpen(false)}
+                    className={`${styles.navLink} ${
+                      isActive ? styles.activeLink : ""
+                    }`}
                   >
+                    {label}
+                  </a>
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Right: Cart */}
+      <div className={styles.cartWrapper}>
+        <button
+          onClick={handleCartClick}
+          aria-label="Open Cart"
+          className={styles.cartButton}
+        >
+          <FaShoppingCart className={styles.cartIcon} />
+          {totalItems > 0 && (
+            <span className={styles.cartBadge}>{totalItems}</span>
+          )}
+        </button>
+      </div>
+    </nav>
+  );
+
+  /* --------------- Mobile Layout --------------- */
+  const mobileHeader = (
+    <>
+      <nav className={styles.mobileNavbar} ref={navbarRef}>
+        {/* Left: Logo */}
+        <div className={styles.mobileLogo}>
+          <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
+            <Image
+              src="/images/logo.png"
+              alt="Your Logo"
+              className={styles.logoImage}
+              width={100}
+              height={40}
+              priority
+            />
+          </Link>
+        </div>
+
+        {/* Middle: Cart */}
+        <button
+          onClick={handleCartClick}
+          aria-label="Open Cart"
+          className={styles.cartButtonMobile}
+        >
+          <FaShoppingCart className={styles.cartIcon} />
+          {totalItems > 0 && (
+            <span className={styles.cartBadgeMobile}>{totalItems}</span>
+          )}
+        </button>
+
+        {/* Right: Hamburger */}
+        <button
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          aria-label="Toggle Menu"
+          className={`${styles.hamburgerButton} ${
+            mobileMenuOpen ? styles.hamburgerOpen : ""
+          }`}
+        >
+          <span className={styles.hamburgerBar} />
+          <span className={styles.hamburgerBar} />
+          <span className={styles.hamburgerBar} />
+        </button>
+      </nav>
+
+      {/* Slide-out mobile menu */}
+      <div
+        className={`${styles.mobileMenu} ${
+          mobileMenuOpen ? styles.mobileMenuOpen : ""
+        }`}
+      >
+        <ul className={styles.mobileNavList}>
+          {navItems.map(({ href, label, external }) => (
+            <li key={label} className={styles.mobileNavItem}>
+              {external ? (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.mobileNavLink}
+                  onClick={closeMobileMenu}
+                >
+                  {label}
+                </a>
+              ) : (
+                <Link href={href}>
+                  <a className={styles.mobileNavLink} onClick={closeMobileMenu}>
                     {label}
                   </a>
                 </Link>
@@ -173,17 +217,19 @@ const Header: React.FC = () => {
           ))}
         </ul>
       </div>
-      {/* Overlay for mobile sidebar */}
+
+      {/* Dark overlay behind the mobile menu */}
       {mobileMenuOpen && (
-        <div
-          className={styles.sidebarOverlay}
-          onClick={() => setMobileMenuOpen(false)}
-        ></div>
+        <div className={styles.mobileOverlay} onClick={closeMobileMenu}></div>
       )}
     </>
   );
 
-  return <header className={styles.header}>{isMobile ? mobileHeader : desktopHeader}</header>;
+  return (
+    <header className={styles.header}>
+      {isMobile ? mobileHeader : desktopHeader}
+    </header>
+  );
 };
 
 export default Header;
