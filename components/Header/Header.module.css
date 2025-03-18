@@ -14,8 +14,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Increase left padding so the logo sits further left */
+  padding: 0 2rem;
   height: var(--navbar-height);
-  padding: 0 1.5rem;
   background-color: var(--white);
 }
 
@@ -33,14 +34,14 @@
   object-fit: contain;
 }
 
-/* Nav List: no special background, let the text color stand out */
+/* Nav List with smaller gap so "About Us" fits on one line */
 .navList {
   display: flex;
   align-items: center;
   margin: 0;
   padding: 0;
   list-style: none;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .navItem {
@@ -60,12 +61,11 @@
   color: var(--secondary-color);
 }
 
-/* Active link shares the same hover color */
 .activeLink {
   color: var(--secondary-color) !important;
 }
 
-/* Desktop Cart Button (right side) */
+/* Right: Cart button */
 .cartButton {
   background-color: transparent;
   border: none;
@@ -86,7 +86,7 @@
   color: var(--primary-color);
 }
 
-/* Text-based cart count in secondary color */
+/* Show cart count in secondary color, bold, to the right of the icon */
 .cartCount {
   margin-left: 0.5rem;
   color: var(--secondary-color);
@@ -96,12 +96,10 @@
 
 /* -------------------- MOBILE STYLES -------------------- */
 @media (max-width: 991px) {
-  /* Hide the desktop nav */
   .desktopNavbar {
     display: none;
   }
 
-  /* Show the mobile nav */
   .mobileNavbar {
     display: flex;
     align-items: center;
@@ -117,7 +115,7 @@
     flex-shrink: 0;
   }
 
-  /* Cart in the middle by absolute positioning */
+  /* Cart in the middle via absolute positioning */
   .mobileCartButton {
     background-color: transparent;
     border: none;
@@ -135,12 +133,12 @@
     font-weight: 700;
   }
 
-  /* Hamburger on the right */
+  /* Hamburger on the right, transforms into an "X" */
   .hamburgerButton {
     width: 40px;
     height: 40px;
     background-color: transparent;
-    border: 2px solid var(--secondary-color);
+    border: 2px solid var(--primary-color);
     border-radius: 4px;
     display: flex;
     flex-direction: column;
@@ -152,23 +150,24 @@
   }
 
   .hamburgerButton:hover {
-    border-color: var(--primary-color);
+    border-color: var(--secondary-color);
   }
 
+  /* Three bars: default color = primary (green) */
   .hamburgerBar {
     width: 70%;
     height: 2px;
-    background-color: var(--secondary-color);
+    background-color: var(--primary-color);
     margin: 4px 0;
     transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
   }
 
-  /* On hover, lines become primary color */
+  /* On hover, lines become secondary color */
   .hamburgerButton:hover .hamburgerBar {
-    background-color: var(--primary-color);
+    background-color: var(--secondary-color);
   }
 
-  /* When the hamburger is open */
+  /* Transition into an "X" when open */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
   }
@@ -179,7 +178,7 @@
     transform: translateY(-8px) rotate(-45deg);
   }
 
-  /* Drawer Menu */
+  /* Slide-out drawer */
   .mobileMenu {
     position: fixed;
     top: 0;
@@ -192,39 +191,66 @@
     transition: right 0.3s ease;
     z-index: 999;
     padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    /* optional subtle fade/slide from right */
+    opacity: 0.9; /* slightly see-through if you like */
   }
 
   .mobileMenuOpen {
     right: 0;
   }
 
+  /* Sidebar nav list with a small fade/slide-in effect for each item */
   .mobileNavList {
     list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
     margin: 0;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
   }
 
   .mobileNavItem {
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
+    /* Animate each menu item individually if desired */
+    transform: translateX(20px);
+    opacity: 0;
+    animation: slideIn 0.4s forwards;
   }
 
+  /* Delay each li slightly for a stagger effect */
+  .mobileNavItem:nth-child(1) {
+    animation-delay: 0.05s;
+  }
+  .mobileNavItem:nth-child(2) {
+    animation-delay: 0.1s;
+  }
+  .mobileNavItem:nth-child(3) {
+    animation-delay: 0.15s;
+  }
+  /* etc... adjust or add more if you want more items */
+
+  @keyframes slideIn {
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Mobile Nav Link in green, hover to secondary */
   .mobileNavLink {
     font-family: var(--font-heading);
     font-size: 1.125rem;
-    color: var(--dark-gray);
+    color: var(--primary-color);
     text-decoration: none;
     transition: color 0.3s ease;
   }
 
   .mobileNavLink:hover {
-    color: var(--primary-color);
+    color: var(--secondary-color);
   }
 
-  /* Overlay behind the drawer */
+  /* Dark overlay behind the drawer */
   .mobileOverlay {
     position: fixed;
     inset: 0;
@@ -233,7 +259,7 @@
   }
 }
 
-/* Hide mobile nav in desktop */
+/* Hide mobile in desktop */
 @media (min-width: 992px) {
   .mobileNavbar {
     display: none;
