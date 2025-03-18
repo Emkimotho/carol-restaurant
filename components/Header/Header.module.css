@@ -1,3 +1,4 @@
+/* General Styles */
 .header {
   position: fixed;
   top: 0;
@@ -9,87 +10,29 @@
 
 .custom-navbar {
   display: flex;
+  flex-direction: column;
+}
+
+/* Desktop Navbar */
+.desktop-navbar {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
 }
 
-/* Logo container */
 .navbar-logo {
   display: flex;
   align-items: center;
-  flex: 1;
-  justify-content: flex-start;
 }
 
-/* Logo link and image */
 .custom-logo-link {
   display: inline-block;
 }
+
 .custom-logo {
   width: auto;
   height: auto;
-}
-
-/* Mobile Cart Icon (default desktop hidden) */
-.mobile-cart {
-  display: none;
-  margin-left: 20px;
-}
-.cart-button {
-  background-color: #fff; /* white background */
-  border: 2px solid green; /* green border */
-  color: #000; /* cart icon in black */
-  cursor: pointer;
-  padding: 5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.cart-badge {
-  position: absolute;
-  top: -6px;
-  right: -10px;
-  background-color: #dc3545;
-  color: #fff;
-  width: 18px;
-  height: 18px;
-  font-size: 0.75rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Desktop Cart Icon */
-.desktop-cart {
-  display: block;
-}
-
-/* Mobile Menu Toggler (hidden by default on desktop) */
-.custom-navbar-toggler {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-/* Toggler icon for desktop (not used on mobile) */
-.custom-navbar-toggler-icon {
-  width: 25px;
-  height: 3px;
-  background-color: #000;
-  display: block;
-  margin: 5px 0;
-}
-
-.custom-navbar-toggler-label {
-  display: none;
-}
-
-/* Navbar collapse for desktop */
-.custom-navbar-collapse {
-  display: flex;
 }
 
 .custom-navbar-nav {
@@ -118,7 +61,7 @@
 }
 
 .custom-nav-link.active::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -5px;
   left: 0;
@@ -127,77 +70,99 @@
   background-color: var(--primary-color);
 }
 
-/* Desktop toggler open state */
-.custom-navbar-toggler.open .custom-navbar-toggler-icon {
-  transform: rotate(45deg);
-}
-.custom-navbar-toggler.open .custom-navbar-toggler-icon::before {
-  transform: rotate(90deg);
-}
-.custom-navbar-toggler.open .custom-navbar-toggler-icon::after {
-  opacity: 0;
+/* Cart Button & Badge */
+.cart-button {
+  background-color: #fff;
+  border: 2px solid green;
+  color: #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
 }
 
-/* Mobile styles */
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background-color: #dc3545;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  font-size: 0.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Desktop Cart Icon */
+.desktop-cart {
+  display: block;
+}
+
+/* Mobile Menu Toggler */
+.custom-navbar-toggler {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.custom-navbar-toggler-icon {
+  width: 25px;
+  height: 3px;
+  background-color: #000;
+  display: block;
+  margin: 5px 0;
+}
+
+.custom-navbar-toggler-label {
+  display: none;
+}
+
+/* Navbar collapse for desktop */
+.custom-navbar-collapse {
+  display: flex;
+}
+
+/* Mobile Styles */
 @media (max-width: 991px) {
-  .custom-navbar {
-    justify-content: space-between;
-  }
-  .navbar-logo {
-    justify-content: flex-start;
-    margin-left: -45px;  /* Adjust this value as needed */
-  }
-  /* Show mobile cart icon and hide desktop cart */
-  .mobile-cart {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-  }
-  .desktop-cart {
+  /* Hide Desktop Navbar */
+  .desktop-navbar {
     display: none;
   }
-  /* Mobile Header: Logo on left, Cart in center, Toggler on right */
+  /* Mobile Header Container */
   .mobile-header {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
   }
+  /* Mobile Logo (left) */
   .mobile-logo {
-    flex: 1;
-    text-align: left;
+    z-index: 2;
   }
-  .mobile-cart {
-    flex: 1;
-    text-align: center;
-  }
-  /* Increase cart size to match the hamburger */
-  .cart-button {
-    width: 45px;
-    height: 45px;
-    padding: 0;
-  }
-  .cart-button svg {
-    font-size: 1.5rem; /* Larger icon for better visibility */
-  }
-  /* Hamburger Toggler for mobile */
+  /* Hamburger Toggler (right) */
   .custom-navbar-toggler {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    flex: 1;
+    z-index: 2;
     background: transparent;
     border: 2px solid var(--primary-color);
     border-radius: 8px;
     width: 45px;
     height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 0;
   }
   .custom-navbar-toggler-icon {
     width: 24px;
     height: 3px;
     background-color: var(--primary-color);
+    position: relative;
     transition: transform 0.35s ease, opacity 0.35s ease;
   }
   .custom-navbar-toggler-icon::before,
@@ -225,7 +190,22 @@
   .custom-navbar-toggler.open .custom-navbar-toggler-icon::after {
     transform: translateY(-8px) rotate(-45deg);
   }
-  /* Mobile collapse styles */
+  /* Center Mobile Cart */
+  .mobile-cart {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 45px;
+    height: 45px;
+    z-index: 2;
+  }
+  /* Adjust Cart Button for Mobile */
+  .cart-button {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+  /* Mobile Navigation Collapse */
   .custom-navbar-collapse {
     display: none;
     flex-direction: column;
