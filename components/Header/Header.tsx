@@ -31,7 +31,8 @@ const Header: React.FC = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleCartClick = () => {
@@ -42,7 +43,7 @@ const Header: React.FC = () => {
   return (
     <header className={styles.header}>
       <nav className={styles["custom-navbar"]} ref={navbarRef}>
-        {/* Desktop Navigation – visible on larger screens */}
+        {/* Desktop Navigation – visible on screens above 991px */}
         <div className={styles["desktop-navbar"]}>
           <div className={styles["navbar-logo"]}>
             <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>
@@ -156,7 +157,7 @@ const Header: React.FC = () => {
           </ul>
         </div>
 
-        {/* Mobile Navigation – visible on screens below 991px */}
+        {/* Mobile Navigation – visible on screens 991px and below */}
         <div className={styles["mobile-header"]}>
           <div className={styles["mobile-logo"]}>
             <Link href="/" onClick={closeMenu} className={styles["custom-logo-link"]}>

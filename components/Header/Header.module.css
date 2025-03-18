@@ -130,15 +130,10 @@
     display: none;
   }
   
-  /* Ensure mobile header is hidden on desktop */
+  /* Mobile Header: hidden by default on desktop, shown only on small screens */
   .mobile-header {
     display: flex;
-  }
-  
-  /* Mobile Header Container */
-  .mobile-header {
     position: relative;
-    display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
@@ -151,13 +146,13 @@
   
   /* Hamburger Toggler (right) */
   .custom-navbar-toggler {
+    display: flex;
     z-index: 2;
     background: transparent;
     border: 2px solid var(--primary-color);
     border-radius: 8px;
     width: 45px;
     height: 45px;
-    display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -255,16 +250,4 @@
   .custom-nav-link {
     color: #000;
   }
-}
-
-/* Hide Mobile Header on Desktop */
-@media (min-width: 992px) {
-  .mobile-header {
-    display: none;
-  }
-}
-
-/* Optional: Additional adjustments for very small screens */
-@media (max-width: 767px) {
-  /* Additional adjustments if needed */
 }
