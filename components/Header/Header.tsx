@@ -8,6 +8,10 @@ import { FaShoppingCart } from "react-icons/fa";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
+/*
+  Hook to detect mobile view (<= 991px).
+  Returns a boolean: true if window width <= breakpoint.
+*/
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -30,10 +34,10 @@ const Header: React.FC = () => {
   const pathname = usePathname();
   const { cartItems, openSidebarCart } = useContext(CartContext)!;
 
-  // Calculate total items
+  // Sum up quantity of all cart items
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close menu if clicking outside
+  // Close mobile menu if user clicks outside of it
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
@@ -44,14 +48,16 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Helpers
+  // Utility to close the mobile drawer
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  // Clicking the cart icon
   const handleCartClick = () => {
     closeMobileMenu();
     openSidebarCart();
   };
 
-  // Nav items
+  // Navigation items
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/menu", label: "Menu" },
@@ -64,7 +70,7 @@ const Header: React.FC = () => {
     { href: "/login", label: "Login" },
   ];
 
-  /* ---------------- DESKTOP NAV ---------------- */
+  // ------------------- DESKTOP NAV ------------------- //
   const desktopHeader = (
     <nav className={styles.desktopNavbar} ref={navbarRef}>
       {/* Left: Logo */}
@@ -81,7 +87,7 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
-      {/* Middle: Nav Links */}
+      {/* Middle: Nav Items */}
       <ul className={styles.navList}>
         {navItems.map(({ href, label, external }) => {
           const isActive = !external && pathname === href;
@@ -114,7 +120,7 @@ const Header: React.FC = () => {
         })}
       </ul>
 
-      {/* Right: Cart */}
+      {/* Right: Cart Button */}
       <button
         onClick={handleCartClick}
         aria-label="Open Cart"
@@ -128,7 +134,7 @@ const Header: React.FC = () => {
     </nav>
   );
 
-  /* ---------------- MOBILE NAV ---------------- */
+  // ------------------- MOBILE NAV ------------------- //
   const mobileHeader = (
     <>
       <nav className={styles.mobileNavbar} ref={navbarRef}>
@@ -158,7 +164,7 @@ const Header: React.FC = () => {
           )}
         </button>
 
-        {/* Right: Hamburger */}
+        {/* Right: Hamburger (transforms into X) */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"
@@ -172,7 +178,7 @@ const Header: React.FC = () => {
         </button>
       </nav>
 
-      {/* Slide-out drawer */}
+      {/* Slide-Out Drawer */}
       <div
         className={`${styles.mobileMenu} ${
           mobileMenuOpen ? styles.mobileMenuOpen : ""
@@ -203,7 +209,7 @@ const Header: React.FC = () => {
         </ul>
       </div>
 
-      {/* Dark overlay */}
+      {/* Dark Overlay behind the slide-out menu */}
       {mobileMenuOpen && (
         <div className={styles.mobileOverlay} onClick={closeMobileMenu}></div>
       )}

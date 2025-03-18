@@ -19,7 +19,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.5rem; /* adjust to move logo further left or right */
+  /* Adjust this padding to move the desktop logo further left or right */
+  padding: 0 1.5rem;
   height: var(--navbar-height);
   background-color: var(--white);
 }
@@ -47,7 +48,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  gap: 0.6rem; /* slightly reduced gap to keep "About Us" in one line */
+  /* Slightly reduced gap to help keep "About Us" on one line */
+  gap: 0.6rem;
   white-space: nowrap;
 }
 
@@ -58,7 +60,8 @@
 .navLink {
   display: block;
   font-family: var(--font-heading);
-  font-size: 0.95rem; /* small enough to help "About Us" fit on one line */
+  /* slightly smaller font to help fit everything in one row */
+  font-size: 0.95rem;
   color: var(--primary-color);
   padding: 0.75rem 0.5rem;
   transition: color 0.3s ease;
@@ -115,7 +118,11 @@
     align-items: center;
     justify-content: space-between;
     height: var(--navbar-height);
-    padding: 0 0.5rem; /* adjust to move logo further left (smaller -> more left) */
+    /*
+      Adjust to move mobile logo further left
+      The smaller this left/right padding, the closer the logo is to the edge.
+    */
+    padding: 0 0.5rem;
     background-color: var(--white);
     box-shadow: var(--box-shadow-primary);
     position: relative;
@@ -147,47 +154,43 @@
    * HAMBURGER BUTTON
    **************************************/
   .hamburgerButton {
-    /* 
-     * Green border and white background to ensure 
-     * the hamburger lines are fully visible 
-     */
-    background-color: #fff;       /* White BG ensures lines stand out */
-    border: 2px solid #00BF63;    /* A bold green border */
+    /* A green border + white background ensures we can clearly see the button box */
+    background-color: #fff;
+    border: 2px solid #00BF63;
     border-radius: 4px;
 
     width: 40px;
     height: 40px;
+    cursor: pointer;
+    position: relative;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    cursor: pointer;
-    position: relative;
   }
 
   /*
-   * The actual hamburger lines:
-   * Thicker (4px) and bright green (#00BF63)
-   * so they're clearly visible
-   */
+    Each line is a "bar" with bright green color,
+    and 4px thickness so it's easily visible.
+  */
   .hamburgerBar {
-    width: 30px;  /* line width */
-    height: 4px;  /* thickness of each line */
-    background-color: #00BF63; /* bright green */
-    margin: 4px 0;
-    transition: transform 0.3s ease, 
-                opacity 0.3s ease, 
+    display: block;
+    width: 30px;
+    height: 4px;
+    background-color: #00BF63 !important;
+    margin: 3px 0;
+    transition: transform 0.3s ease,
+                opacity 0.3s ease,
                 background-color 0.3s ease;
   }
 
-  /* On hover, lines become your secondary color variable */
+  /* On hover, lines become secondary color */
   .hamburgerButton:hover .hamburgerBar {
-    background-color: var(--secondary-color);
+    background-color: var(--secondary-color) !important;
   }
 
-  /*
-   * Transform to "X" when open
-   */
+  /* Transform the 3 lines into an "X" when open */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
     transform: translateY(8px) rotate(45deg);
   }
@@ -230,6 +233,7 @@
     gap: 1.25rem;
   }
 
+  /* Slight fade/slide-in animation for each nav item */
   .mobileNavItem {
     transform: translateX(15px);
     opacity: 0;
