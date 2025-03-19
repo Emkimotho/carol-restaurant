@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect, useContext } from "react";
 import Image from "next/image";
 import styles from "./DetailedItemView.module.css";
@@ -50,7 +49,10 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
   const [quantity, setQuantity] = useState<number>(1);
   const [specialInstructions, setSpecialInstructions] = useState<string>("");
   const [spiceLevel, setSpiceLevel] = useState<string>("");
-  
+
+  // Toast state for desktop notifications.
+  const [showToast, setShowToast] = useState<boolean>(false);
+
   // Safely initialize selectedAccompaniments.
   const initialSelections: { [groupId: string]: Accompaniment[] } =
     item.selectedAccompaniments ? deepCloneSelections(item.selectedAccompaniments) : {} as { [groupId: string]: Accompaniment[] };
@@ -107,9 +109,21 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
       selectedAccompaniments,
       item.accompanimentGroups || []
     );
-    onClose();
-    if (!isSidebarCartOpen) {
-      openSidebarCart();
+    
+    // Check viewport width: if small device, open sidebar cart immediately.
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      if (!isSidebarCartOpen) {
+        openSidebarCart();
+      }
+      onClose();
+    } else {
+      // For larger screens, show a toast notification.
+      setShowToast(true);
+      // Auto-hide the toast after 2 seconds, then close the modal.
+      setTimeout(() => {
+        setShowToast(false);
+        onClose();
+      }, 2000);
     }
   };
 
@@ -276,6 +290,13 @@ const DetailedItemView: React.FC<DetailedItemViewProps> = ({
             Add to Cart
           </button>
         </div>
+
+        {/* Toast Notification for Desktop */}
+        {showToast && (
+          <div className={styles.toastNotification}>
+            Item added to cart!
+          </div>
+        )}
       </div>
     </div>
   );
