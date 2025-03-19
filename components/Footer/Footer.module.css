@@ -1,10 +1,16 @@
-/* ===========================
-    Footer Styles (Footer.module.css)
-=========================== */
+/* ============================
+   Footer Styles (Footer.module.css)
+   Modernized & Sleek
+============================ */
 
-/* ===== Footer Container Styles ===== */
+/* ===== Root Footer ===== */
 .footer {
-  background-color: var(--dark-gray);
+  /* Subtle gradient background for a more modern look */
+  background: linear-gradient(
+    135deg,
+    var(--dark-gray) 0%,
+    #000 100%
+  );
   color: #fff;
   padding: 0;
   margin: 0;
@@ -13,7 +19,7 @@
   clear: both;
 }
 
-/* ===== Footer Content Wrapper ===== */
+/* ===== Main Container ===== */
 .footerContainer {
   max-width: 1200px;
   margin: 0 auto;
@@ -23,7 +29,7 @@
   align-items: center;
 }
 
-/* ===== Footer Grid & Column ===== */
+/* ===== Grid & Column Layout ===== */
 .footerGrid {
   display: flex;
   flex-wrap: wrap;
@@ -36,20 +42,20 @@
   margin-bottom: 30px;
   min-width: 220px;
 }
-
-/* Additional adjustment for Quick Links column */
 .quickLinksColumn {
   margin-left: 20px;
 }
 
-/* ===== Widget Titles Styling ===== */
+/* ===== Section Titles ===== */
 .widgetTitle {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   color: var(--primary-color);
   margin-bottom: 20px;
   font-family: var(--font-heading);
   position: relative;
   display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 .leftAlign {
   display: block;
@@ -58,14 +64,14 @@
 .widgetTitle::after {
   content: "";
   position: absolute;
-  left: 0; /* Desktop: underline starts at left edge */
+  left: 0;
   bottom: -5px;
-  width: 50px;
+  width: 60px;
   height: 3px;
   background-color: var(--secondary-color);
 }
 
-/* ===== Logo and About Section ===== */
+/* ===== Logo & About ===== */
 .logoAndHours {
   text-align: left;
 }
@@ -73,45 +79,51 @@
   width: 100%;
   height: auto;
   margin-bottom: 15px;
+  transition: transform 0.3s;
+}
+.footerLogo:hover {
+  transform: scale(1.05);
 }
 @media (min-width: 992px) {
   .footerLogo {
-    max-width: 300px;
+    max-width: 280px;
   }
 }
 .aboutParagraph {
   margin-bottom: 1rem;
   color: #ddd;
+  line-height: 1.6;
 }
 
-/* ===== Opening Hours Styling ===== */
+/* ===== Opening Hours ===== */
 .openingHours {
   list-style: none;
   padding: 0;
-  margin: 0 auto; /* center the container */
+  margin: 0 auto;
   max-width: 300px;
   font-size: 1rem;
   font-family: var(--font-body);
-  text-align: left; /* keep internal row split intact */
+  text-align: left;
 }
 .openingHoursItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.25rem 0;
-  border-bottom: 1px dashed #555;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 .openingHoursDay {
   font-weight: bold;
-  color: var(--primary-color);
+  color: var(--secondary-color);
   text-align: left;
 }
 .openingHoursTime {
   color: var(--white);
   text-align: right;
+  font-weight: 300;
 }
 
-/* ===== Quick Links Styling ===== */
+/* ===== Quick Links ===== */
 .quickLinksList {
   list-style: none;
   padding: 0;
@@ -123,8 +135,9 @@
 .quickLinksLink {
   color: #fff;
   text-decoration: none;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s;
   position: relative;
+  font-weight: 300;
 }
 .quickLinksLink::after {
   content: "";
@@ -142,32 +155,33 @@
 }
 .quickLinksLink:hover {
   color: var(--secondary-color);
+  transform: translateX(3px);
 }
 
-/* ===== Contact Info Styling ===== */
+/* ===== Contact Info ===== */
 .contactWidget {
   list-style: none;
   padding: 0;
-  margin: 0 auto; /* center the container */
+  margin: 0 auto;
   max-width: 300px;
   text-align: left;
 }
 .contactItem {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   justify-content: flex-start;
 }
 .contactIcon {
-  display: inline-block;
   width: 30px;
   margin-right: 10px;
   font-size: 1.2rem;
   color: var(--primary-color);
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s;
 }
 .contactIcon:hover {
   color: var(--secondary-color);
+  transform: scale(1.1);
 }
 .contactContent {
   flex: 1;
@@ -183,13 +197,8 @@
 .contactLink:hover {
   color: var(--primary-color);
 }
-.contactContent a[href^="mailto:"] {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-}
 
-/* ===== Newsletter Form Styling ===== */
+/* ===== Newsletter ===== */
 .newsletterContainer {
   margin-top: 30px;
   text-align: left;
@@ -199,12 +208,17 @@
   flex-direction: column;
 }
 .newsletterInput {
-  padding: 0.5rem;
+  padding: 0.6rem;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 0.875rem;
   width: 100%;
   margin-bottom: 0.5rem;
+  outline: none;
+}
+.newsletterInput:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
 .newsletterControls {
   display: flex;
@@ -227,34 +241,33 @@
   accent-color: var(--primary-color);
 }
 .formCheckLabel {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   line-height: 1.2;
   color: #ddd;
   position: relative;
 }
 .btnSmall {
-  padding: 0.3rem 0.8rem;
+  padding: 0.4rem 1rem;
   font-size: 0.875rem;
   border-radius: 4px;
   background-color: var(--primary-color);
   color: #fff;
   border: none;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  align-self: stretch;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 .btnSmall:hover {
   background-color: var(--secondary-color);
-  color: #fff;
+  transform: translateY(-2px);
 }
 
-/* ===== Sponsored By Styling ===== */
+/* ===== Sponsored By ===== */
 .sponsoredByContainer {
   margin-top: 20px;
   text-align: center;
 }
 .sponsoredByTitle {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: var(--white);
   margin-bottom: 10px;
   font-family: var(--font-heading);
@@ -267,10 +280,11 @@
   display: inline-block;
 }
 .sponsorLogo {
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s;
 }
 .sponsorLogo:hover {
   transform: scale(1.1);
+  opacity: 0.9;
 }
 .sponsorTextContainer {
   text-align: center;
@@ -281,14 +295,14 @@
 .sponsorText {
   color: var(--primary-color);
   font-family: var(--font-heading);
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   transition: color 0.3s ease;
 }
 .sponsorText:hover {
   color: var(--secondary-color);
 }
 
-/* ===== Footer Bottom Section ===== */
+/* ===== Footer Bottom ===== */
 .footerBottom {
   border-top: 1px solid var(--secondary-color);
   width: 100%;
@@ -307,13 +321,14 @@
   gap: 15px;
   justify-content: center;
 }
-.footerSocial li a {
+.footerSocialLink {
   color: var(--primary-color);
   font-size: 1.5rem;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, transform 0.3s;
 }
-.footerSocial li a:hover {
+.footerSocialLink:hover {
   color: var(--secondary-color);
+  transform: scale(1.1);
 }
 .footerSeparator {
   width: 100%;
@@ -323,11 +338,13 @@
 }
 .footerBottomText {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   width: 100%;
+  font-weight: 300;
+  color: #ccc;
 }
 .footerDevelopedBy {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   margin-top: 10px;
 }
 .footerDevelopedByLink {
@@ -343,7 +360,7 @@
 }
 
 /* ===== Responsive Adjustments ===== */
-/* Medium screens (max-width: 991.98px) */
+/* Medium devices (max-width: 991.98px) */
 @media (max-width: 991.98px) {
   .footerContainer {
     padding: 40px 20px;
@@ -352,17 +369,14 @@
   }
   .footerColumn {
     flex: 1 1 100%;
-    margin-bottom: 30px;
     text-align: center;
   }
 }
 
-/* Small screens (max-width: 767.98px) */
+/* Small devices (max-width: 767.98px) */
 @media (max-width: 767.98px) {
   .footerContainer {
     padding: 30px 15px;
-    flex-direction: column;
-    align-items: center;
   }
   .footerColumn {
     flex: 1 1 100%;
@@ -379,11 +393,9 @@
   .btnSmall {
     width: 100%;
   }
-  /* Center Opening Hours container */
   .openingHours {
     margin: 0 auto;
   }
-  /* For Contact Info, center the container while keeping items left aligned */
   .contactWidget {
     margin: 0 auto;
     text-align: left;
@@ -394,15 +406,12 @@
   .contactContent {
     text-align: left;
   }
-  /* Center the logoAndHours container on small devices */
   .logoAndHours {
     text-align: center;
   }
-  /* Center the newsletter container */
   .newsletterContainer {
     text-align: center;
   }
-  /* Center the "More Info" title and override underline positioning */
   .footerColumn .leftAlign {
     text-align: center;
   }
@@ -412,14 +421,7 @@
   }
 }
 
-/* Large screens (min-width: 992px) */
-@media (min-width: 992px) {
-  .footerBottom {
-    justify-content: center;
-  }
-}
-
-/* ===== Additional Footer Link Styles ===== */
+/* ===== Global Footer Links Behavior ===== */
 .footer a {
   color: inherit;
   text-decoration: none;

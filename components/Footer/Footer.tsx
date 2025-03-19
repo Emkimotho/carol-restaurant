@@ -41,8 +41,9 @@ const Footer: React.FC = () => {
   return (
     <footer id="footer" className={styles.footer}>
       <div className={styles.footerContainer}>
+        {/* ========== Footer Grid ========== */}
         <div className={styles.footerGrid}>
-          {/* Column 1: More Info and Opening Hours */}
+          {/* Column 1: More Info & Opening Hours */}
           <div className={styles.footerColumn}>
             <h4 className={`${styles.widgetTitle} ${styles.leftAlign}`}>More Info</h4>
             <div className={styles.logoAndHours}>
@@ -171,9 +172,7 @@ const Footer: React.FC = () => {
             {/* Newsletter */}
             <div className={styles.newsletterContainer}>
               <h4 className={styles.widgetTitle}>Newsletter</h4>
-              <p>
-                Join our subscribers list to get the latest news and special offers.
-              </p>
+              <p>Join our subscribers list to get the latest news and special offers.</p>
               <form action="#" className={styles.newsletterForm}>
                 <input
                   type="email"
@@ -212,7 +211,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Bottom */}
+        {/* ========== Footer Bottom ========== */}
         <div className={styles.footerBottom}>
           <ul className={styles.footerSocial}>
             <li>
