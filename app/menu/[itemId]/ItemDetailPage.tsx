@@ -14,7 +14,6 @@ interface Drink {
   price: number;
 }
 
-// Helper to deep-clone accompaniments, same as before
 function deepCloneSelections(
   selections: { [groupId: string]: Accompaniment[] }
 ): { [groupId: string]: Accompaniment[] } {
@@ -22,69 +21,51 @@ function deepCloneSelections(
 }
 
 interface ItemDetailPageProps {
-  item: MenuItem;             // The menu item data
-  recommendedDrinks?: Drink[]; // Optional recommended drinks
+  item: MenuItem;              // From your menuData or server fetch
+  recommendedDrinks?: Drink[]; // Optional
 }
 
 export default function ItemDetailPage({
   item,
   recommendedDrinks = [],
 }: ItemDetailPageProps) {
+  // Basic states
   const [quantity, setQuantity] = useState<number>(1);
   const [specialInstructions, setSpecialInstructions] = useState<string>("");
   const [spiceLevel, setSpiceLevel] = useState<string>("");
 
-  // Keep the same "toast" logic you had in the modal
+  // Toast notification state (shown on desktop after Add to Cart)
   const [showToast, setShowToast] = useState<boolean>(false);
 
-  // Initialize selectedAccompaniments
+  // Initialize accompaniments
   const initialSelections: { [groupId: string]: Accompaniment[] } =
     item.selectedAccompaniments
       ? deepCloneSelections(item.selectedAccompaniments)
       : {};
-
   const [selectedAccompaniments, setSelectedAccompaniments] = useState<{
     [groupId: string]: Accompaniment[];
   }>(initialSelections);
 
-  // Access your CartContext
-  const { addToCart, isSidebarCartOpen, openSidebarCart } = useContext(CartContext)!;
+  // Access cart context
+  const {
+    addToCart,
+    isSidebarCartOpen,
+    openSidebarCart,
+  } = useContext(CartContext)!;
 
-  // Optional: If your old modal had "onClose" or body scroll locking, remove it here.
-  // This is a full page now, so no "body.style.overflow" or "overlay" needed.
-
-  // If your item prop changes, re-init the accompaniments (rare but included here):
+  // (Re)initialize these states if the passed "item" changes
   useEffect(() => {
-    if (item?.selectedAccompaniments) {
+    if (item.selectedAccompaniments) {
       setSelectedAccompaniments(deepCloneSelections(item.selectedAccompaniments));
     } else {
       setSelectedAccompaniments({});
     }
     setQuantity(1);
-    setSpecialInstructions("");
     setSpiceLevel("");
+    setSpecialInstructions("");
   }, [item]);
 
-  // Build the base item object (similar to your old "baseItem" approach)
-  const baseItem = {
-    id: item.id,
-    title: item.title,
-    description: item.description,
-    price: item.price,
-    image: item.image,
-    hasSpiceLevel: item.hasSpiceLevel,
-    specialInstructions: "",
-    spiceLevel: item.hasSpiceLevel ? null : undefined,
-  };
-
-  function handleQuantityIncrease() {
-    setQuantity((prev) => prev + 1);
-  }
-
-  function handleQuantityDecrease() {
-    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
-  }
-
+  // Helper to handle checking/unchecking of accompaniment groups
   function handleAccompanimentChange(
     groupId: string,
     option: Accompaniment,
@@ -95,10 +76,8 @@ export default function ItemDetailPage({
       const currentSelections = prev[groupId] || [];
       if (isChecked) {
         if (maxSelections === 1) {
-          // Only one allowed -> overwrite selection
           return { ...prev, [groupId]: [option] };
         } else {
-          // If multiple allowed, just push if we haven't hit the limit
           if (currentSelections.length < maxSelections) {
             return { ...prev, [groupId]: [...currentSelections, option] };
           } else {
@@ -111,7 +90,6 @@ export default function ItemDetailPage({
           }
         }
       } else {
-        // Unchecked -> remove from selected
         return {
           ...prev,
           [groupId]: currentSelections.filter((a) => a.id !== option.id),
@@ -120,17 +98,39 @@ export default function ItemDetailPage({
     });
   }
 
+  // Helpers for quantity
+  function handleQuantityIncrease() {
+    setQuantity((prev) => prev + 1);
+  }
+  function handleQuantityDecrease() {
+    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+  }
+
+  // Calculate total
   function calculateTotalPrice() {
     let total = item.price;
-    Object.values(selectedAccompaniments).forEach((groupSelections) => {
-      groupSelections.forEach((acc) => {
+    Object.values(selectedAccompaniments).forEach((group) => {
+      group.forEach((acc) => {
         total += acc.price;
       });
     });
     return (total * quantity).toFixed(2);
   }
 
+  // Add to Cart
   function handleAddToCart() {
+    // Build the minimal item object
+    const baseItem = {
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      price: item.price,
+      image: item.image,
+      hasSpiceLevel: item.hasSpiceLevel,
+      specialInstructions: "",
+      spiceLevel: item.hasSpiceLevel ? null : undefined,
+    };
+
     addToCart(
       baseItem,
       quantity,
@@ -140,16 +140,15 @@ export default function ItemDetailPage({
       item.accompanimentGroups || []
     );
 
-    // Same mobile vs. desktop logic from your old DetailedItemView:
+    // On mobile (<768px): open the cart
     if (typeof window !== "undefined" && window.innerWidth < 768) {
-      // On mobile: open the cart immediately
       if (!isSidebarCartOpen) {
         openSidebarCart?.();
       }
-      // Optionally navigate away or keep them on the same page.
-      // For a full page, often you keep them here or show a message.
+      // We can remain on the page or show a small message
+      // For a full page approach, maybe just do nothing
     } else {
-      // On desktop: show a toast for 2 seconds
+      // On desktop: show a toast message for a couple seconds
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
@@ -158,27 +157,27 @@ export default function ItemDetailPage({
   }
 
   return (
-    <div className={styles.itemDetailPage}>
-      {/* Title, Description */}
+    <div className={styles.detailPageContainer}>
+      {/* Item Title and Description */}
       <div className={styles.headerSection}>
         <h1>{item.title}</h1>
         <p>{item.description}</p>
       </div>
 
       {/* Item Image */}
-      <div className={styles.imageSection}>
-        {item.image && (
+      {item.image && (
+        <div className={styles.imageSection}>
           <Image
             src={item.image}
             alt={item.title}
             width={300}
-            height={300}
+            height={200}
             unoptimized
           />
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Accompaniment Groups, if any */}
+      {/* Accompaniment Groups */}
       {item.accompanimentGroups && item.accompanimentGroups.length > 0 && (
         <div className={styles.accompanimentGroups}>
           {item.accompanimentGroups.map((group) => {
@@ -189,7 +188,9 @@ export default function ItemDetailPage({
                   {group.label} (Max {group.maxSelections})
                 </h4>
                 {group.options.map((option) => {
-                  const isSelected = groupSelections.some((a) => a.id === option.id);
+                  const isSelected = groupSelections.some(
+                    (a) => a.id === option.id
+                  );
                   const disableCheckbox =
                     !isSelected && groupSelections.length >= group.maxSelections;
 
@@ -198,7 +199,6 @@ export default function ItemDetailPage({
                       <label>
                         <input
                           type="checkbox"
-                          value={option.id}
                           checked={isSelected}
                           disabled={disableCheckbox}
                           onChange={(e) =>
@@ -221,7 +221,7 @@ export default function ItemDetailPage({
         </div>
       )}
 
-      {/* Spice Level (if item.hasSpiceLevel) */}
+      {/* Spice Level (if applicable) */}
       {item.hasSpiceLevel && (
         <div className={styles.spiceLevelSelector}>
           <label>Choose Spice Level:</label>
@@ -229,13 +229,13 @@ export default function ItemDetailPage({
             {["No Spice", "Mild", "Medium", "Hot"].map((level) => (
               <button
                 key={level}
+                onClick={() => setSpiceLevel(level)}
+                aria-pressed={spiceLevel === level}
                 className={
                   spiceLevel === level
                     ? styles.btnSelected
                     : styles.btnOutline
                 }
-                onClick={() => setSpiceLevel(level)}
-                aria-pressed={spiceLevel === level}
               >
                 {level}
               </button>
@@ -248,13 +248,9 @@ export default function ItemDetailPage({
       <div className={styles.quantitySelector}>
         <label>Quantity:</label>
         <div className={styles.quantityControls}>
-          <button onClick={handleQuantityDecrease} aria-label="Decrease Quantity">
-            –
-          </button>
-          <span className={styles.quantityDisplay}>{quantity}</span>
-          <button onClick={handleQuantityIncrease} aria-label="Increase Quantity">
-            +
-          </button>
+          <button onClick={handleQuantityDecrease}>-</button>
+          <span>{quantity}</span>
+          <button onClick={handleQuantityIncrease}>+</button>
         </div>
       </div>
 
@@ -266,8 +262,8 @@ export default function ItemDetailPage({
           maxLength={500}
           value={specialInstructions}
           onChange={(e) => setSpecialInstructions(e.target.value)}
-          placeholder="Add any special requests or dietary restrictions here."
-        ></textarea>
+          placeholder="Add dietary restrictions, no onions, extra sauce, etc."
+        />
       </div>
 
       {/* Recommended Drinks (optional) */}
@@ -299,7 +295,7 @@ export default function ItemDetailPage({
         </button>
       </div>
 
-      {/* Toast Notification (Desktop) */}
+      {/* Toast Notification (desktop) */}
       {showToast && (
         <div className={styles.toastNotification}>
           Item added to cart!
