@@ -152,40 +152,38 @@
   }
 
   /**************************************
-   * HAMBURGER BUTTON (NO BOX)
+   * HAMBURGER BUTTON (like it was before)
    **************************************/
   .hamburgerButton {
-    background: transparent;
-    border: none;       /* Remove box border */
-    width: 40px;        /* Just the lines themselves */
-    height: 40px;
-    cursor: pointer;
-    position: relative;
-
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    justify-content: space-between;
+    width: 2.8125rem; /* 45px */
+    height: 2.8125rem; /* 45px */
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 0.3rem;
+    cursor: pointer;
+    position: relative;
   }
 
   .hamburgerBar {
-    display: block;
-    width: 30px;
-    height: 4px;        /* Thicker line so it’s visible */
+    height: 0.1875rem; /* about 3px thick line */
+    width: 100%;
     background-color: var(--primary-color);
-    margin: 3px 0;
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
-  /* Transform lines into "X" when open */
+  /* On open => lines transform to an X */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
-    transform: translateY(8px) rotate(45deg);
+    transform: translateY(0.6rem) rotate(45deg);
   }
   .hamburgerOpen .hamburgerBar:nth-child(2) {
     opacity: 0;
   }
   .hamburgerOpen .hamburgerBar:nth-child(3) {
-    transform: translateY(-8px) rotate(-45deg);
+    transform: translateY(-0.6rem) rotate(-45deg);
   }
 
   /**************************************
@@ -200,21 +198,24 @@
     height: 100%;
 
     /*
-      A "magnificent" repeating pattern 
-      of green stripes. The stripes are 
-      diagonal, 30px wide each.
-
-      Adjust color stops or angles to 
-      fine-tune the look.
+      Horizontal stripes with small lines in 
+      various shades of grey & black.
+      This pattern repeats every 6px:
+        #555 for 2px,
+        #444 for next 2px,
+        #333 for next 2px.
     */
     background: repeating-linear-gradient(
-      -45deg,
-      #00bf63 0px,
-      #00bf63 15px,
-      #b4e2b8 15px,
-      #b4e2b8 30px
+      0deg,
+      #555 0,
+      #555 2px,
+      #444 2px,
+      #444 4px,
+      #333 4px,
+      #333 6px
     );
-    color: #fff; /* White text stands out on green stripes */
+
+    color: #fff; /* White text stands out on dark stripes */
 
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
     transition: right 0.3s ease;
@@ -228,14 +229,14 @@
     right: 0;
   }
 
-  /* X button at top-right corner */
+  /* "X" button at top-right corner inside the menu */
   .closeMenuButton {
     position: absolute;
     top: 1rem;
     right: 1rem;
     background: none;
     border: none;
-    color: #fff; /* White "X" */
+    color: #fff;
     font-size: 1.5rem;
     cursor: pointer;
   }
@@ -247,10 +248,9 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    padding-top: 3rem; /* space below "X" */
+    padding-top: 3rem; /* space below the "X" */
   }
 
-  /* Slide/fade-in animation for each menu link */
   .mobileNavItem {
     transform: translateX(15px);
     opacity: 0;
@@ -276,14 +276,16 @@
     }
   }
 
+  /* White links on the dark striped background */
   .mobileNavLink {
     font-family: var(--font-heading);
     font-size: 1.125rem;
     text-decoration: none;
-    color: #fff; /* White links on striped background */
+    color: #fff;
     transition: color 0.3s ease;
   }
 
+  /* Slightly fade link on hover */
   .mobileNavLink:hover {
     color: rgba(255, 255, 255, 0.8);
   }

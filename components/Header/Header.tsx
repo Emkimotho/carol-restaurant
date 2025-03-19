@@ -48,7 +48,7 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Utility to close the mobile drawer
+  // Utility to close the mobile menu
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
   // Clicking the cart icon
@@ -164,7 +164,7 @@ const Header: React.FC = () => {
           )}
         </button>
 
-        {/* Right: Hamburger (just 3 lines, no box) */}
+        {/* Right: Hamburger (2.8125rem box, 3 bars => X) */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"
