@@ -8,7 +8,10 @@ import { FaShoppingCart } from "react-icons/fa";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
-/* Detect mobile view at or below 'breakpoint' (default = 991px) */
+/*
+  Hook to detect mobile view (<= 991px).
+  Returns a boolean: true if window width <= breakpoint.
+*/
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -34,7 +37,7 @@ const Header: React.FC = () => {
   // Sum up quantity of all cart items
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close the mobile menu if user clicks outside of it
+  // Close mobile menu if user clicks outside of it
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
@@ -45,10 +48,10 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Helper to close the mobile drawer
+  // Utility to close the mobile drawer
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
-  // Clicking cart icon
+  // Clicking the cart icon
   const handleCartClick = () => {
     closeMobileMenu();
     openSidebarCart();
@@ -161,7 +164,7 @@ const Header: React.FC = () => {
           )}
         </button>
 
-        {/* Right: Hamburger (3 bars => X) */}
+        {/* Right: Hamburger (just 3 lines, no box) */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"

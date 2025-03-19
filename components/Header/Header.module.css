@@ -152,38 +152,40 @@
   }
 
   /**************************************
-   * HAMBURGER BUTTON
+   * HAMBURGER BUTTON (NO BOX)
    **************************************/
   .hamburgerButton {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 2.8125rem; /* 45px */
-    height: 2.8125rem; /* 45px */
     background: transparent;
-    border: 2px solid var(--primary-color);
-    border-radius: 4px;
-    padding: 0.3rem;
+    border: none;       /* Remove box border */
+    width: 40px;        /* Just the lines themselves */
+    height: 40px;
     cursor: pointer;
     position: relative;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
 
   .hamburgerBar {
-    height: 0.1875rem;
-    width: 100%;
+    display: block;
+    width: 30px;
+    height: 4px;        /* Thicker line so it’s visible */
     background-color: var(--primary-color);
+    margin: 3px 0;
     transition: transform 0.3s ease, opacity 0.3s ease;
   }
 
-  /* The "X" transform on open */
+  /* Transform lines into "X" when open */
   .hamburgerOpen .hamburgerBar:nth-child(1) {
-    transform: translateY(0.6rem) rotate(45deg);
+    transform: translateY(8px) rotate(45deg);
   }
   .hamburgerOpen .hamburgerBar:nth-child(2) {
     opacity: 0;
   }
   .hamburgerOpen .hamburgerBar:nth-child(3) {
-    transform: translateY(-0.6rem) rotate(-45deg);
+    transform: translateY(-8px) rotate(-45deg);
   }
 
   /**************************************
@@ -197,21 +199,22 @@
     max-width: 300px;
     height: 100%;
 
-    /* 
-      SLEEK GRADIENT BACKGROUND 
-      (adjust colors or direction as desired)
-    */
-    background: linear-gradient(
-      135deg,
-      #00bf63 0%,
-      #009f53 100%
-    );
+    /*
+      A "magnificent" repeating pattern 
+      of green stripes. The stripes are 
+      diagonal, 30px wide each.
 
-    /* 
-      If you want a darker approach, try:
-      background: linear-gradient(135deg, #111 0%, #333 100%);
-      color: #fff;
+      Adjust color stops or angles to 
+      fine-tune the look.
     */
+    background: repeating-linear-gradient(
+      -45deg,
+      #00bf63 0px,
+      #00bf63 15px,
+      #b4e2b8 15px,
+      #b4e2b8 30px
+    );
+    color: #fff; /* White text stands out on green stripes */
 
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
     transition: right 0.3s ease;
@@ -219,21 +222,20 @@
     padding: 2rem 1rem;
     display: flex;
     flex-direction: column;
-    color: #fff; /* Ensures any text inside is white */
   }
 
   .mobileMenuOpen {
     right: 0;
   }
 
-  /* X button to close menu, in top-right corner */
+  /* X button at top-right corner */
   .closeMenuButton {
     position: absolute;
     top: 1rem;
     right: 1rem;
     background: none;
     border: none;
-    color: #fff; /* White text for "X" */
+    color: #fff; /* White "X" */
     font-size: 1.5rem;
     cursor: pointer;
   }
@@ -245,11 +247,10 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    /* Add extra top padding so links are below the "X" if you prefer */
-    padding-top: 3rem;
+    padding-top: 3rem; /* space below "X" */
   }
 
-  /* Slight fade/slide-in animation for each nav item */
+  /* Slide/fade-in animation for each menu link */
   .mobileNavItem {
     transform: translateX(15px);
     opacity: 0;
@@ -279,13 +280,11 @@
     font-family: var(--font-heading);
     font-size: 1.125rem;
     text-decoration: none;
-    /* White text to contrast gradient background */
-    color: #fff;
+    color: #fff; /* White links on striped background */
     transition: color 0.3s ease;
   }
 
   .mobileNavLink:hover {
-    /* A lighter white or slightly transparent for hover effect */
     color: rgba(255, 255, 255, 0.8);
   }
 
@@ -298,6 +297,7 @@
   }
 }
 
+/* Hide mobile nav in desktop */
 @media (min-width: 992px) {
   .mobileNavbar {
     display: none;
