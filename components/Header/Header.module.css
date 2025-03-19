@@ -152,7 +152,8 @@
   }
 
   /**************************************
-   * HAMBURGER BUTTON (like it was before)
+   * HAMBURGER BUTTON 
+   * (2.8125rem box, 3 bars => X)
    **************************************/
   .hamburgerButton {
     display: flex;
@@ -197,25 +198,24 @@
     max-width: 300px;
     height: 100%;
 
-    /*
-      Horizontal stripes with small lines in 
-      various shades of grey & black.
-      This pattern repeats every 6px:
-        #555 for 2px,
-        #444 for next 2px,
-        #333 for next 2px.
+    /* 
+      Triple-green repeating horizontal stripes 
+      (0deg means stripes go left-to-right).
+      Each cycle is 6px high:
+        - #00BF63 for 0→2px
+        - #009F53 for 2→4px
+        - var(--secondary-color) for 4→6px
     */
     background: repeating-linear-gradient(
       0deg,
-      #555 0,
-      #555 2px,
-      #444 2px,
-      #444 4px,
-      #333 4px,
-      #333 6px
+      #00BF63 0,
+      #00BF63 2px,
+      #009F53 2px,
+      #009F53 4px,
+      var(--secondary-color) 4px,
+      var(--secondary-color) 6px
     );
-
-    color: #fff; /* White text stands out on dark stripes */
+    color: #fff; /* White text stands out on the stripes */
 
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
     transition: right 0.3s ease;
@@ -229,7 +229,7 @@
     right: 0;
   }
 
-  /* "X" button at top-right corner inside the menu */
+  /* "X" button top-right corner */
   .closeMenuButton {
     position: absolute;
     top: 1rem;
@@ -276,7 +276,6 @@
     }
   }
 
-  /* White links on the dark striped background */
   .mobileNavLink {
     font-family: var(--font-heading);
     font-size: 1.125rem;
@@ -285,7 +284,7 @@
     transition: color 0.3s ease;
   }
 
-  /* Slightly fade link on hover */
+  /* Slight fade link on hover */
   .mobileNavLink:hover {
     color: rgba(255, 255, 255, 0.8);
   }
