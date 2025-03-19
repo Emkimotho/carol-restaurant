@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import styles from './Careers.module.css';
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import styles from "./Careers.module.css";
 
+// 1. Extend the Job interface to include the 'deadline'
 interface Job {
   id: number;
   title: string;
   description: string;
   requirements: string[];
+  deadline: string; // storing as string; we will convert to Date in code
 }
 
 interface ApplicationData {
@@ -23,59 +25,74 @@ export default function CareersPage() {
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [applicationData, setApplicationData] = useState<ApplicationData>({
-    firstName: '',
-    lastName: '',
-    jobTitle: '',
+    firstName: "",
+    lastName: "",
+    jobTitle: "",
     attachment: null,
   });
   const [submissionStatus, setSubmissionStatus] = useState(false);
 
+  // Helper function: checks if the deadline for a job has passed
+  const isDeadlinePassed = (deadline: string) => {
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    return now > deadlineDate;
+  };
+
   useEffect(() => {
-    // Static job data (since there’s no backend)
+    // 2. Include deadlines for each job. One is intentionally expired.
     const staticJobs: Job[] = [
       {
         id: 1,
-        title: 'Chef',
-        description: 'Lead our kitchen team to prepare exquisite dishes.',
+        title: "Chef",
+        description: "Lead our kitchen team to prepare exquisite dishes.",
         requirements: [
-          'Culinary degree or equivalent experience',
-          '5+ years in a high-end kitchen',
-          'Expertise in various cuisines',
-          'Strong leadership and team management skills',
+          "Culinary degree or equivalent experience",
+          "5+ years in a high-end kitchen",
+          "Expertise in various cuisines",
+          "Strong leadership and team management skills",
         ],
+        // Future deadline (for demonstration)
+        deadline: "2026-03-23T14:00:00",
       },
       {
         id: 2,
-        title: 'Waitress',
-        description: 'Provide excellent service to our guests.',
+        title: "Waitress",
+        description: "Provide excellent service to our guests.",
         requirements: [
-          'High school diploma or equivalent',
-          '1+ year of experience in a restaurant',
-          'Excellent communication skills',
-          'Ability to work in a fast-paced environment',
+          "High school diploma or equivalent",
+          "1+ year of experience in a restaurant",
+          "Excellent communication skills",
+          "Ability to work in a fast-paced environment",
         ],
+        // Another future deadline
+        deadline: "2026-04-01T09:00:00",
       },
       {
         id: 3,
-        title: 'Bartender',
-        description: 'Craft and serve a variety of beverages.',
+        title: "Bartender",
+        description: "Craft and serve a variety of beverages.",
         requirements: [
-          'Experience as a bartender',
-          'Knowledge of mixology and drink recipes',
-          'Excellent customer service skills',
-          'Ability to handle cash transactions',
+          "Experience as a bartender",
+          "Knowledge of mixology and drink recipes",
+          "Excellent customer service skills",
+          "Ability to handle cash transactions",
         ],
+        // **Past deadline** (already expired)
+        deadline: "2023-03-23T14:00:00",
       },
       {
         id: 4,
-        title: 'Dishwasher',
-        description: 'Maintain cleanliness of kitchenware and work area.',
+        title: "Dishwasher",
+        description: "Maintain cleanliness of kitchenware and work area.",
         requirements: [
-          'Ability to work under pressure',
-          'Attention to detail',
-          'Good time management skills',
-          'Physical stamina',
+          "Ability to work under pressure",
+          "Attention to detail",
+          "Good time management skills",
+          "Physical stamina",
         ],
+        // Future deadline
+        deadline: "2026-05-10T18:30:00",
       },
     ];
     setJobs(staticJobs);
@@ -84,8 +101,8 @@ export default function CareersPage() {
   const handleApplyClick = (job: Job) => {
     setSelectedJob(job);
     setApplicationData({
-      firstName: '',
-      lastName: '',
+      firstName: "",
+      lastName: "",
       jobTitle: job.title,
       attachment: null,
     });
@@ -110,8 +127,8 @@ export default function CareersPage() {
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Simulate a successful submission
-    console.log('Application Submitted:', applicationData);
+    // Simulate a successful submission (no backend)
+    console.log("Application Submitted:", applicationData);
     setSubmissionStatus(true);
     setShowApplicationForm(false);
   };
@@ -132,28 +149,47 @@ export default function CareersPage() {
         className={styles.careersCover}
       />
       <h1 className={styles.careersTitle}>Join Our Team</h1>
+
       <div className={styles.jobsList}>
         {jobs.length === 0 ? (
           <p>No job postings available at the moment.</p>
         ) : (
-          jobs.map((job) => (
-            <div key={job.id} className={styles.jobCard}>
-              <h2 className={styles.jobTitle}>{job.title}</h2>
-              <p className={styles.jobDescription}>{job.description}</p>
-              <h3>Requirements:</h3>
-              <ul className={styles.requirementsList}>
-                {job.requirements.map((req, index) => (
-                  <li key={index}>{req}</li>
-                ))}
-              </ul>
-              <button
-                className={styles.applyButton}
-                onClick={() => handleApplyClick(job)}
-              >
-                Apply
-              </button>
-            </div>
-          ))
+          jobs.map((job) => {
+            const deadlinePassed = isDeadlinePassed(job.deadline);
+
+            return (
+              <div key={job.id} className={styles.jobCard}>
+                <h2 className={styles.jobTitle}>{job.title}</h2>
+                <p className={styles.jobDescription}>{job.description}</p>
+                <h3>Requirements:</h3>
+                <ul className={styles.requirementsList}>
+                  {job.requirements.map((req, index) => (
+                    <li key={index}>{req}</li>
+                  ))}
+                </ul>
+
+                {/* 3. Display the deadline in a friendly format */}
+                <p className={styles.deadline}>
+                  <strong>Application Deadline:</strong>{" "}
+                  {new Date(job.deadline).toLocaleString()}
+                </p>
+
+                {/* 4. Conditional rendering based on deadline */}
+                {deadlinePassed ? (
+                  <button className={styles.expiredButton} disabled>
+                    Expired
+                  </button>
+                ) : (
+                  <button
+                    className={styles.applyButton}
+                    onClick={() => handleApplyClick(job)}
+                  >
+                    Apply
+                  </button>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 
