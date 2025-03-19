@@ -11,7 +11,6 @@ import { AuthContext } from "@/contexts/AuthContext";
 import { OpeningHoursContext } from "@/contexts/OpeningHoursContext";
 import MenuItem from "@/components/MenuItem/MenuItem";
 import SidebarCart from "@/components/SidebarCart/SidebarCart";
-import FloatingCartBar from "@/components/FloatingCartBar/FloatingCartBar";
 import MenuTimingBar from "@/components/MenuTimingBar/MenuTimingBar";
 
 interface MenuProps {
@@ -22,8 +21,9 @@ export default function Menu({ slug }: MenuProps) {
   const router = useRouter();
   const { user } = useContext(AuthContext);
   const { isOpen } = useContext(OpeningHoursContext);
+  const { cartItems } = useContext(CartContext); // Cart context is maintained
 
-  // Local state for menu items and sidebar state.
+  // Local state for menu items and SidebarCart.
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
@@ -45,8 +45,8 @@ export default function Menu({ slug }: MenuProps) {
   }, []);
 
   // Dynamically compute categories for MainMenu items.
-  const mainMenuItems = menuItems.filter((item) =>
-    item.sections && item.sections.includes("MainMenu")
+  const mainMenuItems = menuItems.filter(
+    (item) => item.sections && item.sections.includes("MainMenu")
   );
   const dynamicCategories = Array.from(
     new Set(mainMenuItems.map((item) => item.category).filter(Boolean))
@@ -54,7 +54,6 @@ export default function Menu({ slug }: MenuProps) {
 
   // Determine active section and category from the slug prop.
   const activeSection = slug[0] || "MainMenu";
-  // If no category is provided, use the first dynamic category.
   const activeCategory =
     slug[1] ||
     (activeSection === "MainMenu" ? dynamicCategories[0] : "Lunch/Dinner");
@@ -73,6 +72,7 @@ export default function Menu({ slug }: MenuProps) {
     router.push(`/menu/MainMenu/${key}`);
   };
 
+  // Function to open the SidebarCart (only on large screens).
   const openSidebarCart = () => {
     if (isLargeScreen) {
       setIsSidebarOpen(true);
@@ -148,7 +148,7 @@ export default function Menu({ slug }: MenuProps) {
           </div>
         </Tab>
       </Tabs>
-      {!isLargeScreen && <FloatingCartBar />}
+      {/* SidebarCart is preserved and rendered on large screens */}
       {isLargeScreen && (
         <SidebarCart isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
       )}
