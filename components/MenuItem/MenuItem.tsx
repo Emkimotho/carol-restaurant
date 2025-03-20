@@ -40,9 +40,9 @@ export default function MenuItem({
     }
 
     // If user has a scheduled order or restaurant is open,
-    // navigate to the dedicated detail page at /menu/[itemId]
+    // navigate to the dedicated detail page at /menuitem/[itemId]
     if (order.schedule || restaurantOpen) {
-      router.push(`/menu/${item.id}`);
+      router.push(`/menuitem/${item.id}`);
     } else {
       // Otherwise, restaurant is closed with no schedule => show timing popup
       setShowChoicePopup(true);
@@ -59,7 +59,7 @@ export default function MenuItem({
     }
 
     // Otherwise open detail page
-    router.push(`/menu/${item.id}`);
+    router.push(`/menuitem/${item.id}`);
   }
 
   function proceedSchedule() {
@@ -118,13 +118,10 @@ export default function MenuItem({
               </>
             ) : (
               <>
-                <h3>We&apos;re Closed</h3>
+                <h3>We're Closed</h3>
                 <p>Schedule for later or come back during operating hours.</p>
                 <div className={styles.orderChoiceButtons}>
-                  <button
-                    className={styles.btnChoice}
-                    onClick={proceedSchedule}
-                  >
+                  <button className={styles.btnChoice} onClick={proceedSchedule}>
                     Schedule for Later
                   </button>
                 </div>
