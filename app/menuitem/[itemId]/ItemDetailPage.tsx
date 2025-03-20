@@ -5,7 +5,7 @@ import Image from "next/image";
 import styles from "./ItemDetailPage.module.css";
 
 import { CartContext } from "@/contexts/CartContext";
-import { MenuItem, Accompaniment, AccompanimentGroup } from "@/utils/types";
+import { MenuItem, Accompaniment } from "@/utils/types";
 
 interface Drink {
   id: number | string;
@@ -27,8 +27,7 @@ interface ItemDetailPageProps {
 }
 
 /**
- * Creates a deep copy of the given accompaniments object so that modifying
- * it does not affect the original data by reference.
+ * Deep clone a selections object.
  */
 function deepCloneSelections(
   selections: { [groupId: string]: Accompaniment[] }
@@ -40,33 +39,22 @@ export default function ItemDetailPage({
   item,
   recommendedDrinks = [],
 }: ItemDetailPageProps) {
-  // Access cart context for adding items & controlling sidebar cart.
-  const { addToCart, isSidebarCartOpen, openSidebarCart } = useContext(CartContext)!;
+  const { addToCart, isSidebarCartOpen, openSidebarCart } =
+    useContext(CartContext)!;
 
-  // Quantity of the item being ordered.
+  // Local states
   const [quantity, setQuantity] = useState<number>(1);
-  // Selected spice level, if the item supports spice.
   const [spiceLevel, setSpiceLevel] = useState<string>("");
-  // Any special instructions the user provides.
   const [specialInstructions, setSpecialInstructions] = useState<string>("");
-
-  // A simple toast message for desktop confirmations.
-  const [showToast, setShowToast] = useState<boolean>(false);
-
-  // Initialize or re-initialize the selected accompaniments for this item.
-  const initialSelections: { [groupId: string]: Accompaniment[] } =
-    item.selectedAccompaniments
-      ? deepCloneSelections(item.selectedAccompaniments)
-      : {};
-
-  // State that tracks user-chosen accompaniments grouped by groupId.
   const [selectedAccompaniments, setSelectedAccompaniments] = useState<{
     [groupId: string]: Accompaniment[];
-  }>(initialSelections);
+  }>(
+    item.selectedAccompaniments
+      ? deepCloneSelections(item.selectedAccompaniments)
+      : {}
+  );
+  const [showToast, setShowToast] = useState<boolean>(false);
 
-  /**
-   * If the parent `item` object changes for any reason, re-init all the local states.
-   */
   useEffect(() => {
     if (item.selectedAccompaniments) {
       setSelectedAccompaniments(deepCloneSelections(item.selectedAccompaniments));
@@ -78,10 +66,6 @@ export default function ItemDetailPage({
     setSpecialInstructions("");
   }, [item]);
 
-  /**
-   * Handles checkbox changes for accompaniments.
-   * Ensures we don't exceed the group's max selections.
-   */
   function handleAccompanimentChange(
     groupId: string,
     option: Accompaniment,
@@ -91,11 +75,9 @@ export default function ItemDetailPage({
     setSelectedAccompaniments((prev) => {
       const currentSelections = prev[groupId] || [];
       if (isChecked) {
-        // If only 1 selection is allowed, overwrite.
         if (maxSelections === 1) {
           return { ...prev, [groupId]: [option] };
         } else {
-          // If multiple allowed, ensure we don't exceed the max.
           if (currentSelections.length < maxSelections) {
             return { ...prev, [groupId]: [...currentSelections, option] };
           } else {
@@ -108,7 +90,6 @@ export default function ItemDetailPage({
           }
         }
       } else {
-        // If user unchecks an option, remove it from the array.
         return {
           ...prev,
           [groupId]: currentSelections.filter((a) => a.id !== option.id),
@@ -117,40 +98,24 @@ export default function ItemDetailPage({
     });
   }
 
-  /**
-   * Increase the item quantity by 1.
-   */
   function handleQuantityIncrease() {
     setQuantity((prev) => prev + 1);
   }
 
-  /**
-   * Decrease the item quantity by 1, but never below 1.
-   */
   function handleQuantityDecrease() {
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
   }
 
-  /**
-   * Calculates the total price, including the base item price
-   * plus any accompaniments multiplied by the quantity.
-   */
   function calculateTotalPrice() {
     let total = item.price;
-
     Object.values(selectedAccompaniments).forEach((group) => {
       group.forEach((acc) => {
         total += acc.price;
       });
     });
-
     return (total * quantity).toFixed(2);
   }
 
-  /**
-   * Main function to add the item (with user selections) to the cart.
-   * Provides different feedback on mobile vs. desktop.
-   */
   function handleAddToCart() {
     const baseItem = {
       id: item.id,
@@ -163,7 +128,7 @@ export default function ItemDetailPage({
       spiceLevel: item.hasSpiceLevel ? null : undefined,
     };
 
-    // Add the item to cart with all selected options.
+    // Add the item to cart along with user selections.
     addToCart(
       baseItem,
       quantity,
@@ -173,161 +138,182 @@ export default function ItemDetailPage({
       item.accompanimentGroups || []
     );
 
-    // If mobile, open the sidebar cart (if not already).
-    // If desktop, show a brief toast message.
+    // On mobile, open sidebar cart; on desktop, show a toast (with a cool animation)
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       if (!isSidebarCartOpen) {
         openSidebarCart?.();
       }
     } else {
       setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      setTimeout(() => setShowToast(false), 3000);
     }
   }
 
   return (
     <div className={styles.detailPageContainer}>
-      {/* Title & description */}
-      <div className={styles.headerSection}>
-        <h1>{item.title}</h1>
-        <p>{item.description}</p>
-      </div>
-
-      {/* Main image */}
-      {item.image && (
-        <div className={styles.imageSection}>
-          <Image
-            src={item.image}
-            alt={item.title}
-            width={300}
-            height={200}
-            unoptimized
-          />
+      <div className={styles.mainContent}>
+        {/* Left column – Item image */}
+        <div className={styles.imageContainer}>
+          {item.image && (
+            <Image
+              src={item.image}
+              alt={item.title}
+              width={500}
+              height={400}
+              unoptimized
+              className={styles.itemImage}
+            />
+          )}
         </div>
-      )}
 
-      {/* Accompaniment Groups */}
-      {item.accompanimentGroups && item.accompanimentGroups.length > 0 && (
-        <div className={styles.accompanimentGroups}>
-          {item.accompanimentGroups.map((group) => {
-            const groupSelections = selectedAccompaniments[group.id] || [];
-            return (
+        {/* Right column – Details */}
+        <div className={styles.infoContainer}>
+          <h1 className={styles.itemTitle}>{item.title}</h1>
+          <p className={styles.itemDescription}>{item.description}</p>
+
+          {/* Accompaniment Group (Side Options) */}
+          {item.accompanimentGroups &&
+            item.accompanimentGroups.map((group) => (
               <div key={group.id} className={styles.accompanimentGroup}>
-                <h4>
+                <h4 className={styles.groupTitle}>
                   {group.label} (Max {group.maxSelections})
                 </h4>
-                {group.options.map((option) => {
-                  const isSelected = groupSelections.some(
-                    (a) => a.id === option.id
-                  );
-                  const disableCheckbox =
-                    !isSelected && groupSelections.length >= group.maxSelections;
-
-                  return (
-                    <div
-                      key={option.id}
-                      className={styles.accompanimentOption}
-                    >
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          disabled={disableCheckbox}
-                          onChange={(e) =>
-                            handleAccompanimentChange(
-                              group.id,
-                              option,
-                              e.target.checked,
-                              group.maxSelections
-                            )
-                          }
-                        />
-                        {option.name} (+${option.price.toFixed(2)})
-                      </label>
-                    </div>
-                  );
-                })}
+                <div className={styles.options}>
+                  {group.options.map((option) => {
+                    const groupSelections =
+                      selectedAccompaniments[group.id] || [];
+                    const isSelected = groupSelections.some(
+                      (a) => a.id === option.id
+                    );
+                    const disableCheckbox =
+                      !isSelected &&
+                      groupSelections.length >= group.maxSelections;
+                    return (
+                      <div key={option.id} className={styles.optionItem}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={disableCheckbox}
+                            onChange={(e) =>
+                              handleAccompanimentChange(
+                                group.id,
+                                option,
+                                e.target.checked,
+                                group.maxSelections
+                              )
+                            }
+                          />
+                          {option.name} (+${option.price.toFixed(2)})
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Spice level selection (if the item supports spice) */}
-      {item.hasSpiceLevel && (
-        <div className={styles.spiceLevelSelector}>
-          <label>Choose Spice Level:</label>
-          <div className={styles.spiceOptions}>
-            {["No Spice", "Mild", "Medium", "Hot"].map((level) => (
-              <button
-                key={level}
-                onClick={() => setSpiceLevel(level)}
-                aria-pressed={spiceLevel === level}
-                className={
-                  spiceLevel === level ? styles.btnSelected : styles.btnOutline
-                }
-              >
-                {level}
-              </button>
             ))}
+
+          {/* Spice Level Selection */}
+          {item.hasSpiceLevel && (
+            <div className={styles.spiceLevelContainer}>
+              <label className={styles.spiceLabel}>Choose Spice Level:</label>
+              <div className={styles.spiceOptions}>
+                {["No Spice", "Mild", "Medium", "Hot"].map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setSpiceLevel(level)}
+                    className={
+                      spiceLevel === level
+                        ? styles.btnSelected
+                        : styles.btnOutline
+                    }
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Quantity Selector */}
+          <div className={styles.quantityContainer}>
+            <label className={styles.quantityLabel}>Quantity:</label>
+            <div className={styles.quantityControls}>
+              <button
+                onClick={handleQuantityDecrease}
+                className={styles.btnQuantity}
+              >
+                -
+              </button>
+              <span className={styles.quantityDisplay}>{quantity}</span>
+              <button
+                onClick={handleQuantityIncrease}
+                className={styles.btnQuantity}
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Special Instructions */}
+          <div className={styles.specialInstructionsContainer}>
+            <label
+              htmlFor="specialInstructions"
+              className={styles.instructionsLabel}
+            >
+              Special Instructions:
+            </label>
+            <textarea
+              id="specialInstructions"
+              maxLength={500}
+              value={specialInstructions}
+              onChange={(e) => setSpecialInstructions(e.target.value)}
+              placeholder="Extra sauce, no onions, gluten-free, etc."
+              className={styles.instructionsInput}
+            />
+          </div>
+
+          {/* Bottom row – Total Price & Add-to-Cart */}
+          <div className={styles.addToCartContainer}>
+            <div className={styles.totalPrice}>
+              Total Price: ${calculateTotalPrice()}
+            </div>
+            <button className={styles.btnAddToCart} onClick={handleAddToCart}>
+              Add to Cart
+            </button>
           </div>
         </div>
-      )}
-
-      {/* Quantity */}
-      <div className={styles.quantitySelector}>
-        <label>Quantity:</label>
-        <div className={styles.quantityControls}>
-          <button onClick={handleQuantityDecrease}>-</button>
-          <span>{quantity}</span>
-          <button onClick={handleQuantityIncrease}>+</button>
-        </div>
       </div>
 
-      {/* Special Instructions */}
-      <div className={styles.specialInstructions}>
-        <label htmlFor="specialInstructions">Special Instructions:</label>
-        <textarea
-          id="specialInstructions"
-          maxLength={500}
-          value={specialInstructions}
-          onChange={(e) => setSpecialInstructions(e.target.value)}
-          placeholder="Extra sauce, no onions, gluten-free, etc."
-        />
-      </div>
-
-      {/* Recommended drinks (optional) */}
+      {/* Recommended Drinks Section */}
       {recommendedDrinks.length > 0 && (
         <div className={styles.recommendations}>
-          <h3>Suggested Drinks</h3>
+          <h3 className={styles.recommendationsTitle}>
+            You might also like...
+          </h3>
           <div className={styles.drinkList}>
             {recommendedDrinks.map((drink) => (
               <div key={drink.id} className={styles.drinkItem}>
                 <Image
                   src={drink.image}
                   alt={drink.title}
-                  width={80}
-                  height={80}
+                  width={100}
+                  height={100}
                   unoptimized
+                  className={styles.drinkImage}
                 />
-                <p>{drink.title}</p>
+                <p className={styles.drinkTitle}>{drink.title}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Bottom area with total price and add-to-cart button */}
-      <div className={styles.bottomBar}>
-        <h4>Total Price: ${calculateTotalPrice()}</h4>
-        <button className={styles.btnAddToCart} onClick={handleAddToCart}>
-          Add to Cart
-        </button>
-      </div>
-
-      {/* Toast notification (desktop) */}
+      {/* Toast Animation for Desktop */}
       {showToast && (
-        <div className={styles.toastNotification}>Item added to cart!</div>
+        <div className={styles.toastNotification}>
+          <div className={styles.toastContent}>Item added to cart!</div>
+        </div>
       )}
     </div>
   );
