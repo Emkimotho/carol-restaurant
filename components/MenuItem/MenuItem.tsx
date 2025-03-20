@@ -118,7 +118,7 @@ export default function MenuItem({
               </>
             ) : (
               <>
-                <h3>We're Closed</h3>
+                <h3>We&apos;re Closed</h3>
                 <p>Schedule for later or come back during operating hours.</p>
                 <div className={styles.orderChoiceButtons}>
                   <button className={styles.btnChoice} onClick={proceedSchedule}>
