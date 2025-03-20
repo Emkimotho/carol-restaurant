@@ -1,13 +1,12 @@
-/* Overall container */
 .detailPageContainer {
   padding: 24px;
-  max-width: 1200px;
+  max-width: var(--container-width);
   margin: 0 auto;
-  font-family: "Helvetica Neue", sans-serif;
-  color: #333;
+  font-family: var(--font-body);
+  color: var(--foreground);
 }
 
-/* Main content layout */
+/* Main layout */
 .mainContent {
   display: flex;
   gap: 40px;
@@ -16,7 +15,7 @@
   margin-bottom: 40px;
 }
 
-/* Left column – Image container */
+/* Left column: image */
 .imageContainer {
   flex: 1 1 40%;
   display: flex;
@@ -24,7 +23,7 @@
   align-items: center;
   overflow: hidden;
   border-radius: 10px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--box-shadow-primary);
 }
 
 .itemImage {
@@ -33,7 +32,7 @@
   object-fit: cover;
 }
 
-/* Right column – Info container */
+/* Right column: info */
 .infoContainer {
   flex: 1 1 55%;
   display: flex;
@@ -45,16 +44,18 @@
 .itemTitle {
   font-size: 2rem;
   margin-bottom: 8px;
-  color: #222;
+  font-family: var(--font-heading);
+  /* Use primary green */
+  color: var(--primary-color);
 }
 
 .itemDescription {
   font-size: 1rem;
   line-height: 1.6;
-  color: #555;
+  color: var(--foreground);
 }
 
-/* Accompaniment Groups (Side Options) */
+/* Accompaniment Groups */
 .accompanimentGroup {
   margin-bottom: 20px;
 }
@@ -78,10 +79,6 @@
   gap: 8px;
 }
 
-.optionItem input {
-  accent-color: #2d9cdb;
-}
-
 /* Spice Level */
 .spiceLevelContainer {
   margin-bottom: 20px;
@@ -103,18 +100,18 @@
 .btnOutline,
 .btnSelected {
   padding: 10px 16px;
-  border: 1px solid #2d9cdb;
+  border: 2px solid var(--primary-color);
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
   font-size: 0.95rem;
-  background-color: #fff;
-  color: #2d9cdb;
+  background-color: var(--white);
+  color: var(--primary-color);
 }
 
 .btnSelected {
-  background-color: #2d9cdb;
-  color: #fff;
+  background-color: var(--primary-color);
+  color: var(--white);
 }
 
 .btnOutline:hover,
@@ -122,7 +119,7 @@
   transform: scale(1.05);
 }
 
-/* Quantity Selector */
+/* Quantity */
 .quantityContainer {
   margin-bottom: 20px;
 }
@@ -140,19 +137,21 @@
   gap: 12px;
 }
 
-.btnQuantity {
-  width: 36px;
-  height: 36px;
+.btnCircle {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
+  border: 2px solid var(--secondary-color);
+  background-color: var(--secondary-color);
   font-size: 1.2rem;
+  color: var(--white);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
-.btnQuantity:hover {
-  background-color: #e0e0e0;
+.btnCircle:hover {
+  background-color: var(--primary-color);
+  transform: scale(1.05);
 }
 
 .quantityDisplay {
@@ -176,50 +175,100 @@
   width: 100%;
   min-height: 80px;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color-dark);
   border-radius: 6px;
   font-size: 0.95rem;
   resize: none;
-  background-color: #fafafa;
+  background-color: var(--light-gray);
+  color: var(--foreground);
 }
 
-/* Bottom row – Total Price & Add-to-Cart */
-.addToCartContainer {
+/* Additional Items Section */
+.additionalItemsSection {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.additionalItemsHeading {
+  font-size: 1.3rem;
+  color: var(--secondary-color);
+  font-family: var(--font-heading);
+  margin-bottom: 12px;
+}
+
+.additionalCategory {
+  margin-bottom: 16px;
+}
+
+.categoryTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--foreground);
+}
+
+.selectWrapper {
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px;
+  max-width: 300px;
+}
+
+.categorySelect {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+/* Buttons row */
+.buttonsRow {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.btnBackToMenu {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+  padding: 10px 16px;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  border-radius: 4px;
+}
+
+.btnBackToMenu:hover {
+  background-color: var(--primary-color-hover);
+  color: var(--white);
+}
+
+.cartActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  border-top: 1px solid #eee;
-  padding-top: 16px;
+  margin-top: 8px;
 }
 
 .totalPrice {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #222;
+  color: var(--foreground);
+  white-space: nowrap;
 }
 
 .btnAddToCart {
-  width: 100%;
-  padding: 14px;
-  background-color: #2d9cdb;
-  border: none;
-  border-radius: 6px;
-  color: #fff;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  /* Inherits global sweeping effect from your global.css */
+  border-radius: 4px;
 }
 
-.btnAddToCart:hover {
-  background-color: #238abf;
-  transform: scale(1.03);
-}
-
-.btnAddToCart:active {
-  transform: scale(0.98);
-}
-
-/* Recommended Drinks Section */
+/* Recommended Drinks */
 .recommendations {
   margin-top: 40px;
 }
@@ -227,7 +276,7 @@
 .recommendationsTitle {
   font-size: 1.6rem;
   font-weight: 600;
-  color: #2d9cdb;
+  color: var(--primary-color);
   margin-bottom: 16px;
 }
 
@@ -258,7 +307,7 @@
 .drinkTitle {
   margin-top: 8px;
   font-size: 0.95rem;
-  color: #555;
+  color: var(--foreground);
 }
 
 /* Toast Notification (Desktop) */
@@ -267,11 +316,11 @@
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #2d9cdb;
+  background-color: var(--primary-color);
   padding: 16px 24px;
   border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  color: #fff;
+  box-shadow: var(--box-shadow-primary);
+  color: var(--white);
   font-size: 1rem;
   animation: fadeInOut 3s ease;
   z-index: 1000;
@@ -296,7 +345,7 @@
   }
 }
 
-/* Responsive Styles */
+/* Responsive */
 @media (max-width: 768px) {
   .mainContent {
     flex-direction: column;
@@ -306,16 +355,26 @@
   .infoContainer {
     flex: 1 1 100%;
   }
+  .buttonsRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 480px) {
-  .btnQuantity {
-    width: 32px;
-    height: 32px;
+  .btnCircle {
+    width: 36px;
+    height: 36px;
     font-size: 1rem;
   }
+  .quantityDisplay {
+    font-size: 1rem;
+  }
+  .btnBackToMenu {
+    font-size: 0.9rem;
+  }
   .btnAddToCart {
-    padding: 12px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    padding: 10px;
   }
 }
