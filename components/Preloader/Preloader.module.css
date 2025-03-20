@@ -1,39 +1,42 @@
-.preloader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--white, #fff);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 1;
-    transition: opacity 0.3s ease-in-out;
-  }
+/* A full-page overlay that centers its contents */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #fff; /* or any background you like */
+  z-index: 9999;
   
-  .spinnerWrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Center spinner horizontally & vertically */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Optional: fade transition if you keep the component in the DOM
+     and just change opacity. Currently, we unmount after 2s, so
+     it just disappears instantly when isLoading = false. */
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* The circular spinner */
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #3498db; /* main color */
+  border-top: 6px solid #e74c3c; /* accent color on top segment */
+  border-radius: 50%;
+
+  /* Infinite rotation animation */
+  animation: spin 1s linear infinite;
+}
+
+/* Keyframes for the spinner's rotation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  
-  .spinner {
-    width: 60px;
-    height: 60px;
-    border: 6px solid var(--primary-color, #3498db);
-    border-top: 6px solid var(--secondary-color, #e74c3c);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  100% {
+    transform: rotate(360deg);
   }
-  
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-  
+}

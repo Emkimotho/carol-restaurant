@@ -5,8 +5,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import styles from "./MenuItem.module.css";
 
+// Contexts
 import { CartContext } from "@/contexts/CartContext";
 import { OrderContext } from "@/contexts/OrderContext";
+
+// Types
 import { MenuItem as MenuItemType } from "@/utils/types";
 
 interface MenuItemProps {
@@ -27,21 +30,21 @@ export default function MenuItem({
   const router = useRouter();
   const { order } = useContext(OrderContext)!;
 
-  // For the "Restaurant closed" popup
+  // For the "restaurant closed" scheduling popup
   const [showChoicePopup, setShowChoicePopup] = useState(false);
 
   function handleAddClick() {
     if (!allowAddToCart) {
-      console.warn("Add to cart not allowed for this item.");
+      console.warn("[MenuItem] This item cannot be added to cart.");
       return;
     }
 
-    // If restaurant is open or user already scheduled an order,
-    // navigate to the dedicated page:
+    // If user has a scheduled order or restaurant is open,
+    // navigate to the dedicated detail page at /menu/[itemId]
     if (order.schedule || restaurantOpen) {
       router.push(`/menu/${item.id}`);
     } else {
-      // Restaurant is closed & no schedule set -> show popup
+      // Otherwise, restaurant is closed with no schedule => show timing popup
       setShowChoicePopup(true);
     }
   }
@@ -49,13 +52,13 @@ export default function MenuItem({
   function proceedASAP() {
     setShowChoicePopup(false);
 
-    // If still closed, force scheduling:
     if (!restaurantOpen) {
+      // Actually closed => schedule
       window.location.href = "/schedule-order";
       return;
     }
 
-    // Otherwise, go to detail page
+    // Otherwise open detail page
     router.push(`/menu/${item.id}`);
   }
 
@@ -78,10 +81,13 @@ export default function MenuItem({
           />
         )}
       </div>
+
       <div className={styles.details}>
         <h4 className={styles.title}>{item.title}</h4>
         <p className={styles.description}>{item.description}</p>
-        <h5 className={styles.price}>${parseFloat(String(item.price)).toFixed(2)}</h5>
+        <h5 className={styles.price}>
+          ${parseFloat(String(item.price)).toFixed(2)}
+        </h5>
 
         {allowAddToCart ? (
           <button className={styles.btnAddToCart} onClick={handleAddClick}>
@@ -99,8 +105,7 @@ export default function MenuItem({
               <>
                 <h3>Choose Your Order Timing</h3>
                 <p>
-                  Order instantly (ASAP) or schedule for later.  
-                  You’ll choose pickup/delivery at checkout.
+                  Order instantly (ASAP) or schedule for later—pickup/delivery is set at checkout.
                 </p>
                 <div className={styles.orderChoiceButtons}>
                   <button className={styles.btnChoice} onClick={proceedASAP}>
@@ -114,9 +119,12 @@ export default function MenuItem({
             ) : (
               <>
                 <h3>We&apos;re Closed</h3>
-                <p>Schedule your order for later or return during open hours.</p>
+                <p>Schedule for later or come back during operating hours.</p>
                 <div className={styles.orderChoiceButtons}>
-                  <button className={styles.btnChoice} onClick={proceedSchedule}>
+                  <button
+                    className={styles.btnChoice}
+                    onClick={proceedSchedule}
+                  >
                     Schedule for Later
                   </button>
                 </div>
