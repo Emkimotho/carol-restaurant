@@ -45,7 +45,6 @@
   font-size: 2rem;
   margin-bottom: 8px;
   font-family: var(--font-heading);
-  /* Use primary green */
   color: var(--primary-color);
 }
 
@@ -225,35 +224,18 @@
   cursor: pointer;
 }
 
-/* Buttons row */
+/* Buttons Row */
 .buttonsRow {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.btnBackToMenu {
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color);
-  padding: 10px 16px;
-  font-size: 1rem;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  border-radius: 4px;
-}
-
-.btnBackToMenu:hover {
-  background-color: var(--primary-color-hover);
-  color: var(--white);
-}
-
 .cartActions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 12px;
-  margin-top: 8px;
 }
 
 .totalPrice {
@@ -264,8 +246,23 @@
 }
 
 .btnAddToCart {
-  /* Inherits global sweeping effect from your global.css */
   border-radius: 4px;
+}
+
+.btnBackToMenu {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: 2px solid var(--secondary-color);
+  padding: 10px 16px;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.btnBackToMenu:hover {
+  background-color: var(--secondary-color-hover);
+  transform: scale(1.03);
 }
 
 /* Recommended Drinks */
@@ -310,7 +307,7 @@
   color: var(--foreground);
 }
 
-/* Toast Notification (Desktop) */
+/* Toast Notification */
 .toastNotification {
   position: fixed;
   bottom: 30px;

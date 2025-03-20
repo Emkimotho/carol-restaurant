@@ -10,14 +10,14 @@ export default function Page() {
   const { itemId } = params;
   const numericId = parseInt(itemId, 10);
 
-  // Find the main item by numeric id.
+  // Find the main item.
   const foundItem = menuData.find((m) => m.id === numericId);
 
   if (!foundItem) {
     return <div style={{ padding: "2rem" }}>Item not found!</div>;
   }
 
-  // Recommended drinks: filter items from the "Soft Drinks" category.
+  // Example: recommended drinks are items in "Soft Drinks" category
   const recommendedDrinks = menuData
     .filter((m) => m.category === "Soft Drinks")
     .map((m) => ({
@@ -27,7 +27,7 @@ export default function Page() {
       price: m.price,
     }));
 
-  // Additional items are passed as full MenuItem objects.
+  // Additional items as full `MenuItem` objects
   const desserts: MenuItem[] = menuData.filter((m) => m.category === "Desserts");
   const snacks: MenuItem[] = menuData.filter((m) => m.category === "Snacks");
   const softDrinks: MenuItem[] = menuData.filter((m) => m.category === "Soft Drinks");
