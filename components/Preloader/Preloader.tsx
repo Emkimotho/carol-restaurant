@@ -22,11 +22,7 @@ export default function Preloader() {
   }
 
   return (
-    <div
-      // A fullscreen overlay
-      className={styles.overlay}
-    >
-      {/* A spinner only, no text */}
+    <div className={styles.overlay}>
       <div className={styles.spinner}></div>
     </div>
   );

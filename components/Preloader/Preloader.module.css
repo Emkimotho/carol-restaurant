@@ -5,7 +5,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: #fff; /* or any background you like */
+  background-color: var(--background); /* Uses your white background */
   z-index: 9999;
   
   /* Center spinner horizontally & vertically */
@@ -13,9 +13,7 @@
   align-items: center;
   justify-content: center;
 
-  /* Optional: fade transition if you keep the component in the DOM
-     and just change opacity. Currently, we unmount after 2s, so
-     it just disappears instantly when isLoading = false. */
+  /* Optional fade transition */
   transition: opacity 0.3s ease-in-out;
 }
 
@@ -23,8 +21,8 @@
 .spinner {
   width: 60px;
   height: 60px;
-  border: 6px solid #3498db; /* main color */
-  border-top: 6px solid #e74c3c; /* accent color on top segment */
+  border: 6px solid var(--primary-color); /* Uses your green primary color */
+  border-top: 6px solid var(--secondary-color); /* Uses your gold secondary color */
   border-radius: 50%;
 
   /* Infinite rotation animation */
