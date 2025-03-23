@@ -1,4 +1,15 @@
+// File: 19thhole/components/Auth/ForgotPasswordModal.tsx
 "use client";
+
+/*
+  This component renders the modal for "Forgot Password" functionality.
+  It uses a relative URL for the backend and expects:
+    - isOpen: whether the modal is visible.
+    - onClose: callback to close the modal.
+    - backendURL: the base URL for API calls.
+  
+  Adjust the CSS module path as needed. In this example, it reuses styles from Login.module.css.
+*/
 
 import React, { useState } from "react";
 import styles from "./Login.module.css";
@@ -34,7 +45,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     }
 
     try {
-      const response = await fetch(`${backendURL}/auth/password-reset`, {
+      const response = await fetch(`${backendURL}/password-reset`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotPasswordEmail }),
@@ -65,9 +76,11 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    // Do NOT add onClick to overlay (so it does not close when clicking outside)
     <div className={styles["modal-overlay"]} aria-modal="true">
-      <div className={styles["modal-content"]} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles["modal-content"]}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           className={styles["close-button"]}
           onClick={onClose}

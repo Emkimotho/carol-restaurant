@@ -1,8 +1,17 @@
+// File: 19thhole/components/Auth/LoginForm.tsx
 "use client";
 
-import React, { useState, useContext } from "react";
+/*
+  This component renders the login form.
+  It expects two callback props:
+    - onOpenForgotPassword: called when the user clicks “Forgot Password?”
+    - onOpenSignup: called when the user wants to create an account.
+  
+  This version uses the styles defined in Login.module.css.
+*/
+
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AuthContext } from "@/contexts/AuthContext";
 import styles from "./Login.module.css";
 
 interface LoginFormProps {
@@ -10,102 +19,85 @@ interface LoginFormProps {
   onOpenSignup: () => void;
 }
 
+const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api/auth";
+
 const LoginForm: React.FC<LoginFormProps> = ({
   onOpenForgotPassword,
   onOpenSignup,
 }) => {
   const router = useRouter();
-  const { login } = useContext(AuthContext);
-  const backendURL =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000/api/auth";
-
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
-
-  const validateEmail = (email: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validatePassword = (password: string) => password.length >= 6;
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoginError("");
-
-    if (!validateEmail(loginEmail) || !validatePassword(loginPassword)) {
-      setLoginError("Please enter valid credentials.");
-      return;
-    }
+    setError("");
 
     try {
-      const response = await fetch(`${backendURL}/auth/login`, {
+      const res = await fetch(`${backendURL}/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        // Pass the user object only—remove token property because it's not expected by AuthContext.
-        login(data.user);
-        router.push("/dashboard");
-      } else {
-        setLoginError(data.message || "Invalid email or password.");
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.message || "Login failed.");
+        return;
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      setLoginError("Network error. Please try again later.");
+
+      // On successful login, redirect to dashboard
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Network error. Please try again later.");
     }
   };
 
   return (
-    <form className={styles["login-form"]} onSubmit={handleLoginSubmit}>
-      <h3>Login</h3>
-      {loginError && <p className={styles["error-message"]}>{loginError}</p>}
-      <div className={styles["form-group"]}>
-        <label htmlFor="login-email">Email Address</label>
+    <form onSubmit={handleLoginSubmit} className={styles.loginForm}>
+      {error && <p className={styles.error}>{error}</p>}
+      <div className={styles.formGroup}>
+        <label htmlFor="email">Email:</label>
         <input
           type="email"
-          id="login-email"
-          placeholder="Enter your email"
-          value={loginEmail}
-          onChange={(e) => setLoginEmail(e.target.value)}
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
       </div>
-      <div className={styles["form-group"]}>
-        <label htmlFor="login-password">Password</label>
+      <div className={styles.formGroup}>
+        <label htmlFor="password">Password:</label>
         <input
           type="password"
-          id="login-password"
-          placeholder="Enter your password"
-          value={loginPassword}
-          onChange={(e) => setLoginPassword(e.target.value)}
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
       </div>
-      <div className={styles["form-actions"]}>
-        <button type="submit" className={styles["btn-primary"]}>
-          Login
-        </button>
+      <button type="submit" className={styles.submitButton}>
+        Login
+      </button>
+      <div className={styles.links}>
         <button
           type="button"
-          className={styles["forgot-password"]}
           onClick={onOpenForgotPassword}
+          className={styles.linkButton}
         >
           Forgot Password?
         </button>
-      </div>
-      <div className={styles["switch-auth"]}>
-        <p>
-          Don&apos;t have an account?{" "}
-          <button
-            type="button"
-            className={styles["signup-link"]}
-            onClick={onOpenSignup}
-          >
-            Sign Up
-          </button>
-        </p>
+        <button
+          type="button"
+          onClick={onOpenSignup}
+          className={styles.linkButton}
+        >
+          Sign Up
+        </button>
       </div>
     </form>
   );

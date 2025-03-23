@@ -1,0 +1,45 @@
+/* File: app/verify-email/VerifyEmail.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--navbar-height));
+  padding: 2rem;
+  background-color: var(--light-gray);
+}
+
+.loadingSpinner {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  font-family: var(--font-body);
+}
+
+.feedbackMessage {
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  text-align: center;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: var(--box-shadow-primary);
+}
+
+.success {
+  color: var(--white);
+  background-color: #28a745; /* Bootstrap success color */
+}
+
+.error {
+  color: var(--white);
+  background-color: #dc3545; /* Bootstrap danger color */
+}
+
+.redirectMessage {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--foreground);
+  margin-top: 1rem;
+}

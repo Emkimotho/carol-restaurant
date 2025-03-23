@@ -1,28 +1,65 @@
+// File: prisma/schema.prisma
+
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
 }
 
+/*
+  The User model contains basic user details along with fields for password reset 
+  and email verification. These fields allow you to store a reset token, its expiry,
+  as well as a verification token (with expiry) to confirm a user's email.
+*/
 model User {
-  id        Int         @id @default(autoincrement())
-  email     String      @unique
-  password  String      // This should store the hashed password
-  name      String?
-  roles     UserRole[]  // This creates the relationship to roles
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id                       Int       @id @default(autoincrement())
+  email                    String    @unique @db.VarChar(255)
+  password                 String    @db.Text
+  firstName                String    @db.VarChar(100)
+  lastName                 String    @db.VarChar(100)
+  phone                    String?   @db.VarChar(20)
+  streetAddress            String?   @db.VarChar(255)
+  aptSuite                 String?   @db.VarChar(100)
+  city                     String?   @db.VarChar(100)
+  state                    String?   @db.VarChar(50)
+  zip                      String?   @db.VarChar(20)
+  country                  String?   @db.VarChar(50)
+  
+  // Password reset fields
+  resetToken               String?   @db.VarChar(255)
+  resetTokenExpiry         DateTime?
+  
+  // Email verification fields
+  isVerified               Boolean   @default(false)
+  verificationToken        String?   @db.VarChar(255)
+  verificationTokenExpiry  DateTime?
+  
+  // Relations to roles (many-to-many)
+  roles                    UserRole[]
+  
+  // Timestamps
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 }
 
+/*
+  The Role model defines the various roles that can be assigned to a user.
+  The name field uses the RoleName enum to restrict its values.
+*/
 model Role {
-  id    Int         @id @default(autoincrement())
-  name  RoleName    @unique
+  id    Int      @id @default(autoincrement())
+  name  RoleName @unique
   users UserRole[]
 }
 
+/*
+  The UserRole model is the join table for the many-to-many relationship 
+  between Users and Roles.
+*/
 model UserRole {
   user   User @relation(fields: [userId], references: [id])
   userId Int
@@ -32,6 +69,9 @@ model UserRole {
   @@id([userId, roleId])
 }
 
+/*
+  The RoleName enum defines the possible roles a user can have.
+*/
 enum RoleName {
   SUPERADMIN
   ADMIN

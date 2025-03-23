@@ -1,44 +1,29 @@
 {
   "compilerOptions": {
-    // Modern targets for Next.js (15 or 13+)
     "target": "ESNext",
     "lib": [
       "DOM",
       "DOM.Iterable",
       "ESNext"
     ],
-    // Allow .js files in TypeScript compilation if you want
     "allowJs": true,
-    // Skips checking .d.ts files in your node_modules
     "skipLibCheck": true,
-    // Turn stricter checks on or off. For fully strict: true
     "strict": false,
-    // Consistent file-name casing
     "forceConsistentCasingInFileNames": true,
-    // Don’t emit compiled files; Next.js handles that
     "noEmit": true,
-    // Helps TS handle "import" from ES modules
     "esModuleInterop": true,
-    // Next.js uses ESNext modules
     "module": "ESNext",
     "moduleResolution": "node",
-    // Allows importing JSON
     "resolveJsonModule": true,
-    // Required by Next.js for an optimal dev experience
     "isolatedModules": true,
-    // Keep the React/JSX as-is; Next.js will handle transformations
     "jsx": "preserve",
-    // Speeds up repeated builds
     "incremental": true,
-    // Base path for absolute imports, if you want to use them
     "baseUrl": ".",
-    // Example path alias
     "paths": {
       "@/*": [
         "./*"
       ]
     },
-    // Next.js plugin for better IntelliSense
     "plugins": [
       {
         "name": "next"
@@ -46,17 +31,15 @@
     ]
   },
   "include": [
-    // Default includes:
     "**/*.ts",
     "**/*.tsx",
     "app/**/*",
     "next-env.d.ts",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "prisma/seed.cjs"
   ],
   "exclude": [
-    // Exclude node_modules
     "node_modules",
-    // Exclude the .next folder so TS doesn't parse the auto-generated types
     ".next"
   ]
 }

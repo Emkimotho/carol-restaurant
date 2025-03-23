@@ -1,3 +1,5 @@
+// File: 19thhole/components/Header/Header.tsx
+
 "use client";
 
 import React, { useState, useEffect, useRef, useContext } from "react";
@@ -8,10 +10,11 @@ import { FaShoppingCart } from "react-icons/fa";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
-/*
-  Detect mobile view (<= 991px).
-  Returns a boolean: true if window width <= breakpoint.
-*/
+/**
+ * Hook: useIsMobile
+ * Detects if the viewport width is less than or equal to the given breakpoint.
+ * Returns a boolean.
+ */
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -37,7 +40,7 @@ const Header: React.FC = () => {
   // Sum up quantity of all cart items
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close mobile menu if user clicks outside it
+  // Close mobile menu if user clicks outside of navbar
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
@@ -48,16 +51,14 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Helper to close the mobile drawer
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
-  // Clicking the cart icon
   const handleCartClick = () => {
     closeMobileMenu();
     openSidebarCart();
   };
 
-  // Nav items
+  // Navigation items
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/menu", label: "Menu" },
@@ -87,7 +88,7 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
-      {/* Middle: Nav Links */}
+      {/* Middle: Navigation Links */}
       <ul className={styles.navList}>
         {navItems.map(({ href, label, external }) => {
           const isActive = !external && pathname === href;
@@ -105,14 +106,13 @@ const Header: React.FC = () => {
                   {label}
                 </a>
               ) : (
-                <Link href={href}>
-                  <a
-                    className={`${styles.navLink} ${
-                      isActive ? styles.activeLink : ""
-                    }`}
-                  >
-                    {label}
-                  </a>
+                <Link
+                  href={href}
+                  className={`${styles.navLink} ${
+                    isActive ? styles.activeLink : ""
+                  }`}
+                >
+                  {label}
                 </Link>
               )}
             </li>
@@ -164,7 +164,7 @@ const Header: React.FC = () => {
           )}
         </button>
 
-        {/* Right: Hamburger (2.8125rem box, 3 bars => X) */}
+        {/* Right: Hamburger Button */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"
@@ -178,13 +178,12 @@ const Header: React.FC = () => {
         </button>
       </nav>
 
-      {/* Slide-Out Drawer */}
+      {/* Slide-Out Mobile Menu */}
       <div
         className={`${styles.mobileMenu} ${
           mobileMenuOpen ? styles.mobileMenuOpen : ""
         }`}
       >
-        {/* The "X" button top-right corner */}
         <button
           className={styles.closeMenuButton}
           onClick={closeMobileMenu}
@@ -192,7 +191,6 @@ const Header: React.FC = () => {
         >
           X
         </button>
-
         <ul className={styles.mobileNavList}>
           {navItems.map(({ href, label, external }) => (
             <li key={label} className={styles.mobileNavItem}>
@@ -207,10 +205,12 @@ const Header: React.FC = () => {
                   {label}
                 </a>
               ) : (
-                <Link href={href}>
-                  <a className={styles.mobileNavLink} onClick={closeMobileMenu}>
-                    {label}
-                  </a>
+                <Link
+                  href={href}
+                  className={styles.mobileNavLink}
+                  onClick={closeMobileMenu}
+                >
+                  {label}
                 </Link>
               )}
             </li>
@@ -218,9 +218,9 @@ const Header: React.FC = () => {
         </ul>
       </div>
 
-      {/* Dark overlay behind the slide-out menu */}
+      {/* Dark Overlay Behind Slide-Out Menu */}
       {mobileMenuOpen && (
-        <div className={styles.mobileOverlay} onClick={closeMobileMenu}></div>
+        <div className={styles.mobileOverlay} onClick={closeMobileMenu} />
       )}
     </>
   );

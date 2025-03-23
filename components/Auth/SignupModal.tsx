@@ -1,3 +1,4 @@
+// File: 19thhole/components/Auth/SignupModal.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -9,11 +10,7 @@ interface SignupModalProps {
   backendURL: string;
 }
 
-const SignupModal: React.FC<SignupModalProps> = ({
-  isOpen,
-  onClose,
-  backendURL,
-}) => {
+const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, backendURL }) => {
   const [step, setStep] = useState(1);
 
   // Step 1: Personal Info
@@ -52,16 +49,12 @@ const SignupModal: React.FC<SignupModalProps> = ({
     const digits = value.replace(/\D/g, "");
     if (digits.length === 0) return "";
     if (digits.length < 4) return digits;
-    if (digits.length < 7) {
-      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-    }
+    if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
-    const formatted = formatPhoneNumber(input);
-    setSignUpPhone(formatted);
+    setSignUpPhone(formatPhoneNumber(e.target.value));
   };
 
   // Validate phone as 10-digit number.
@@ -151,21 +144,17 @@ const SignupModal: React.FC<SignupModalProps> = ({
     };
 
     try {
-      const response = await fetch(`${backendURL}/auth/signup`, {
+      // Using a relative URL: API endpoint is available at /api/auth/signup.
+      const response = await fetch(`/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         credentials: "include",
       });
       const data = await response.json();
-      if (response.ok) {
-        setSignUpMessage(
-          "Sign-up successful! Please check your email to verify your account."
-        );
-        resetForm();
-        setTimeout(() => {
-          onClose();
-        }, 3000);
+      if (response.ok && data.success && data.redirect) {
+        // Instead of just closing the modal, redirect to the notice page.
+        window.location.assign(data.redirect);
       } else {
         setSignUpError(data.message || "Sign-up failed. Please try again.");
       }
@@ -178,7 +167,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    // Do NOT close the modal when clicking outside.
     <div className={styles["modal-overlay"]} aria-modal="true">
       <div className={styles["modal-content"]}>
         <button
@@ -192,9 +180,7 @@ const SignupModal: React.FC<SignupModalProps> = ({
           &times;
         </button>
         <h3>Sign Up</h3>
-        {signUpError && (
-          <p className={styles["error-message"]}>{signUpError}</p>
-        )}
+        {signUpError && <p className={styles["error-message"]}>{signUpError}</p>}
         {signUpMessage && (
           <p className={styles["success-message"]}>{signUpMessage}</p>
         )}
@@ -338,9 +324,7 @@ const SignupModal: React.FC<SignupModalProps> = ({
               />
             </div>
             <div className={styles["form-group"]}>
-              <label htmlFor="signup-confirm-password">
-                Confirm Password
-              </label>
+              <label htmlFor="signup-confirm-password">Confirm Password</label>
               <input
                 type="password"
                 id="signup-confirm-password"

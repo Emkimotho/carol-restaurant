@@ -123,13 +123,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  // Updated getTotalPrice: uses a fallback to {} for selectedAccompaniments
+  // Updated getTotalPrice: verifies that groupSelections is an array before calling reduce.
   const getTotalPrice = (): number => {
     return cartItems.reduce((total, item) => {
-      // Fallback to empty object if selectedAccompaniments is undefined or null
       const accompanimentsCost = Object.values(item.selectedAccompaniments || {}).reduce(
-        (groupTotal, groupSelections) =>
-          groupTotal + groupSelections.reduce((acc, accompaniment) => acc + accompaniment.price, 0),
+        (groupTotal, groupSelections) => {
+          if (Array.isArray(groupSelections)) {
+            return groupTotal + groupSelections.reduce((acc, accompaniment) => acc + accompaniment.price, 0);
+          }
+          return groupTotal;
+        },
         0
       );
       return total + (item.price + accompanimentsCost) * item.quantity;
