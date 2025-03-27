@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import OptionGroupEditor from "./OptionGroupEditor";
 import styles from "./MenuItemEditor.module.css";
 import type { MenuCategory, MenuItemOptionGroup, MenuItem } from "@/utils/types";
@@ -46,7 +47,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   // Subcategory dropdown
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>(categoryId || "");
 
-  // Price numeric safety
+  // Ensure numeric price input is handled safely.
   function handlePriceChange(val: string) {
     const parsed = parseFloat(val);
     if (isNaN(parsed)) setPrice(0);
@@ -58,23 +59,23 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       const file = e.target.files[0];
       setSelectedFile(file);
 
-      // Show local preview right away
+      // Show a local preview immediately
       const localURL = createLocalPreviewURL(file);
       setImageUrl(localURL);
     }
   }
 
-  // Mock upload
+  // Simulated upload function that returns a final URL after a delay.
   async function uploadFile(file: File): Promise<string> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        // Return a pretend final URL
+        // Return a simulated final URL for the uploaded image.
         resolve(`/uploads/${file.name}`);
       }, 1000);
     });
   }
 
-  // Add an option group
+  // Option group management
   function addOptionGroup() {
     const newGroup: MenuItemOptionGroup = {
       id: Date.now().toString(),
@@ -86,11 +87,13 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     };
     setOptionGroups([...optionGroups, newGroup]);
   }
+
   function updateOptionGroup(index: number, newGroup: MenuItemOptionGroup) {
     const updated = [...optionGroups];
     updated[index] = newGroup;
     setOptionGroups(updated);
   }
+
   function removeOptionGroup(index: number) {
     const updated = [...optionGroups];
     updated.splice(index, 1);
@@ -104,7 +107,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     if (selectedFile) {
       setUploading(true);
       try {
-        // Actually upload to get final URL
+        // Upload the file to get its final URL.
         finalImage = await uploadFile(selectedFile);
       } catch (err) {
         console.error("File upload error", err);
@@ -143,14 +146,14 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     }
   }
 
-  // Show a local or final preview (in a modal via <ItemDetailPage isPreview />)
+  // Prepare a local or final preview of the menu item.
   function handlePreview() {
     const itemToPreview: MenuItem = {
       id: editingItem?.id || "temp-id",
       title,
       description,
       price,
-      image: imageUrl, // could be local blob or final
+      image: imageUrl,
       hasSpiceLevel,
       category: {
         id: selectedSubcategory,
@@ -199,7 +202,16 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         {selectedFile && <p>Selected file: {selectedFile.name}</p>}
         {uploading && <p>Uploading image...</p>}
         {imageUrl && (
-          <img src={imageUrl} alt="Preview" style={{ maxWidth: "200px", marginTop: "0.5rem" }} />
+          <div style={{ marginTop: "0.5rem", maxWidth: "200px" }}>
+            <Image
+              src={imageUrl}
+              alt="Preview"
+              width={200}
+              height={200}
+              unoptimized
+              style={{ maxWidth: "100%", height: "auto" }}
+            />
+          </div>
         )}
       </div>
 
@@ -257,7 +269,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       </div>
 
       {/* Buttons Row: Save + Preview */}
-      <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
+      <div className={styles.buttonsRow}>
         <button type="submit" className={styles.submitButton} disabled={uploading}>
           Save Menu Item
         </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import styles from "./AdminDashboard.module.css";
 
 const DashboardContent = () => (
@@ -29,11 +30,13 @@ const DashboardContent = () => (
     </div>
     <div className={styles.graphSection}>
       <h3 className={styles.graphTitle}>Sales Trend</h3>
-      {/* Replace this placeholder image with an interactive chart component */}
-      <img
+      {/* Replace this placeholder with an interactive chart component as needed */}
+      <Image
         className={styles.graphImage}
         src="/images/sample-graph.png"
         alt="Sales Trend Graph"
+        width={600}
+        height={400}
       />
     </div>
   </div>
