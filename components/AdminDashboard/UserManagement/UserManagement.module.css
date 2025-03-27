@@ -1,0 +1,25 @@
+/* Container styled to resemble the dashboard content with sufficient spacing */
+/* Adjusted margin-top to ensure the header does not overlap the title */
+.userManagementContainer {
+  margin-top: 120px;           /* Increased top margin for clear spacing under the fixed header */
+  padding: 2rem;
+  background-color: #fff;      /* White background for a card-like look */
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.title {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+  text-align: center;
+}
+
+.userGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}

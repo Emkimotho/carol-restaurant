@@ -1,15 +1,6 @@
 // File: 19thhole/components/Auth/LoginForm.tsx
 "use client";
 
-/*
-  This component renders the login form.
-  It expects two callback props:
-    - onOpenForgotPassword: called when the user clicks “Forgot Password?”
-    - onOpenSignup: called when the user wants to create an account.
-  
-  This version uses the styles defined in Login.module.css.
-*/
-
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./Login.module.css";
@@ -21,10 +12,7 @@ interface LoginFormProps {
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api/auth";
 
-const LoginForm: React.FC<LoginFormProps> = ({
-  onOpenForgotPassword,
-  onOpenSignup,
-}) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onOpenForgotPassword, onOpenSignup }) => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,9 +25,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
     try {
       const res = await fetch(`${backendURL}/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
@@ -49,8 +35,27 @@ const LoginForm: React.FC<LoginFormProps> = ({
         return;
       }
 
-      // On successful login, redirect to dashboard
-      router.push("/dashboard");
+      // Get user data from the response
+      const data = await res.json();
+
+      // Role-based redirection logic
+      if (data.user && data.user.roles) {
+        const roles: string[] = data.user.roles;
+        if (roles.includes("ADMIN") || roles.includes("SUPERADMIN")) {
+          router.push("/admin-dashboard");
+        } else if (roles.includes("STAFF")) {
+          router.push("/staff-dashboard");
+        } else if (roles.includes("DRIVER")) {
+          router.push("/driver-dashboard");
+        } else if (roles.includes("CUSTOMER")) {
+          router.push("/customer-dashboard");
+        } else {
+          router.push("/dashboard");
+        }
+      } else {
+        // Fallback in case no user data is returned
+        setError("Invalid login response.");
+      }
     } catch (err) {
       console.error("Login error:", err);
       setError("Network error. Please try again later.");

@@ -55,12 +55,15 @@ html {
   font-size: 16px;
 }
 
+/* Remove default top padding from the body to eliminate the unwanted gap.
+   Previously, body had: padding-top: var(--navbar-height);
+   Now, header spacing is managed within specific layout components. */
 body {
   font-family: var(--font-body);
   background-color: var(--background);
   color: var(--foreground);
   line-height: 1.6;
-  padding-top: var(--navbar-height);
+  /* padding-top: var(--navbar-height);  <-- Removed to fix gap issue */
 }
 
 img,

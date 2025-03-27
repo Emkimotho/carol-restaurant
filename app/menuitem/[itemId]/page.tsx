@@ -2,35 +2,34 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import menuData, { MenuItem } from "@/data/menuData";
-import ItemDetailPage from "./ItemDetailPage";
+import menuData from "@/data/menuData";
+import ItemDetailPage from "@/components/MenuItem/ItemDetailPage";
+import type { MenuItem } from "@/utils/types";
 
 export default function Page() {
   const params = useParams() as { itemId: string };
   const { itemId } = params;
-  const numericId = parseInt(itemId, 10);
 
-  // Find the main item.
-  const foundItem = menuData.find((m) => m.id === numericId);
+  // Lookup by string ID.
+  const foundItem = menuData.find((m) => m.id === itemId);
 
   if (!foundItem) {
     return <div style={{ padding: "2rem" }}>Item not found!</div>;
   }
 
-  // Example: recommended drinks are items in "Soft Drinks" category
-  const recommendedDrinks = menuData
-    .filter((m) => m.category === "Soft Drinks")
-    .map((m) => ({
-      id: m.id,
-      title: m.title,
-      image: m.image,
-      price: m.price,
-    }));
-
-  // Additional items as full `MenuItem` objects
-  const desserts: MenuItem[] = menuData.filter((m) => m.category === "Desserts");
-  const snacks: MenuItem[] = menuData.filter((m) => m.category === "Snacks");
-  const softDrinks: MenuItem[] = menuData.filter((m) => m.category === "Soft Drinks");
+  // Filter recommended items by category name.
+  const recommendedDrinks: MenuItem[] = menuData.filter(
+    (m) => m.category && m.category.name === "Soft Drinks"
+  );
+  const desserts: MenuItem[] = menuData.filter(
+    (m) => m.category && m.category.name === "Desserts"
+  );
+  const snacks: MenuItem[] = menuData.filter(
+    (m) => m.category && m.category.name === "Snacks"
+  );
+  const softDrinks: MenuItem[] = menuData.filter(
+    (m) => m.category && m.category.name === "Soft Drinks"
+  );
 
   return (
     <ItemDetailPage

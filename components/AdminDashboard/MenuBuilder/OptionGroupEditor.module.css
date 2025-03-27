@@ -1,0 +1,153 @@
+.groupEditor {
+  border: 1px solid var(--border-color);
+  background-color: var(--white);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 6px;
+  box-shadow: var(--box-shadow-primary);
+}
+
+/* Header row for the group: includes title input & remove button */
+.groupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.groupHeader input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  margin-right: 0.75rem;
+}
+
+/* Danger button style (remove button) */
+.removeButton {
+  background-color: #dc3545; /* or define a var(--danger-color) if desired */
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.removeButton:hover {
+  background-color: #c82333;
+}
+
+.groupSettings {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.groupSettings label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+.groupSettings input,
+.groupSettings select {
+  margin-top: 0.25rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color-dark);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+.choices {
+  margin-top: 1rem;
+}
+
+.choiceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.choiceRow input {
+  padding: 0.4rem;
+  border: 1px solid var(--border-color-dark);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  flex: 1;
+}
+
+.removeChoice {
+  background-color: #dc3545; /* or var(--danger-color) if you define it */
+  color: var(--white);
+  border: none;
+  padding: 0.4rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.removeChoice:hover {
+  background-color: #c82333;
+}
+
+/* Add Choice button uses your primary color */
+.addChoice {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.addChoice:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* For any future nested groups if implemented */
+.nestedOptionGroup {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: var(--light-gray);
+  border-radius: 4px;
+}
+
+.nestedOptionGroup input {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.nestedChoices {
+  margin-top: 0.5rem;
+}
+
+.nestedChoiceRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.addNestedButton {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.4rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.addNestedButton:hover {
+  background-color: var(--secondary-color-hover);
+}

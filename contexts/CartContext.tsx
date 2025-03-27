@@ -2,21 +2,24 @@
 
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { CartItem, Accompaniment, AccompanimentGroup } from "../utils/types";
+import { CartItem } from "../utils/types";
+
+interface SelectedOptions {
+  [groupId: string]: {
+    selectedChoiceIds: string[];
+    nestedSelections?: { [choiceId: string]: string[] };
+  };
+}
 
 interface CartContextType {
   cartItems: CartItem[];
   isSidebarCartOpen: boolean;
   addToCart: (
-    item: Omit<
-      CartItem,
-      "cartItemId" | "quantity" | "selectedAccompaniments" | "availableAccompanimentGroups"
-    >,
+    item: Omit<CartItem, "cartItemId" | "quantity" | "selectedOptions">,
     quantity: number,
     specialInstructions: string,
     spiceLevel?: string,
-    selectedAccompaniments?: { [groupId: string]: Accompaniment[] },
-    availableAccompanimentGroups?: AccompanimentGroup[]
+    selectedOptions?: SelectedOptions
   ) => void;
   removeFromCart: (cartItemId: string) => void;
   increaseQuantity: (cartItemId: string) => void;
@@ -33,7 +36,6 @@ export const CartContext = createContext<CartContextType | undefined>(undefined)
 const LOCAL_STORAGE_CART_KEY = "cartItems";
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  // Lazy initializer to read from localStorage (only on client)
   const getInitialCart = (): CartItem[] => {
     if (typeof window !== "undefined") {
       const storedCart = localStorage.getItem(LOCAL_STORAGE_CART_KEY);
@@ -52,12 +54,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isSidebarCartOpen, setIsSidebarCartOpen] = useState<boolean>(false);
   const [hasMounted, setHasMounted] = useState(false);
 
-  // Set mounted flag to ensure client-only rendering (avoids hydration mismatches)
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
-  // Persist cart items whenever they change.
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem(LOCAL_STORAGE_CART_KEY, JSON.stringify(cartItems));
@@ -65,29 +65,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [cartItems]);
 
   const addToCart = (
-    item: Omit<CartItem, "cartItemId" | "quantity" | "selectedAccompaniments" | "availableAccompanimentGroups">,
+    item: Omit<CartItem, "cartItemId" | "quantity" | "selectedOptions">,
     quantity: number,
     specialInstructions: string,
     spiceLevel?: string,
-    selectedAccompaniments?: { [groupId: string]: Accompaniment[] },
-    availableAccompanimentGroups?: AccompanimentGroup[]
+    selectedOptions?: SelectedOptions
   ) => {
     const cartItemId = uuidv4();
     const newItem: CartItem = {
       cartItemId,
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      price: item.price,
-      image: item.image,
-      hasSpiceLevel: item.hasSpiceLevel,
+      ...item,
       quantity,
       specialInstructions,
       spiceLevel: spiceLevel || "",
-      // Ensure selectedAccompaniments always defaults to an object
-      selectedAccompaniments: selectedAccompaniments || {},
-      availableAccompanimentGroups: availableAccompanimentGroups || [],
-      accompanimentGroups: availableAccompanimentGroups,
+      selectedOptions: selectedOptions || {},
     };
     setCartItems((prev) => [...prev, newItem]);
   };
@@ -123,19 +114,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  // Updated getTotalPrice: verifies that groupSelections is an array before calling reduce.
   const getTotalPrice = (): number => {
     return cartItems.reduce((total, item) => {
-      const accompanimentsCost = Object.values(item.selectedAccompaniments || {}).reduce(
-        (groupTotal, groupSelections) => {
-          if (Array.isArray(groupSelections)) {
-            return groupTotal + groupSelections.reduce((acc, accompaniment) => acc + accompaniment.price, 0);
-          }
-          return groupTotal;
-        },
-        0
-      );
-      return total + (item.price + accompanimentsCost) * item.quantity;
+      let optionsCost = 0;
+      if (item.selectedOptions) {
+        Object.values(item.selectedOptions).forEach((group) => {
+          // Extend if you want to add adjustments for nested selections.
+        });
+      }
+      return total + (item.price + optionsCost) * item.quantity;
     }, 0);
   };
 
@@ -143,7 +130,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeSidebarCart = () => setIsSidebarCartOpen(false);
   const clearCart = () => setCartItems([]);
 
-  // Delay rendering until after client-side mount to avoid hydration issues
   if (!hasMounted) return null;
 
   return (

@@ -1,4 +1,3 @@
-// File: components/SidebarCart/SidebarCart.tsx
 "use client";
 
 import React, { useContext, useState, useEffect } from "react";
@@ -6,7 +5,6 @@ import { useRouter } from "next/navigation";
 import styles from "./SidebarCart.module.css";
 import { CartContext } from "@/contexts/CartContext";
 import EditItemModal from "../EditItemModal/EditItemModal";
-import { Accompaniment } from "@/utils/types";
 
 interface SidebarCartProps {
   isOpen: boolean;
@@ -67,9 +65,10 @@ const SidebarCart: React.FC<SidebarCartProps> = ({ isOpen, onClose }) => {
         <div className={styles.sidebarCartHeader}>
           <h2>Your Cart</h2>
           <div
-            className={minimized
-              ? `${styles.buttonGroup} ${styles.buttonGroupMinimized}`
-              : styles.buttonGroup
+            className={
+              minimized
+                ? `${styles.buttonGroup} ${styles.buttonGroupMinimized}`
+                : styles.buttonGroup
             }
           >
             <button
@@ -102,10 +101,10 @@ const SidebarCart: React.FC<SidebarCartProps> = ({ isOpen, onClose }) => {
               </div>
             ) : (
               cartItems.map((item: any) => {
-                // Compute additional cost from grouped accompaniments.
-                const accompanimentsCost = Object.values(item.selectedAccompaniments || {})
+                // Compute additional cost from grouped selected options.
+                const optionsCost = Object.values(item.selectedOptions || {})
                   .flat()
-                  .reduce((acc: number, ai: Accompaniment) => acc + ai.price, 0);
+                  .reduce((acc: number, option: any) => acc + option.price, 0);
 
                 return (
                   <div key={item.cartItemId} className={styles.sidebarCartItem}>
@@ -121,16 +120,15 @@ const SidebarCart: React.FC<SidebarCartProps> = ({ isOpen, onClose }) => {
                       {item.description && <p>{item.description}</p>}
                       {item.spiceLevel && <p>Spice Level: {item.spiceLevel}</p>}
                       
-                      {/* Render grouped accompaniments */}
-                      {Object.keys(item.selectedAccompaniments || {}).length > 0 && (
+                      {/* Render grouped selected options */}
+                      {Object.keys(item.selectedOptions || {}).length > 0 && (
                         <div>
-                          <p>Accompaniments:</p>
-                          {Object.entries(item.selectedAccompaniments || {}).map(([groupId, selections]) => {
-                            // Look up group label from availableAccompanimentGroups if provided.
-                            const groupLabel = item.availableAccompanimentGroups?.find(
+                          <p>Options:</p>
+                          {Object.entries(item.selectedOptions || {}).map(([groupId, selections]) => {
+                            // Look up group label from optionGroups if provided.
+                            const groupLabel = item.optionGroups?.find(
                               (group: any) => group.id === groupId
                             )?.label || groupId;
-                            // Ensure selections is an array.
                             const selectionArray = Array.isArray(selections) ? selections : [];
                             return (
                               <div key={groupId}>
@@ -138,9 +136,9 @@ const SidebarCart: React.FC<SidebarCartProps> = ({ isOpen, onClose }) => {
                                   <strong>{groupLabel}</strong>
                                 </p>
                                 <ul>
-                                  {selectionArray.map((acc: Accompaniment) => (
-                                    <li key={acc.id}>
-                                      {acc.name} (+${acc.price.toFixed(2)})
+                                  {selectionArray.map((option: any) => (
+                                    <li key={option.id}>
+                                      {option.name} (+${option.price.toFixed(2)})
                                     </li>
                                   ))}
                                 </ul>
@@ -170,7 +168,7 @@ const SidebarCart: React.FC<SidebarCartProps> = ({ isOpen, onClose }) => {
                       </button>
                     </div>
                     <p className={styles.itemPrice}>
-                      ${((item.price + accompanimentsCost) * item.quantity).toFixed(2)}
+                      ${((item.price + optionsCost) * item.quantity).toFixed(2)}
                     </p>
                   </div>
                 );

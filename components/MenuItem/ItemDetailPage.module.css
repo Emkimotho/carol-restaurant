@@ -1,0 +1,396 @@
+.detailPageContainer {
+    padding: 24px;
+    max-width: var(--container-width);
+    margin: 0 auto;
+    font-family: var(--font-body);
+    color: var(--foreground);
+  }
+  
+  /* Main layout */
+  .mainContent {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 40px;
+  }
+  
+  /* Left column: image */
+  .imageContainer {
+    flex: 1 1 40%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    border-radius: 10px;
+    box-shadow: var(--box-shadow-primary);
+  }
+  
+  .itemImage {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+  
+  /* Right column: info */
+  .infoContainer {
+    flex: 1 1 55%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  /* Title & description */
+  .itemTitle {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    font-family: var(--font-heading);
+    color: var(--primary-color);
+  }
+  
+  .itemDescription {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--foreground);
+  }
+  
+  /* Dynamic Option Groups */
+  .optionGroup {
+    margin-bottom: 20px;
+  }
+  
+  .groupTitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .optionItem label {
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  /* Nested Option Group Styles */
+  .nestedOptionGroup {
+    margin-top: 10px;
+    margin-left: 20px;
+    padding-left: 10px;
+    border-left: 2px solid var(--border-color);
+  }
+  
+  .nestedGroupTitle {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  
+  .nestedOptionItem {
+    margin-bottom: 8px;
+  }
+  
+  /* Spice Level */
+  .spiceLevelContainer {
+    margin-bottom: 20px;
+  }
+  
+  .spiceLabel {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+    font-size: 1rem;
+  }
+  
+  .spiceOptions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .btnOutline,
+  .btnSelected {
+    padding: 10px 16px;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    font-size: 0.95rem;
+    background-color: var(--white);
+    color: var(--primary-color);
+  }
+  
+  .btnSelected {
+    background-color: var(--primary-color);
+    color: var(--white);
+  }
+  
+  .btnOutline:hover,
+  .btnSelected:hover {
+    transform: scale(1.05);
+  }
+  
+  /* Quantity */
+  .quantityContainer {
+    margin-bottom: 20px;
+  }
+  
+  .quantityLabel {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+    font-size: 1rem;
+  }
+  
+  .quantityControls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .btnCircle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--secondary-color);
+    background-color: var(--secondary-color);
+    font-size: 1.2rem;
+    color: var(--white);
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+  
+  .btnCircle:hover {
+    background-color: var(--primary-color);
+    transform: scale(1.05);
+  }
+  
+  .quantityDisplay {
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
+  
+  /* Special Instructions */
+  .specialInstructionsContainer {
+    margin-bottom: 20px;
+  }
+  
+  .instructionsLabel {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+    font-size: 1rem;
+  }
+  
+  .instructionsInput {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 1px solid var(--border-color-dark);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    resize: none;
+    background-color: var(--light-gray);
+    color: var(--foreground);
+  }
+  
+  /* Additional Items Section */
+  .additionalItemsSection {
+    border-top: 1px solid var(--border-color);
+    padding-top: 16px;
+  }
+  
+  .additionalItemsHeading {
+    font-size: 1.3rem;
+    color: var(--secondary-color);
+    font-family: var(--font-heading);
+    margin-bottom: 12px;
+  }
+  
+  .additionalCategory {
+    margin-bottom: 16px;
+  }
+  
+  .categoryTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--foreground);
+  }
+  
+  .selectWrapper {
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px;
+    max-width: 300px;
+  }
+  
+  .categorySelect {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 1rem;
+    color: var(--foreground);
+    cursor: pointer;
+  }
+  
+  /* Buttons Row */
+  .buttonsRow {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .cartActions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .totalPrice {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--foreground);
+    white-space: nowrap;
+  }
+  
+  .btnAddToCart {
+    border-radius: 4px;
+  }
+  
+  .btnBackToMenu {
+    background-color: var(--secondary-color);
+    color: var(--white);
+    border: 2px solid var(--secondary-color);
+    padding: 10px 16px;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+  
+  .btnBackToMenu:hover {
+    background-color: var(--secondary-color-hover);
+    transform: scale(1.03);
+  }
+  
+  /* Recommended Drinks */
+  .recommendations {
+    margin-top: 40px;
+  }
+  
+  .recommendationsTitle {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 16px;
+  }
+  
+  .drinkList {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+  }
+  
+  .drinkItem {
+    flex: 0 0 auto;
+    text-align: center;
+  }
+  
+  .drinkImage {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+  }
+  
+  .drinkImage:hover {
+    transform: scale(1.1);
+  }
+  
+  .drinkTitle {
+    margin-top: 8px;
+    font-size: 0.95rem;
+    color: var(--foreground);
+  }
+  
+  /* Toast Notification */
+  .toastNotification {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--primary-color);
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: var(--box-shadow-primary);
+    color: var(--white);
+    font-size: 1rem;
+    animation: fadeInOut 3s ease;
+    z-index: 1000;
+  }
+  
+  @keyframes fadeInOut {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+    20% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    80% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px);
+    }
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .mainContent {
+      flex-direction: column;
+      gap: 20px;
+    }
+    .imageContainer,
+    .infoContainer {
+      flex: 1 1 100%;
+    }
+    .buttonsRow {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .btnCircle {
+      width: 36px;
+      height: 36px;
+      font-size: 1rem;
+    }
+    .quantityDisplay {
+      font-size: 1rem;
+    }
+    .btnBackToMenu {
+      font-size: 0.9rem;
+    }
+    .btnAddToCart {
+      font-size: 0.9rem;
+      padding: 10px;
+    }
+  }
+  

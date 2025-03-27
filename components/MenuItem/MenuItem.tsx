@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useContext } from "react";
+import React, { useContext } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import styles from "./MenuItem.module.css";
@@ -10,10 +10,10 @@ import { CartContext } from "@/contexts/CartContext";
 import { OrderContext } from "@/contexts/OrderContext";
 
 // Types
-import { MenuItem as MenuItemType } from "@/utils/types";
+import type { MenuItem } from "@/utils/types";
 
 interface MenuItemProps {
-  item: MenuItemType;
+  item: MenuItem;
   user: any;
   openSidebarCart: () => void;
   allowAddToCart: boolean;
@@ -30,35 +30,24 @@ export default function MenuItem({
   const router = useRouter();
   const { order } = useContext(OrderContext)!;
 
-  // For the "restaurant closed" scheduling popup
-  const [showChoicePopup, setShowChoicePopup] = useState(false);
+  // For the "restaurant closed" scheduling popup.
+  const [showChoicePopup, setShowChoicePopup] = React.useState(false);
 
   function handleAddClick() {
     if (!allowAddToCart) {
       console.warn("[MenuItem] This item cannot be added to cart.");
       return;
     }
-
-    // If user has a scheduled order or restaurant is open,
-    // navigate to the dedicated detail page at /menuitem/[itemId]
-    if (order.schedule || restaurantOpen) {
-      router.push(`/menuitem/${item.id}`);
-    } else {
-      // Otherwise, restaurant is closed with no schedule => show timing popup
-      setShowChoicePopup(true);
-    }
+    // Navigate to the detail page.
+    router.push(`/menuitem/${item.id}`);
   }
 
   function proceedASAP() {
     setShowChoicePopup(false);
-
     if (!restaurantOpen) {
-      // Actually closed => schedule
       window.location.href = "/schedule-order";
       return;
     }
-
-    // Otherwise open detail page
     router.push(`/menuitem/${item.id}`);
   }
 
@@ -81,23 +70,18 @@ export default function MenuItem({
           />
         )}
       </div>
-
       <div className={styles.details}>
         <h4 className={styles.title}>{item.title}</h4>
         <p className={styles.description}>{item.description}</p>
-        <h5 className={styles.price}>
-          ${parseFloat(String(item.price)).toFixed(2)}
-        </h5>
-
+        <h5 className={styles.price}>${parseFloat(String(item.price)).toFixed(2)}</h5>
         {allowAddToCart ? (
           <button className={styles.btnAddToCart} onClick={handleAddClick}>
-            Add to Cart
+            Start Order
           </button>
         ) : (
           <p className={styles.textMuted}>In-restaurant purchase only</p>
         )}
       </div>
-
       {showChoicePopup && (
         <div className={styles.orderChoiceOverlay}>
           <div className={styles.orderChoiceModal}>
@@ -127,10 +111,7 @@ export default function MenuItem({
                 </div>
               </>
             )}
-            <button
-              className={styles.btnCloseChoice}
-              onClick={() => setShowChoicePopup(false)}
-            >
+            <button className={styles.btnCloseChoice} onClick={() => setShowChoicePopup(false)}>
               Cancel
             </button>
           </div>

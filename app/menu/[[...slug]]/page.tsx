@@ -1,18 +1,21 @@
-import MenuComponent from '@/components/Menu/Menu';
+import MenuComponent from "@/components/Menu/Menu";
 
 interface MenuPageProps {
-  // Next.js expects the parameters to be a Promise that resolves to an object.
+  // params is a Promise that resolves to an object with an optional slug array.
   params: Promise<{ slug?: string[] }>;
 }
 
 export default async function MenuPage({ params }: MenuPageProps) {
-  // Await the resolved params object.
+  // Await the parameters before using them.
   const { slug } = await params;
   let resolvedSlug: string[] = slug ?? [];
 
-  // If the slug contains separate segments for "lunch" and "dinner", merge them.
-  // For example, if slug is ["MainMenu", "lunch", "dinner"] (case-insensitive),
-  // then change it to ["MainMenu", "Lunch/Dinner"].
+  // If the slug has fewer than two segments (e.g., section and category), set defaults.
+  if (resolvedSlug.length < 2) {
+    resolvedSlug = [resolvedSlug[0] || "MainMenu", "Lunch/Dinner"];
+  }
+
+  // Merge separate "lunch" and "dinner" segments into "Lunch/Dinner" if found.
   if (
     resolvedSlug.length >= 3 &&
     resolvedSlug[1].toLowerCase() === "lunch" &&

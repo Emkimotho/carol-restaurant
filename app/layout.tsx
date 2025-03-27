@@ -6,7 +6,7 @@ import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
 import "./globals.css"; // Import global custom styles
 
 import Providers from "@/components/Providers";
-import ClientLayout from "@/components/ClientLayout";
+import ConditionalClientLayout from "@/components/ConditionalClientLayout";
 import Preloader from "@/components/Preloader/Preloader";
 
 export const metadata = {
@@ -23,9 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Providers>
-          {/* The enhanced preloader is rendered globally and will show during page load */}
+          {/* Global preloader during page load */}
           <Preloader />
-          <ClientLayout>{children}</ClientLayout>
+          {/* Conditionally wrap children with ClientLayout for public routes only */}
+          <ConditionalClientLayout>{children}</ConditionalClientLayout>
         </Providers>
       </body>
     </html>
