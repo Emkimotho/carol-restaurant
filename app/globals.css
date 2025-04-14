@@ -11,10 +11,10 @@
 /* 3. Global Variables */
 :root {
   /* Color Palette */
-  --primary-color: #00BF63;
-  --primary-color-hover: #009F53;
-  --secondary-color: #D0A933;
-  --secondary-color-hover: #B8902D;
+  --primary-color: #00bf63;
+  --primary-color-hover: #009f53;
+  --secondary-color: #d0a933;
+  --secondary-color-hover: #b8902d;
   --white: #ffffff;
   --black: #000000;
   --gray: #6c757d;
@@ -29,8 +29,8 @@
   --font-heading: 'Belleza', sans-serif;
 
   /* Shadows */
-  --box-shadow-primary: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  --box-shadow-secondary: 0px 4px 6px rgba(76, 175, 80, 0.2);
+  --box-shadow-primary: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --box-shadow-secondary: 0 4px 6px rgba(76, 175, 80, 0.2);
 
   /* Layout Variables */
   --navbar-height: 80px;
@@ -62,18 +62,20 @@ body {
   line-height: 1.6;
 }
 
-/* Media elements */
+/* Media Elements */
 img,
 video {
   max-width: 100%;
   display: block;
 }
 
+/* Lists */
 ul,
 ol {
   list-style: none;
 }
 
+/* Links */
 a {
   color: var(--primary-color);
   text-decoration: none;
@@ -87,7 +89,8 @@ a:focus {
 }
 
 /* 5. Button Styles */
-/* Base button styling: primary buttons by default */
+
+/* Base button styling using global variables */
 button,
 .btn {
   background-color: var(--primary-color);
@@ -97,27 +100,26 @@ button,
   font-size: 1rem;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.3s ease;
 }
 
-/* Secondary button variant */
+button:hover,
+.btn:hover {
+  background-color: var(--primary-color);
+  color: var(--white);
+  transform: translateY(-2px);
+}
+
+/* Secondary Button Variant */
 button.secondary,
 .btn-secondary {
   background-color: var(--secondary-color);
+  color: var(--white);
 }
 
-/* Hover effects: 
-   - All buttons change text color to white on hover.
-   - Secondary buttons (and any button with class "secondary" or "btn-secondary")
-     change their background to the primary color on hover.
-   - Primary buttons remain with the primary background on hover, only text changes.
-*/
-button:hover,
-.btn:hover,
 button.secondary:hover,
 .btn-secondary:hover {
   background-color: var(--primary-color);
-  color: var(--white);
 }
 
 /* 6. Checkbox Styling */
@@ -125,12 +127,12 @@ input[type="checkbox"] {
   accent-color: var(--primary-color);
 }
 
-/* 7. Popup Window Styles */
+/* 7. Popup Window Styles with Animation */
 .popup-window {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(0.9);
   z-index: 9999;
   background-color: var(--white);
   padding: 1.5rem;
@@ -138,6 +140,18 @@ input[type="checkbox"] {
   border-radius: 8px;
   min-width: 300px;
   max-width: 90%;
+  animation: popupIn 0.3s ease forwards;
+}
+
+@keyframes popupIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 .popup-window .close-btn {
@@ -153,17 +167,35 @@ input[type="checkbox"] {
   cursor: pointer;
   overflow: visible;
   z-index: auto;
-  transition: none;
 }
 
 .popup-window .close-btn::before {
-  content: "x";
+  content: "×";
   position: static;
   background: none;
-  transition: none;
-  z-index: auto;
 }
 
 .popup-window .close-btn:hover {
   color: var(--gray-hover);
+}
+
+/* 8. Global Animations (Example: Fade In) */
+.fadeIn {
+  animation: fadeInAnim 0.5s ease forwards;
+}
+
+@keyframes fadeInAnim {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 9. Responsive Design Adjustments */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
 }

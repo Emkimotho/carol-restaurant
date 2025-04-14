@@ -13,8 +13,8 @@ import Providers from "@/app/Providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Your App Title",
-  description: "Your App Description",
+  title: "19th Hole Restaurant and Bar",
+  description: "19th Hole Restaurant and Bar at the Black Rock",
 };
 
 export default function RootLayout({

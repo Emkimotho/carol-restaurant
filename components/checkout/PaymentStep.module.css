@@ -1,0 +1,67 @@
+/* File: app/checkout/PaymentStep.module.css */
+
+.checkoutSection {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--box-shadow-primary);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.navigationButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.btnPrimary {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+.btnSecondary {
+  background-color: var(--secondary-color);
+  color: var(--white);
+}
+
+.btnSweepWave {
+  margin-top: 1rem;
+}
+
+/* Input Field Styles */
+.inputField {
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  transition: border-color 0.3s ease;
+  font-family: var(--font-body);
+}
+
+.inputField:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* Additional styling for form groups within PaymentStep */
+.formGroup {
+  margin-bottom: 1.5rem;
+}

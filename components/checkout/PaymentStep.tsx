@@ -3,7 +3,7 @@
 
 import React, { useState, useContext, ChangeEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import styles from "@/app/checkout/Checkout.module.css";
+import styles from "@/components/checkout/PaymentStep.module.css";
 import { CartContext } from "@/contexts/CartContext";
 import { OrderContext, Order } from "@/contexts/OrderContext";
 

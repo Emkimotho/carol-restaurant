@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '@/app/checkout/Checkout.module.css';
+import styles from '@/components/checkout/GuestChoice.module.css';
 
 interface GuestChoiceProps {
   onSelect: (isGuest: boolean) => void;

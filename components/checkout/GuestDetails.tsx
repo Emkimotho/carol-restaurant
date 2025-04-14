@@ -1,6 +1,6 @@
 // components/checkout/GuestDetails.tsx
 import React from 'react';
-import styles from '@/app/checkout/Checkout.module.css';
+import styles from '@/components/checkout/GuestDetails.module.css';
 
 interface GuestDetailsProps {
   guestDetails: {

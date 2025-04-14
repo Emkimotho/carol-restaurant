@@ -1,0 +1,144 @@
+/* File: components/checkout/OrderSummaryStep.module.css */
+
+.checkoutSection {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--box-shadow-primary);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.orderId {
+  font-size: 1rem;
+  color: var(--dark-gray);
+  margin-bottom: 1rem;
+  font-family: var(--font-body);
+}
+
+.orderItem {
+  margin-bottom: 1rem;
+  border-bottom: 1px dashed var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.orderItem h5 {
+  font-size: 1.15rem;
+  color: var(--primary-color);
+  margin-bottom: 0.25rem;
+  font-family: var(--font-heading);
+}
+
+.orderItem p {
+  font-size: 0.95rem;
+  color: var(--dark-gray);
+  margin: 0.25rem 0;
+  font-family: var(--font-body);
+}
+
+.orderTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.orderTotal h5 {
+  font-size: 1rem;
+  color: var(--primary-color);
+  font-family: var(--font-heading);
+}
+
+.orderTotal p {
+  font-size: 1rem;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+
+.orderSummary {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--white);
+}
+
+.deliveryDetails {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: var(--light-gray);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 6px;
+}
+
+.deliveryDetails h5 {
+  font-size: 1rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
+  font-family: var(--font-heading);
+}
+
+.deliveryDetails p {
+  font-size: 0.95rem;
+  color: var(--dark-gray);
+  font-family: var(--font-body);
+}
+
+.pickupDetails {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: var(--light-gray);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--dark-gray);
+  font-family: var(--font-body);
+}
+
+.tipSelection {
+  margin-top: 2rem;
+}
+
+.tipSelection h5 {
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  font-family: var(--font-heading);
+}
+
+.tipOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.tipOptions .btn {
+  flex: 1 1 calc(33.33% - 1rem);
+  padding: 0.8rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.navigationButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}

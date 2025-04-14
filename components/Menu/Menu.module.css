@@ -1,121 +1,80 @@
-/* File: components/MenuItem/ItemDetailPage.module.css */
+/* File: components/Menu/Menu.module.css */
 
-.detailPageContainer {
-  padding: 1rem;
-  font-family: sans-serif;
-}
-
-.mainContent {
-  display: flex;
-  gap: 1rem;
-}
-
-.imageContainer {
-  flex: 0 0 50%;
-}
-
-.itemImage {
-  border-radius: 8px;
-  object-fit: cover;
-  max-width: 100%;
-  height: auto;
-}
-
-.infoContainer {
-  flex: 1;
-}
-
-.itemTitle {
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-}
-
-.itemDescription {
-  font-size: 1rem;
-  color: #555;
-  margin-bottom: 1rem;
-}
-
-/* Buttons row */
-.buttonsRow {
-  margin-top: 1rem;
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.cartActions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.totalPrice {
-  font-weight: bold;
-  font-size: 1.1rem;
-  color: #333;
-}
-
-/* Add To Cart button */
-.btnAddToCart {
-  background-color: #28a745;
-  border: none;
-  color: #fff;
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.btnAddToCart:hover {
-  background-color: #218838;
-}
-
-.btnBackToMenu {
-  background-color: #6c757d;
-  border: none;
-  color: #fff;
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.btnBackToMenu:hover {
-  background-color: #5a6268;
-}
-
-/* Toast notification for "Item added" */
-.toastNotification {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  background: #333;
-  color: #fff;
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  z-index: 9999;
-  animation: fadeInOut 2s forwards;
-}
-.toastContent {
-  font-size: 0.95rem;
-}
-
-@keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(20px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(20px); }
-}
-
-/* The flying golf ball */
-.flyingBall {
-  position: fixed;
-  z-index: 9999;
-  left: 0;
-  top: 0;
-  width: 25px;
-  height: 25px;
-  pointer-events: none; /* So it doesn't capture clicks */
-  transform: translate(-50%, -50%);
-}
+/* A unique wrapper so that these styles override Bootstrap where needed */
+.menuWrapper {
+    margin-top: 100px;
+    padding: 2rem 0;
+  }
+  
+  /* --- Tabs Styling --- */
+  
+  /* Outer Tabs Container: override border if needed */
+  .menuWrapper .nav-tabs {
+    border-bottom: 2px solid var(--border-color) !important;
+  }
+  
+  /* Default tab style: secondary background with black text */
+  .menuWrapper .nav-tabs .nav-link {
+    background-color: var(--secondary-color) !important;
+    color: var(--black) !important;
+    border: none !important;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Active tab style: primary background with white text */
+  .menuWrapper .nav-tabs .nav-link.active {
+    background-color: var(--primary-color) !important;
+    color: var(--white) !important;
+  }
+  
+  /* Hover effect for tabs: subtle brightness change */
+  .menuWrapper .nav-tabs .nav-link:hover {
+    filter: brightness(0.95);
+  }
+  
+  /* --- Start Order Button Styling --- */
+  
+  .startOrderButton {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* On hover, animate background transition to secondary color and apply swaying */
+  .startOrderButton:hover {
+    background-color: var(--secondary-color);
+    animation: sway 0.6s ease-in-out infinite alternate;
+  }
+  
+  /* Sway animation keyframes */
+  @keyframes sway {
+    from {
+      transform: translateX(-5px);
+    }
+    to {
+      transform: translateX(5px);
+    }
+  }
+  
+  /* --- Additional Container Styles --- */
+  
+  .containerPadding {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  
+  /* Utility class for extra bottom padding */
+  .pb-5 {
+    padding-bottom: 3rem;
+  }
+  

@@ -1,0 +1,24 @@
+/* File: components/checkout/CheckoutPage.module.css */
+
+.checkoutContainer {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.checkoutPage {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.mb4 {
+  margin-bottom: 1rem;
+}

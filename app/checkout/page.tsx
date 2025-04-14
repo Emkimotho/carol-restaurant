@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useContext, useState, useEffect } from "react";
-import styles from "./Checkout.module.css";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CartContext } from "@/contexts/CartContext";
 import { AuthContext } from "@/contexts/AuthContext";
-import { useRouter, useSearchParams } from "next/navigation";
 import GuestChoice from "@/components/checkout/GuestChoice";
 import GuestDetails from "@/components/checkout/GuestDetails";
 import OrderTypeStep from "@/components/checkout/OrderTypeStep";
@@ -12,6 +11,7 @@ import DeliveryAddressStep from "@/components/checkout/DeliveryAddressStep";
 import OrderSummaryStep from "@/components/checkout/OrderSummaryStep";
 import PaymentStep from "@/components/checkout/PaymentStep";
 import { validatePhoneNumber, formatPhoneNumber } from "@/utils/checkoutUtils";
+import checkoutStyles from "./CheckoutPage.module.css";
 
 const Checkout: React.FC = () => {
   const { cartItems, getTotalPrice } = useContext(CartContext)!;
@@ -72,10 +72,6 @@ const Checkout: React.FC = () => {
 
   // ---
   // EFFECT: Check if there is a forced step from the query parameter.
-  // If the URL has ?step=orderSummary, force the order summary step.
-  // If orderType is not set yet, we default it to "pickup" (adjust as needed).
-  // For logged-in users: summary = step 2 for pickup, step 3 for delivery.
-  // For guest users: summary = step 3 for pickup, step 4 for delivery.
   useEffect(() => {
     const stepParam = searchParams.get("step");
     if (stepParam === "orderSummary") {
@@ -95,8 +91,7 @@ const Checkout: React.FC = () => {
     }
   }, [searchParams, orderType, user]);
 
-  // ---
-  // Field change handlers
+  // --- Field change handlers
   const handleGuestDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setGuestDetails((prev) => ({
@@ -136,8 +131,7 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // ---
-  // Navigation Handlers
+  // --- Navigation Handlers
   const handleNextStep = () => {
     console.log("[Checkout] handleNextStep at currentStep:", currentStep);
 
@@ -229,8 +223,7 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // ---
-  // Render the appropriate step.
+  // --- Render Step Function
   const renderStep = () => {
     // --- Guest-related step(s).
     if (!user && currentStep === 1) {
@@ -321,9 +314,9 @@ const Checkout: React.FC = () => {
   };
 
   return (
-    <div className={styles.checkoutContainer}>
-      <div className={styles.checkoutPage}>
-        <h1 className={`${styles.textCenter} mb-4`}>Checkout</h1>
+    <div className={checkoutStyles.checkoutContainer}>
+      <div className={checkoutStyles.checkoutPage}>
+        <h1 className={`${checkoutStyles.textCenter} ${checkoutStyles.mb4}`}>Checkout</h1>
         {renderStep()}
       </div>
     </div>

@@ -1,0 +1,56 @@
+/* File: components/checkout/GuestChoice.module.css */
+
+.guestChoiceContainer {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--box-shadow-primary);
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  transition: opacity 0.3s ease;
+}
+
+.guestChoiceTitle {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.guestChoiceIntro {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--dark-gray);
+  margin-bottom: 1.5rem;
+}
+
+.guestChoiceButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  min-width: 150px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  border: none;
+}
+
+.btnPrimary {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+.btnSecondary {
+  background-color: var(--secondary-color);
+  color: var(--white);
+}
+
+.btnSweepWave {
+  margin: 0.5rem;
+}

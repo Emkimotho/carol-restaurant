@@ -3,7 +3,7 @@
 
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import styles from "@/app/checkout/Checkout.module.css";
+import styles from "@/components/checkout/OrderSummaryStep.module.css";
 import { OrderContext } from "@/contexts/OrderContext";
 import { useOpeningHours } from "@/contexts/OpeningHoursContext";
 import {

@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useContext } from 'react';
-import styles from '@/app/checkout/Checkout.module.css';
+import styles from '@/components/checkout/OrderTypeStep.module.css';
 import { OrderContext } from '@/contexts/OrderContext';
 
 interface OrderTypeStepProps {

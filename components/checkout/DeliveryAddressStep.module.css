@@ -1,0 +1,94 @@
+/* File: components/checkout/DeliveryAddressStep.module.css */
+
+.checkoutSection {
+  background-color: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--box-shadow-secondary);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.checkoutSection h4 {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.checkoutSection h4::after {
+  content: "";
+  width: 60px;
+  height: 3px;
+  background-color: var(--secondary-color);
+  display: block;
+  margin-top: 0.5rem;
+  border-radius: 2px;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formControl {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: var(--font-body);
+  transition: border-color 0.3s ease;
+}
+
+.formControl:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.formRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.colMd6 {
+  flex: 1;
+}
+
+.checkboxLabel {
+  font-size: 1rem;
+  margin-left: 0.5rem;
+  color: var(--dark-gray);
+}
+
+.navigationButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-top: 2rem;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.9rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+  border: none;
+}
+
+.btnPrimary {
+  background-color: var(--primary-color);
+  color: var(--white);
+}
+
+.btnSecondary {
+  background-color: var(--secondary-color);
+  color: var(--white);
+}
+
+.btnSweepWave {
+  margin-top: 0.5rem;
+}
