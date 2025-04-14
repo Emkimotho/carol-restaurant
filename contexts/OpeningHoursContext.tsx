@@ -8,7 +8,7 @@ interface DailyHours {
   close: string;
 }
 
-interface OpeningHours {
+export interface OpeningHours {
   [day: string]: DailyHours;
 }
 
@@ -18,6 +18,7 @@ interface OpeningHoursContextType {
   isPopupVisible: boolean;
   togglePopup: () => void;
   showPopup: () => void;
+  refreshHours: () => void;
 }
 
 export const OpeningHoursContext = createContext<OpeningHoursContextType | null>(null);
@@ -27,31 +28,47 @@ export const OpeningHoursProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isPopupVisible, setIsPopupVisible] = useState<boolean>(false);
 
+  const fetchHours = async () => {
+    try {
+      const res = await fetch("/api/openinghours");
+      // Debug log to see the response status
+      console.log("[OpeningHoursContext] /api/openinghours response:", res.status, res.statusText);
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch opening hours");
+      }
+      const data: OpeningHours = await res.json();
+      setOpeningHours(data);
+      console.log("[OpeningHoursContext] Fetched opening hours:", data);
+    } catch (error) {
+      console.error("[OpeningHoursContext] Error fetching hours:", error);
+    }
+  };
+
+  // Fetch on initial mount
   useEffect(() => {
-    const hours: OpeningHours = {
-      Sun: { open: '18:00', close: '23:55' },
-      Mon: { open: '09:00', close: '20:00' },
-      Tue: { open: '09:00', close: '23:00' },
-      Wed: { open: '09:00', close: '23:58' },
-      Thu: { open: '09:00', close: '17:00' },
-      Fri: { open: '09:00', close: '17:00' },
-      Sat: { open: '10:00', close: '14:00' },
-    };
-    setOpeningHours(hours);
-    console.log("[OpeningHoursContext] Opening hours set:", hours);
+    fetchHours();
   }, []);
+
+  const refreshHours = () => {
+    fetchHours();
+  };
 
   const checkIsOpen = () => {
     const now = new Date();
     const dayAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][now.getDay()];
     const todaysHours = openingHours[dayAbbr];
-    if (!todaysHours || todaysHours.open === 'Closed') return false;
-    const [openHour, openMinute] = todaysHours.open.split(':').map(Number);
-    const [closeHour, closeMinute] = todaysHours.close.split(':').map(Number);
+    if (!todaysHours || todaysHours.open === "Closed") return false;
+
+    const [openHour, openMinute] = todaysHours.open.split(":").map(Number);
+    const [closeHour, closeMinute] = todaysHours.close.split(":").map(Number);
+
     const openTime = new Date(now);
     openTime.setHours(openHour, openMinute, 0, 0);
+
     const closeTime = new Date(now);
     closeTime.setHours(closeHour, closeMinute, 0, 0);
+
     return now >= openTime && now < closeTime;
   };
 
@@ -62,6 +79,8 @@ export const OpeningHoursProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setIsOpen(openStatus);
     };
     updateStatus();
+
+    // Re-check every minute
     const intervalId = setInterval(updateStatus, 60000);
     return () => clearInterval(intervalId);
   }, [openingHours]);
@@ -73,14 +92,22 @@ export const OpeningHoursProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
   };
 
-  // Function to explicitly show the popup.
   const showPopup = () => {
     console.log("[OpeningHoursContext] Forcing popup to show.");
     setIsPopupVisible(true);
   };
 
   return (
-    <OpeningHoursContext.Provider value={{ openingHours, isOpen, isPopupVisible, togglePopup, showPopup }}>
+    <OpeningHoursContext.Provider
+      value={{
+        openingHours,
+        isOpen,
+        isPopupVisible,
+        togglePopup,
+        showPopup,
+        refreshHours,
+      }}
+    >
       {children}
     </OpeningHoursContext.Provider>
   );
@@ -89,7 +116,7 @@ export const OpeningHoursProvider: React.FC<{ children: React.ReactNode }> = ({ 
 export const useOpeningHours = () => {
   const context = useContext(OpeningHoursContext);
   if (!context) {
-    throw new Error('useOpeningHours must be used within an OpeningHoursProvider');
+    throw new Error("useOpeningHours must be used within an OpeningHoursProvider");
   }
   return context;
 };

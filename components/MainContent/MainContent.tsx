@@ -1,29 +1,50 @@
 "use client";
 
 import React from "react";
+import { motion, useViewportScroll, useTransform } from "framer-motion";
 import Banner from "../Banner/Banner";
 import NeonSign from "../NeonSign/NeonSign";
 import MenuPreview from "../MenuPreview/MenuPreview";
 import Gallery from "../Gallery/Gallery";
+import SlidingServices from "components/SlidingServices/SlidingServices";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./MainContent.module.css";
 
 const MainContent: React.FC = () => {
+  // Create a parallax effect for the Banner
+  const { scrollY } = useViewportScroll();
+  const parallaxY = useTransform(scrollY, [0, 300], [0, -50]);
+
   return (
     <div className={styles.mainContent}>
-      {/* Banner Section */}
-      <Banner />
+      {/* Banner Section with Parallax */}
+      <motion.div style={{ y: parallaxY }}>
+        <Banner />
+      </motion.div>
 
-      {/* Neon Sign Section */}
-      <NeonSign />
+      {/* Neon Sign Section - fades & slides in on scroll */}
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+        viewport={{ once: true }}
+      >
+        <NeonSign />
+      </motion.div>
 
       {/* About Us Section */}
       <section className={styles.aboutUs}>
         <div className="container">
           <div className="row">
             {/* Left Column - Image */}
-            <div className="col-lg-6 mb-4 mb-lg-0">
+            <motion.div
+              className="col-lg-6 mb-4 mb-lg-0"
+              initial={{ opacity: 0, x: -100 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1 }}
+              viewport={{ once: true }}
+            >
               <Image
                 src="/images/staff-abtus.jpg"
                 alt="Restaurant Interior"
@@ -31,10 +52,16 @@ const MainContent: React.FC = () => {
                 width={600}
                 height={400}
               />
-            </div>
+            </motion.div>
 
             {/* Right Column - Text Content */}
-            <div className="col-lg-6 d-flex flex-column justify-content-center">
+            <motion.div
+              className="col-lg-6 d-flex flex-column justify-content-center"
+              initial={{ opacity: 0, x: 100 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 1 }}
+              viewport={{ once: true }}
+            >
               <h2>About Us</h2>
               <p>
                 Experience fine dining at its best at The 19th Hole Restaurant and Bar. Nestled within the scenic{" "}
@@ -59,16 +86,40 @@ const MainContent: React.FC = () => {
               <Link href="/about" legacyBehavior>
                 <a className={styles.readMoreBtn}>Read More</a>
               </Link>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* Menu Preview Section */}
-      <MenuPreview />
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        viewport={{ once: true }}
+      >
+        <MenuPreview />
+      </motion.div>
+
+      {/* Sliding Services Section */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        viewport={{ once: true }}
+      >
+        <SlidingServices />
+      </motion.div>
 
       {/* Gallery Section */}
-      <Gallery />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1 }}
+        viewport={{ once: true }}
+      >
+        <Gallery />
+      </motion.div>
     </div>
   );
 };

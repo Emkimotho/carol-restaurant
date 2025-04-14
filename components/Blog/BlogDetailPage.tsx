@@ -1,124 +1,88 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Head from 'next/head';
-import ImageGallery from 'react-image-gallery';
-import "react-image-gallery/styles/css/image-gallery.css";
-import styles from './BlogDetailPage.module.css';
+import React, { useState, useEffect } from "react";
+import Head from "next/head";
+import Image from "next/image";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import styles from "./BlogDetailPage.module.css";
 
+/** Data shape returned by /api/blog-news/[slug]?type=blog */
 interface BlogPostData {
-  id: string | number;
+  id: string;
   title: string;
+  slug: string;
   author: string;
   date: string;
   content: string;
-  images: string[];
+  image?: string;
 }
 
 interface BlogDetailPageProps {
-  id: string;
+  slug: string;
 }
 
-export default function BlogDetailPage({ id }: BlogDetailPageProps) {
-  const [blogPost, setBlogPost] = useState<BlogPostData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<boolean>(false);
+export default function BlogDetailPage({ slug }: BlogDetailPageProps) {
+  const [post, setPost] = useState<BlogPostData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Replace with your actual API call if needed.
   useEffect(() => {
-    const fetchBlogPost = async () => {
+    async function fetchPost() {
       try {
-        // Uncomment and modify the below for your API:
-        // const res = await fetch(`/api/blogs/${id}`);
-        // const data = await res.json();
-        // setBlogPost(data);
-
-        // Mock data for demonstration:
-        const data: BlogPostData = {
-          id,
-          title: 'Exploring the Beauty of Maryland',
-          author: 'Admin',
-          date: 'October 19, 2023',
-          content: `
-            <p>Maryland, known as the Old Line State, offers a diverse range of attractions...</p>
-            <p>From the bustling streets of Baltimore to the serene shores of the Chesapeake Bay...</p>
-            <p>Join us as we delve deeper into what makes Maryland a must-visit destination.</p>
-          `,
-          images: [
-            'https://via.placeholder.com/800x400?text=Maryland+1',
-            'https://via.placeholder.com/800x400?text=Maryland+2',
-            'https://via.placeholder.com/800x400?text=Maryland+3',
-          ],
-        };
-
-        setTimeout(() => {
-          setBlogPost(data);
-          setLoading(false);
-        }, 1000);
-      } catch (err) {
-        console.error(err);
-        setError(true);
+        const res = await fetch(`/api/blog-news/${slug}?type=blog`);
+        if (!res.ok) throw new Error("Failed to fetch blog post");
+        const data = await res.json();
+        setPost(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
         setLoading(false);
       }
-    };
-
-    fetchBlogPost();
-  }, [id]);
+    }
+    fetchPost();
+  }, [slug]);
 
   if (loading) return <div className={styles.loading}>Loading...</div>;
-  if (error || !blogPost)
-    return <div className={styles.error}>Blog post not found or an error occurred.</div>;
+  if (!post) return <div className={styles.error}>Blog post not found.</div>;
 
-  // Prepare images for the gallery
-  const galleryImages = blogPost.images.map((img) => ({
-    original: img,
-    thumbnail: img,
-  }));
+  // Ensure the same image logic:
+  // If DB image is a local file, prepend /images/; else if starts with http, use as-is.
+  const fallbackImage = "/images/placeholder.jpg";
+  let imageSrc = fallbackImage;
+  if (post.image) {
+    if (post.image.startsWith("http")) {
+      imageSrc = post.image;
+    } else {
+      imageSrc = `/images/${post.image}`;
+    }
+  }
 
   return (
     <>
       <Head>
-        <title>{blogPost.title} | Company Name</title>
-        <meta
-          name="description"
-          content="Read our latest blog post on exploring the beauty of Maryland."
-        />
-        {/* Add more meta tags as needed */}
+        <title>{post.title} | Company Name</title>
+        <meta name="description" content={`Read our blog post: ${post.title}`} />
       </Head>
-      <article className={styles['blog-detail-page']}>
-        <header className={styles['blog-detail-header']}>
-          <h1 className={styles['blog-detail-title']}>{blogPost.title}</h1>
-          <p className={styles['blog-detail-meta']}>
-            By {blogPost.author} | {blogPost.date}
+
+      <article className={styles["blog-detail-page"]}>
+        <header className={styles["blog-detail-header"]}>
+          <Image
+            src={imageSrc}
+            alt={post.title}
+            width={800} // Adjust width as needed
+            height={400} // Adjust height as needed
+            className={styles["header-image"]}
+          />
+          <h1 className={styles["blog-detail-title"]}>{post.title}</h1>
+          <p className={styles["blog-detail-meta"]}>
+            By {post.author} | {post.date}
           </p>
         </header>
 
-        <section className={styles['blog-detail-gallery']}>
-          <ImageGallery items={galleryImages} showPlayButton={false} />
-        </section>
-
-        <section
-          className={styles['blog-detail-content']}
-          dangerouslySetInnerHTML={{ __html: blogPost.content }}
-        ></section>
-
-        {/* Interaction buttons */}
-        <div className={styles['blog-interactions']}>
-          <button className={styles['interaction-button']} aria-label="Like">
-            👍 Like
-          </button>
-          <button className={styles['interaction-button']} aria-label="Share">
-            🔗 Share
-          </button>
-          <button className={styles['interaction-button']} aria-label="Bookmark">
-            📌 Bookmark
-          </button>
-        </div>
-
-        {/* Comments section */}
-        <section className={styles['comments-section']}>
-          <h3>Comments</h3>
-          <p>Comments feature coming soon!</p>
+        <section className={styles["blog-detail-content"]}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {post.content}
+          </ReactMarkdown>
         </section>
       </article>
     </>

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Event" ADD COLUMN     "adultOnly" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "isFree" BOOLEAN NOT NULL DEFAULT false;

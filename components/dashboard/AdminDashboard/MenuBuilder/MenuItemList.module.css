@@ -1,0 +1,58 @@
+.menuItemList {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--light-gray);
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.menuItem:hover {
+  background-color: var(--white);
+  box-shadow: var(--box-shadow-primary);
+}
+
+.itemTitle {
+  flex: 1;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.editButton,
+.deleteButton {
+  border: none;
+  color: var(--white);
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.editButton {
+  background-color: var(--primary-color);
+}
+
+.editButton:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.deleteButton {
+  background-color: #cc0000;
+}
+
+.deleteButton:hover {
+  background-color: #a80000;
+}

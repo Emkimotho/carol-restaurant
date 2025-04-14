@@ -1,0 +1,16 @@
+/* File: components/dashboard/AdminDashboard/orders/OrderStatusDropdown.module.css */
+
+.dropdownContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .select {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  

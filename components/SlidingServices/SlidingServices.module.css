@@ -1,0 +1,64 @@
+.slidingServices {
+  position: relative;
+  padding: 2rem;
+  background-color: var(--light-gray);
+  text-align: center;
+  margin: 2rem 0;
+  border-radius: 8px;
+  box-shadow: var(--box-shadow-primary);
+}
+
+/* Slider container without a fixed height; content determines height */
+.sliderContainer {
+  overflow: hidden;
+}
+
+/* Service items now flow naturally and can occupy multiple lines */
+.serviceItem {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.serviceItem h3 {
+  margin-top: 1rem;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  font-family: var(--font-heading);
+}
+
+.serviceItem p {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: var(--foreground);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.serviceIcon {
+  font-size: 3rem;
+  color: var(--secondary-color);
+}
+
+.controls {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.controlButton {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.controlButton:hover {
+  background-color: var(--primary-color-hover);
+}

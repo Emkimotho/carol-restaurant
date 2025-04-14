@@ -1,0 +1,88 @@
+.menuBuilderContainer {
+  margin: 2rem auto;
+  padding: 1.5rem;
+  max-width: 900px;
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow-primary);
+  font-family: var(--font-body);
+}
+
+.editorSection {
+  margin-top: 2rem;
+}
+
+.editorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.newItemButton {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.newItemButton:hover {
+  background-color: var(--secondary-color-hover);
+}
+
+.error {
+  color: #dc3545; /* a red color to highlight error messages */
+  margin: 1rem 0;
+  font-weight: 600;
+}
+
+/* NEW: Button to toggle showing/hiding saved menu items */
+.toggleItemsButton {
+  margin: 1rem 0;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggleItemsButton:hover {
+  background-color: var(--primary-color-hover);
+}
+
+
+.menuBuilderContainer {
+  margin: 2rem auto;
+  padding: 1.5rem;
+  max-width: 900px;
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow-primary);
+  font-family: var(--font-body);
+}
+
+.toggleItemsButton {
+  margin: 1rem 0;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggleItemsButton:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.editorSection {
+  margin-top: 2rem;
+}
+
+/* etc. for other classes */

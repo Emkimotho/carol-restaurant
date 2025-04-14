@@ -1,36 +1,73 @@
-"use client";
+// File: app/menuitem/[itemId]/page.tsx
 
-import React from "react";
-import { useParams } from "next/navigation";
-import menuData from "@/data/menuData";
+import { prisma } from "@/lib/prisma";
 import ItemDetailPage from "@/components/MenuItem/ItemDetailPage";
 import type { MenuItem } from "@/utils/types";
+import { notFound } from "next/navigation";
 
-export default function Page() {
-  const params = useParams() as { itemId: string };
-  const { itemId } = params;
+interface PageProps {
+  params: { itemId: string };
+}
 
-  // Lookup by string ID.
-  const foundItem = menuData.find((m) => m.id === itemId);
+/**
+ * Renders /menuitem/[itemId] for the item detail page.
+ * Includes nested optionGroups, category, etc.
+ */
+export default async function Page({ params }: PageProps) {
+  // Await the params to satisfy Next.js’s requirement
+  const resolvedParams = await Promise.resolve(params);
+  const { itemId } = resolvedParams;
 
-  if (!foundItem) {
-    return <div style={{ padding: "2rem" }}>Item not found!</div>;
+  // 1. Fetch the requested menu item with its category and optionGroups (including nested choices)
+  const foundItemRaw = await prisma.menuItem.findUnique({
+    where: { id: itemId },
+    include: {
+      category: true,
+      optionGroups: {
+        include: {
+          choices: {
+            include: {
+              nestedOptionGroup: {
+                include: {
+                  choices: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!foundItemRaw) {
+    // If no menu item found, use Next.js's notFound() helper.
+    return notFound();
   }
 
-  // Filter recommended items by category name.
-  const recommendedDrinks: MenuItem[] = menuData.filter(
+  // Cast the raw item to your local MenuItem type.
+  const foundItem = foundItemRaw as unknown as MenuItem;
+
+  // 2. Optionally fetch all items for recommended sections
+  const allItemsRaw = await prisma.menuItem.findMany({
+    include: { category: true },
+  });
+  const allItems = allItemsRaw as unknown as MenuItem[];
+
+  // Filter recommended items by category:
+  const recommendedDrinks = allItems.filter(
     (m) => m.category && m.category.name === "Soft Drinks"
   );
-  const desserts: MenuItem[] = menuData.filter(
+  const desserts = allItems.filter(
     (m) => m.category && m.category.name === "Desserts"
   );
-  const snacks: MenuItem[] = menuData.filter(
+  const snacks = allItems.filter(
     (m) => m.category && m.category.name === "Snacks"
   );
-  const softDrinks: MenuItem[] = menuData.filter(
+  const softDrinks = allItems.filter(
     (m) => m.category && m.category.name === "Soft Drinks"
   );
 
+  // 3. Render the client component with the found item and recommended sections
   return (
     <ItemDetailPage
       item={foundItem}

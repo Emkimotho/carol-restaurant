@@ -1,100 +1,121 @@
-/* File: components/Menu/Menu.module.css */
+/* File: components/MenuItem/ItemDetailPage.module.css */
 
-/* ==========================================================================
-   Container & Title
-   ========================================================================== */
-   .menuPage {
-    /* Container styles – adjust margins/padding as needed */
-  }
-  
-  .menuPage h1 {
-    font-family: var(--font-heading, 'Arial, sans-serif');
-    font-weight: bold;
-    color: var(--primary-color, #00bf63);
-    text-align: center;
-    margin: 1rem 0;       /* Reduced vertical margin */
-    padding-top: 0;       /* No extra top padding */
-  }
-  
-  /* ==========================================================================
-     Nav Tabs Overrides (Bootstrap)
-     ========================================================================== */
-  .menuPage :global(.nav-tabs) {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1.5rem;
-  }
-  
-  .menuPage :global(.nav-tabs .nav-link) {
-    font-size: 1.1rem;
-    padding: 0.75rem 1.25rem;
-    color: var(--primary-color, #00bf63);
-    background-color: var(--white, #fff);
-    font-family: var(--font-body, 'Arial, sans-serif');
-    text-align: center;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    border-radius: 0.5rem;
-    border: 1px solid transparent;
-  }
-  
-  .menuPage :global(.nav-tabs .nav-link.active) {
-    background-color: var(--primary-color, #00bf63);
-    color: var(--white, #fff);
-    border-color: var(--primary-color, #00bf63);
-  }
-  
-  .menuPage :global(.nav-tabs .nav-link:hover) {
-    background-color: var(--secondary-color, #D0A933);
-    color: var(--white, #fff);
-  }
-  
-  /* ==========================================================================
-     Add to Cart Button & In-Restaurant Message
-     ========================================================================== */
-  .menuPage .btnAddToCart {
-    background-color: var(--primary-color, #00bf63) !important;
-    color: var(--white, #fff) !important;
-    border: none;
-    padding: 1rem;
-    font-size: 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    display: inline-block;
-    text-align: center;
-    width: 100%;
-  }
-  
-  .menuPage .btnAddToCart:hover {
-    background-color: var(--secondary-color, #D0A933) !important;
-    transform: scale(1.05);
-  }
-  
-  /* Message style for items not available for online purchase */
-  .menuPage .textMuted {
-    color: var(--gray, #6c757d);
-    font-style: italic;
-    text-align: center;
-    padding: 0.5rem;
-  }
-  
-  /* ==========================================================================
-     Image Styling
-     ========================================================================== */
-  .menuPage .itemImage {
-    width: 50%;
-    margin: 0 auto 1rem;
-    overflow: hidden;
-    transition: transform 0.3s ease;
-  }
-  
-  .menuPage .itemImage img {
-    width: 100%;
-    display: block;
-    transition: transform 0.3s ease;
-  }
-  
-  .menuPage .itemImage:hover img {
-    transform: scale(1.1);
-  }
-  
+.detailPageContainer {
+  padding: 1rem;
+  font-family: sans-serif;
+}
+
+.mainContent {
+  display: flex;
+  gap: 1rem;
+}
+
+.imageContainer {
+  flex: 0 0 50%;
+}
+
+.itemImage {
+  border-radius: 8px;
+  object-fit: cover;
+  max-width: 100%;
+  height: auto;
+}
+
+.infoContainer {
+  flex: 1;
+}
+
+.itemTitle {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.itemDescription {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+/* Buttons row */
+.buttonsRow {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cartActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.totalPrice {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+/* Add To Cart button */
+.btnAddToCart {
+  background-color: #28a745;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btnAddToCart:hover {
+  background-color: #218838;
+}
+
+.btnBackToMenu {
+  background-color: #6c757d;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btnBackToMenu:hover {
+  background-color: #5a6268;
+}
+
+/* Toast notification for "Item added" */
+.toastNotification {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: #333;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 9999;
+  animation: fadeInOut 2s forwards;
+}
+.toastContent {
+  font-size: 0.95rem;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(20px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(20px); }
+}
+
+/* The flying golf ball */
+.flyingBall {
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 25px;
+  height: 25px;
+  pointer-events: none; /* So it doesn't capture clicks */
+  transform: translate(-50%, -50%);
+}

@@ -80,7 +80,7 @@ const Footer: React.FC = () => {
 
           {/* Column 2: Quick Links */}
           <div className={`${styles.footerColumn} ${styles.quickLinksColumn}`}>
-            <h4 className={styles.widgetTitle}>Quick Links</h4>
+            <h4 className={styles.widgetTitle}>Other Links</h4>
             <ul className={styles.quickLinksList}>
               <li className={styles.quickLinksItem}>
                 <Link href="/contact" className={styles.quickLinksLink}>

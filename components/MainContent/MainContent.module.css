@@ -2,7 +2,7 @@
    About Us Section Styles
 ======================================= */
 .aboutUs {
-  padding: 4rem 0;
+  padding: 1rem 0;  /* Reduced from 2rem to 1rem for consistent spacing */
   background-color: #fff;
 }
 
@@ -56,9 +56,7 @@
   margin-bottom: 1.5rem;
 }
 
-/* Read More Button: Green by default, hover transitions to secondary color.
-   The padding is reduced so it wraps tightly around the text.
-*/
+/* Read More Button */
 .readMoreBtn {
   display: inline-block;
   padding: 0.4rem 0.8rem;
@@ -79,7 +77,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Sweep Link Styling: Styled as text, green by default, transitions to secondary on hover with an underline sweep */
+/* Sweep Link Styling */
 .sweepLink {
   position: relative;
   color: var(--primary-color);

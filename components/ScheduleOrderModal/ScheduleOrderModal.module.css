@@ -1,0 +1,73 @@
+/* Use your global variables defined in globals.css */
+.modalContent {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--box-shadow-primary);
+  }
+  
+  .modalHeader {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+  }
+  
+  .modalTitle {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    margin: 0;
+  }
+  
+  .modalBody {
+    padding: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--foreground);
+  }
+  
+  .modalFooter {
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: none;
+  }
+  
+  .modalButtonPrimary {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+  }
+  
+  .modalButtonPrimary:hover {
+    background-color: var(--primary-color-hover);
+  }
+  
+  .modalButtonSecondary {
+    background-color: var(--secondary-color);
+    color: var(--black);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  .modalButtonSecondary:hover {
+    background-color: var(--primary-color);
+    color: var(--white);
+  }
+  
+  /* Optional: customize the close button icon */
+  .modalHeader .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+  }
+  .modalHeader .btn-close:hover {
+    opacity: 1;
+  }
+  

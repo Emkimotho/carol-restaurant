@@ -3,11 +3,11 @@
 /* Main container */
 .scheduleContainer {
   max-width: 700px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: var(--box-shadow-primary);
+  margin: 2rem auto;
+  padding: 2.5rem 2rem;
+  background: linear-gradient(180deg, var(--white), #fdfdfd);
+  border-radius: 10px;
+  box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.1);
 }
 
 /* Step Indicator */
@@ -20,8 +20,8 @@
 }
 
 .stepItem {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   background: var(--light-gray);
   color: var(--dark-gray);
@@ -35,11 +35,12 @@
 .stepItemActive {
   background: var(--primary-color);
   color: #fff;
-  transform: scale(1.05);
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .stepLabel {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--dark-gray);
   text-align: center;
 }
@@ -48,17 +49,18 @@
 .scheduleHeading {
   text-align: center;
   font-family: var(--font-heading);
-  font-size: 1.8rem;
+  font-size: 2rem;
   color: var(--primary-color);
   margin-bottom: 1rem;
+  letter-spacing: 0.5px;
 }
 
 .scheduleIntro {
   text-align: center;
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--dark-gray);
   margin-bottom: 2rem;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* Day & Time Grids */
@@ -66,16 +68,16 @@
 .timeGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 1rem;
   justify-content: center;
   margin-bottom: 2rem;
 }
 
 .dayCard,
 .timeSlot {
-  width: 90px;
-  padding: 0.75rem;
-  border-radius: 6px;
+  width: 100px;
+  padding: 1rem;
+  border-radius: 8px;
   text-align: center;
   cursor: pointer;
   background: var(--light-gray);
@@ -85,8 +87,8 @@
 
 .dayCard:hover,
 .timeSlot:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .dayCardSelected,
@@ -108,10 +110,10 @@
   color: #721c24;
   background-color: #f8d7da;
   border: 1px solid #f5c6cb;
-  padding: 0.75rem;
-  border-radius: 4px;
+  padding: 1rem;
+  border-radius: 5px;
   margin-bottom: 1rem;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 /* Action Buttons */
@@ -119,14 +121,15 @@
   display: flex;
   justify-content: center;
   gap: 1rem;
+  margin-top: 1rem;
 }
 
 .btnCancel,
 .btnPrimary {
-  min-width: 100px;
-  padding: 0.75rem 1.5rem;
+  min-width: 120px;
+  padding: 0.8rem 1.8rem;
   font-size: 1rem;
-  border-radius: 6px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
   transition: background 0.3s ease, transform 0.3s ease;
@@ -139,7 +142,7 @@
 
 .btnCancel:hover {
   background-color: var(--gray-hover);
-  transform: scale(1.03);
+  transform: scale(1.05);
 }
 
 .btnPrimary {
@@ -149,28 +152,28 @@
 
 .btnPrimary:hover {
   background-color: var(--primary-color-hover);
-  transform: scale(1.03);
+  transform: scale(1.05);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .scheduleContainer {
-    padding: 1.5rem 1rem;
+    padding: 2rem 1.5rem;
   }
 
   .scheduleHeading {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
   }
 
   .dayCard,
   .timeSlot {
-    width: 80px;
-    padding: 0.6rem;
+    width: 90px;
+    padding: 0.8rem;
   }
 
   .btnCancel,
   .btnPrimary {
-    font-size: 0.9rem;
-    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+    padding: 0.7rem 1.2rem;
   }
 }

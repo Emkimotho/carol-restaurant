@@ -1,11 +1,16 @@
+// File: app/checkout/PaymentStep.tsx
 "use client";
 
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, ChangeEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/app/checkout/Checkout.module.css";
 import { CartContext } from "@/contexts/CartContext";
+import { OrderContext, Order } from "@/contexts/OrderContext";
 
 interface PaymentStepProps {
+  orderId?: string | null;
+  items?: { cloverItemId: string; quantity: number }[];
+  totalAmount?: number;
   orderType: string;
   isSameAddress: boolean;
   billingAddress: {
@@ -20,262 +25,217 @@ interface PaymentStepProps {
     state: string;
     zipCode: string;
   };
-  onBillingAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSameAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBack: () => void;
+  onBillingAddressChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  onSameAddressChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onNext: () => void;
+  onBack: () => void;
 }
 
-/**
- * PaymentStep component renders a unified payment form that includes:
- * - Payment information (card number, expiry date, CVV)
- * - Billing address (if applicable)
- * - Terms and conditions agreement
- * - A "Make Payment" button below all fields.
- *
- * The form validates:
- * - The card number must be exactly 16 digits (ignoring spaces)
- * - The expiry date must be in MM/YY format with a valid month (01-12)
- * - The CVV must be exactly 3 digits
- *
- * If validation passes, the cart is cleared and a success message with a redirect
- * button is displayed. The page automatically scrolls to the top on payment success.
- */
-const PaymentStep: React.FC<PaymentStepProps> = ({
-  orderType,
-  isSameAddress,
-  billingAddress,
-  deliveryAddress,
-  onBillingAddressChange,
-  onSameAddressChange,
-  onBack,
-  onNext,
-}) => {
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
+const PaymentStep: React.FC<PaymentStepProps> = (props) => {
+  const {
+    orderId: propOrderId,
+    items: propItems,
+    totalAmount: propTotalAmount,
+    orderType,
+    isSameAddress,
+    billingAddress,
+    deliveryAddress,
+    onBillingAddressChange,
+    onSameAddressChange,
+    onNext,
+    onBack,
+  } = props;
+
   const router = useRouter();
   const { clearCart } = useContext(CartContext)!;
+  const { order, setOrder } = useContext(OrderContext)!;
 
-  // Scroll to the top when payment is complete.
+  // Determine effective values: use props first, then context.
+  const effectiveOrderId = propOrderId ?? order.orderId;
+  const effectiveItems = propItems ?? order.items;
+  const effectiveTotalAmount =
+    typeof propTotalAmount === "number" ? propTotalAmount : order.totalAmount;
+
   useEffect(() => {
-    if (paymentCompleted) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    console.log("PaymentStep: effectiveOrderId =", effectiveOrderId);
+    console.log("PaymentStep: effectiveItems =", effectiveItems);
+    console.log("PaymentStep: effectiveTotalAmount =", effectiveTotalAmount);
+  }, [effectiveOrderId, effectiveItems, effectiveTotalAmount]);
+
+  // Handle customer name and address.
+  const [customerName, setCustomerName] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+
+  useEffect(() => {
+    if (orderType.includes("delivery") && deliveryAddress) {
+      const { street, city, state, zipCode } = deliveryAddress;
+      setCustomerAddress(`${street}, ${city}, ${state} ${zipCode}`);
+    } else if (billingAddress) {
+      const { street, city, state, zipCode } = billingAddress;
+      setCustomerAddress(`${street}, ${city}, ${state} ${zipCode}`);
     }
-  }, [paymentCompleted]);
+  }, [orderType, deliveryAddress, billingAddress]);
 
-  const handlePaymentSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // Function to create the order in the database if not already created.
+  const createOrderInDB = async (): Promise<Order> => {
+    const payload = {
+      customerId: "", // Adjust as needed.
+      items: effectiveItems,
+      totalAmount: effectiveTotalAmount,
+      // Optionally include orderType or other details.
+    };
 
-    // Validate card number: remove spaces and ensure exactly 16 digits.
-    const cleanedCardNumber = cardNumber.replace(/\s+/g, "");
-    if (!/^\d{16}$/.test(cleanedCardNumber)) {
-      alert("Please enter a valid 16-digit card number.");
-      return;
-    }
-
-    // Validate expiry date: must be in MM/YY format with month between 01 and 12.
-    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryDate)) {
-      alert("Please enter a valid expiry date in MM/YY format.");
-      return;
-    }
-
-    // Validate CVV: exactly 3 digits.
-    if (!/^\d{3}$/.test(cvv)) {
-      alert("Please enter a valid 3-digit CVV.");
-      return;
-    }
-
-    // Payment validation passed: clear the cart and mark payment as complete.
-    clearCart();
-    setPaymentCompleted(true);
+    console.log("PaymentStep: Creating order in DB with payload:", payload);
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Failed to create order in DB");
+    const newOrder: Order = await res.json();
+    console.log("PaymentStep: Order created in DB:", newOrder);
+    // Update the context with the returned DB id.
+    setOrder((prev) => ({ ...prev, dbId: newOrder.id }));
+    return newOrder;
   };
 
-  if (paymentCompleted) {
-    return (
-      <div className={styles.checkoutSection}>
-        <h4>Payment Successful!</h4>
-        <p>Your order has been processed successfully.</p>
-        <button
-          onClick={() => router.push("/menu")}
-          className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSweepWave}`}
-        >
-          Go to Menu
-        </button>
-      </div>
-    );
-  }
+  // Payment logic.
+  const [loading, setLoading] = useState(false);
+
+  const handleMakePayment = async () => {
+    if (!effectiveOrderId) {
+      alert("Order ID is missing. Please retry or start a new order.");
+      return;
+    }
+    if (!effectiveItems || effectiveItems.length === 0) {
+      alert("Your cart is empty. Please add items before checking out.");
+      return;
+    }
+    if (typeof effectiveTotalAmount !== "number" || effectiveTotalAmount < 0) {
+      alert("Invalid total amount. Please review your order.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // First, ensure the order record exists in the database.
+      const createdOrder = await createOrderInDB();
+
+      // Then, prepare payload for payment (Clover) API.
+      const payload = {
+        orderId: effectiveOrderId, // human-friendly id from context
+        dbId: createdOrder.id,      // the database id returned
+        items: effectiveItems,
+        totalAmount: effectiveTotalAmount,
+        customerName,
+        customerAddress,
+      };
+      console.log("PaymentStep: Sending payload to /api/clover/payment:", payload);
+
+      const res = await fetch("/api/clover/payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      console.log("PaymentStep: Response from payment API:", data);
+
+      if (data.checkoutUrl) {
+        clearCart();
+        window.location.href = data.checkoutUrl;
+      } else {
+        alert("Error initiating payment session: " + JSON.stringify(data));
+      }
+    } catch (error) {
+      console.error("PaymentStep: Payment processing error:", error);
+      alert("An error occurred while processing payment.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={styles.checkoutSection}>
       <h4>Payment Details</h4>
-      <form onSubmit={handlePaymentSubmit}>
-        <div className={styles.paymentOptions}>
-          <p>Enter your payment information:</p>
-          <div className={styles.formGroup}>
-            <label htmlFor="cardNumber">
-              Card Number<span className={styles.required}>*</span>
-            </label>
-            <input
-              type="text"
-              id="cardNumber"
-              name="cardNumber"
-              className={styles.formControl}
-              placeholder="1234 5678 9012 3456"
-              value={cardNumber}
-              onChange={(e) => setCardNumber(e.target.value)}
-              required
-            />
-          </div>
-          <div className={styles.formRow}>
-            <div className={`${styles.formGroup} ${styles.colMd6}`}>
-              <label htmlFor="expiryDate">
-                Expiry Date<span className={styles.required}>*</span>
-              </label>
-              <input
-                type="text"
-                id="expiryDate"
-                name="expiryDate"
-                className={styles.formControl}
-                placeholder="MM/YY"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
-                required
-              />
-            </div>
-            <div className={`${styles.formGroup} ${styles.colMd6}`}>
-              <label htmlFor="cvv">
-                CVV<span className={styles.required}>*</span>
-              </label>
-              <input
-                type="text"
-                id="cvv"
-                name="cvv"
-                className={styles.formControl}
-                placeholder="123"
-                value={cvv}
-                onChange={(e) => setCvv(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        {orderType === "delivery" && (
-          <div className={`${styles.formCheck} mt-3`}>
-            <input
-              type="checkbox"
-              id="sameAddress"
-              name="sameAddress"
-              className={styles.formCheckInput}
-              checked={isSameAddress}
-              onChange={onSameAddressChange}
-            />
-            <label htmlFor="sameAddress" className={styles.formCheckLabel}>
-              Is your billing address the same as your delivery address?
-            </label>
-          </div>
-        )}
-
-        {((orderType === "delivery" && !isSameAddress) ||
-          orderType === "pickup") && (
-          <div className={`${styles.billingAddress} mt-3`}>
-            <h5>Please Enter Your Billing Address</h5>
-            <div className={styles.formGroup}>
-              <label htmlFor="billingStreet">
-                Street Address<span className={styles.required}>*</span>
-              </label>
-              <input
-                type="text"
-                id="billingStreet"
-                name="street"
-                className={styles.formControl}
-                value={billingAddress.street}
-                onChange={onBillingAddressChange}
-                required
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label htmlFor="billingCity">
-                City<span className={styles.required}>*</span>
-              </label>
-              <input
-                type="text"
-                id="billingCity"
-                name="city"
-                className={styles.formControl}
-                value={billingAddress.city}
-                onChange={onBillingAddressChange}
-                required
-              />
-            </div>
-            <div className={styles.formRow}>
-              <div className={`${styles.formGroup} ${styles.colMd6}`}>
-                <label htmlFor="billingState">
-                  State<span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  id="billingState"
-                  name="state"
-                  className={styles.formControl}
-                  value={billingAddress.state}
-                  onChange={onBillingAddressChange}
-                  required
-                />
-              </div>
-              <div className={`${styles.formGroup} ${styles.colMd6}`}>
-                <label htmlFor="billingZipCode">
-                  Zip Code<span className={styles.required}>*</span>
-                </label>
-                <input
-                  type="text"
-                  id="billingZipCode"
-                  name="zipCode"
-                  className={styles.formControl}
-                  value={billingAddress.zipCode}
-                  onChange={onBillingAddressChange}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className={`${styles.formCheck} mt-3`}>
+      <div style={{ marginBottom: "1rem" }}>
+        <label htmlFor="customerName">Your Name:</label>
+        <input
+          id="customerName"
+          type="text"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+          placeholder="John Doe"
+          style={{ width: "100%", padding: "0.5rem" }}
+        />
+      </div>
+      <p>
+        <strong>Order Type:</strong> {orderType}
+      </p>
+      <p>
+        <strong>Billing Same as Delivery:</strong>{" "}
+        {isSameAddress ? "Yes" : "No"}
+      </p>
+      <div>
+        <h5>Billing Address:</h5>
+        <input
+          type="text"
+          name="street"
+          value={billingAddress.street}
+          onChange={onBillingAddressChange}
+          placeholder="Street"
+        />
+        <input
+          type="text"
+          name="city"
+          value={billingAddress.city}
+          onChange={onBillingAddressChange}
+          placeholder="City"
+        />
+        <input
+          type="text"
+          name="state"
+          value={billingAddress.state}
+          onChange={onBillingAddressChange}
+          placeholder="State"
+        />
+        <input
+          type="text"
+          name="zipCode"
+          value={billingAddress.zipCode}
+          onChange={onBillingAddressChange}
+          placeholder="ZipCode"
+        />
+        <div>
           <input
             type="checkbox"
-            id="terms"
-            name="terms"
-            className={styles.formCheckInput}
-            required
+            checked={isSameAddress}
+            onChange={onSameAddressChange}
           />
-          <label htmlFor="terms" className={styles.formCheckLabel}>
-            I agree to the{" "}
-            <a href="/terms" className={styles.termsLink}>
-              terms and conditions
-            </a>
-            .
-          </label>
+          <label>Same as Delivery Address</label>
         </div>
-
-        <div className={styles.navigationButtons}>
-          <button
-            type="button"
-            onClick={onBack}
-            className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSweepWave}`}
-          >
-            Back
-          </button>
-          <button
-            type="submit"
-            className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSweepWave}`}
-          >
-            Make Payment
-          </button>
-        </div>
-      </form>
+      </div>
+      <div className={styles.navigationButtons}>
+        <button
+          onClick={onBack}
+          className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSweepWave}`}
+        >
+          Back
+        </button>
+        <button
+          onClick={onNext}
+          className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSweepWave}`}
+        >
+          Next
+        </button>
+        <button
+          onClick={handleMakePayment}
+          className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSweepWave}`}
+          disabled={loading}
+        >
+          {loading ? "Processing..." : "Make Payment"}
+        </button>
+      </div>
     </div>
   );
 };

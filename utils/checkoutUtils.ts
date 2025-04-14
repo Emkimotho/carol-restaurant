@@ -1,5 +1,3 @@
-// utils/checkoutUtils.ts
-
 /**
  * Formats a phone number into (XXX) XXX-XXXX format.
  *
@@ -8,7 +6,7 @@
  */
 export const formatPhoneNumber = (value: string): string => {
   if (!value) return value;
-  const digitsOnly = value.replace(/[^\d]/g, '');
+  const digitsOnly = value.replace(/[^\d]/g, "");
   const length = digitsOnly.length;
 
   if (length < 4) return digitsOnly;
@@ -30,19 +28,6 @@ export const validatePhoneNumber = (phone: string): boolean => {
 };
 
 /**
- * Calculates the delivery fee based on a fixed base fee and mileage.
- * 
- * Note: The mileage is currently hard-coded. Update this logic as needed.
- *
- * @returns The calculated delivery fee.
- */
-export const calculateDeliveryFee = (): number => {
-  const baseFee = 5;
-  const miles = 5; // Replace with dynamic distance calculation if required.
-  return baseFee + miles;
-};
-
-/**
  * Calculates the tip amount based on the subtotal.
  *
  * @param total - The subtotal amount.
@@ -55,7 +40,7 @@ export const calculateTipAmount = (
   tip: string,
   customTip: string
 ): number => {
-  if (tip === 'custom') {
+  if (tip === "custom") {
     return parseFloat(customTip) || 0;
   }
   return total * (parseFloat(tip) / 100);
@@ -68,10 +53,8 @@ export const calculateTipAmount = (
  * @param taxRate - The tax rate (e.g., 0.07 for 7%).
  * @returns The calculated tax amount.
  */
-export const calculateTaxAmount = (
-  total: number,
-  taxRate: number
-): number => total * taxRate;
+export const calculateTaxAmount = (total: number, taxRate: number): number =>
+  total * taxRate;
 
 /**
  * Calculates the final total including tip, tax, and delivery fee.
@@ -80,7 +63,7 @@ export const calculateTaxAmount = (
  * @param tipAmount - The calculated tip amount.
  * @param taxAmount - The calculated tax amount.
  * @param deliveryFee - The delivery fee amount.
- * @returns The final total formatted as a string.
+ * @returns The final total as a string (e.g., "25.50").
  */
 export const calculateTotalWithTipAndTax = (
   subtotal: number,

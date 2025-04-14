@@ -1,0 +1,19 @@
+/* File: components/dashboard/AdminDashboard/orders/OrderFilters.module.css */
+
+.filterContainer {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .filterContainer label {
+    font-weight: bold;
+  }
+  
+  .filterContainer select {
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  

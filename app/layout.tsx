@@ -1,32 +1,35 @@
-/**
- * Developed by Kimtech Solutions
- */
+// File: app/layout.tsx
 
-import "bootstrap/dist/css/bootstrap.min.css"; // Import Bootstrap CSS
-import "./globals.css"; // Import global custom styles
+import "./globals.css"; // Global CSS file
+import { Inter } from "next/font/google";
 
-import Providers from "@/components/Providers";
-import ConditionalClientLayout from "@/components/ConditionalClientLayout";
-import Preloader from "@/components/Preloader/Preloader";
+// Import your existing Header and Footer components
+import Header from "@/components/Header/Header";
+import Footer from "@/components/Footer/Footer";
+
+// Import the Providers client component (which includes React Query and other contexts)
+import Providers from "@/app/Providers";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "The 19th Hole | Home",
-  description: "Experience the finest dining and entertainment at The 19th Hole.",
+  title: "Your App Title",
+  description: "Your App Description",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" className="light" style={{ colorScheme: "light" }}>
-      <head>
-        <meta name="description" content={metadata.description} />
-        <title>{metadata.title}</title>
-      </head>
-      <body>
+    <html lang="en">
+      <body className={inter.className}>
+        {/* Providers is a Client Component wrapping QueryClientProvider and all your context providers */}
         <Providers>
-          {/* Global preloader during page load */}
-          <Preloader />
-          {/* Conditionally wrap children with ClientLayout for public routes only */}
-          <ConditionalClientLayout>{children}</ConditionalClientLayout>
+          <Header />
+          <main>{children}</main>
+          <Footer />
         </Providers>
       </body>
     </html>

@@ -1,13 +1,15 @@
-// File: app/api/menu/item/route.ts
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
-
+/**
+ * GET /api/menu/item
+ * Returns { menuItems: [...] } with nested option groups and category data.
+ */
 export async function GET() {
   try {
     const items = await prisma.menuItem.findMany({
       include: {
+        category: true, // <-- Ensure the category relation is included
         optionGroups: {
           include: {
             choices: {
@@ -21,18 +23,20 @@ export async function GET() {
         },
       },
     });
-    return NextResponse.json({ items });
+    return NextResponse.json({ menuItems: items }, { status: 200 });
   } catch (error) {
     console.error("Error fetching menu items:", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
 
+/**
+ * POST /api/menu/item
+ * Creates a new menu item.
+ */
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-
-    // Destructure fields from the payload
     const {
       title,
       description,
@@ -44,7 +48,6 @@ export async function POST(request: Request) {
       optionGroups,
     } = data;
 
-    // Transform the optionGroups array into a nested create object for Prisma.
     const optionGroupsCreate = optionGroups
       ? {
           create: optionGroups.map((group: any) => ({
@@ -57,7 +60,6 @@ export async function POST(request: Request) {
                   create: group.choices.map((choice: any) => ({
                     label: choice.label,
                     priceAdjustment: choice.priceAdjustment,
-                    // If the choice includes a nested option group, transform it similarly:
                     nestedOptionGroup: choice.nestedOptionGroup
                       ? {
                           create: {
@@ -66,10 +68,12 @@ export async function POST(request: Request) {
                             maxAllowed: choice.nestedOptionGroup.maxAllowed,
                             choices: choice.nestedOptionGroup.choices
                               ? {
-                                  create: choice.nestedOptionGroup.choices.map((nc: any) => ({
-                                    label: nc.label,
-                                    priceAdjustment: nc.priceAdjustment,
-                                  })),
+                                  create: choice.nestedOptionGroup.choices.map(
+                                    (nc: any) => ({
+                                      label: nc.label,
+                                      priceAdjustment: nc.priceAdjustment,
+                                    })
+                                  ),
                                 }
                               : undefined,
                           },

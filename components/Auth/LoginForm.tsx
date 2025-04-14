@@ -42,13 +42,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onOpenForgotPassword, onOpenSignu
       if (data.user && data.user.roles) {
         const roles: string[] = data.user.roles;
         if (roles.includes("ADMIN") || roles.includes("SUPERADMIN")) {
-          router.push("/admin-dashboard");
+          router.push("/dashboard/admin-dashboard");
         } else if (roles.includes("STAFF")) {
-          router.push("/staff-dashboard");
+          router.push("/dashboard/staff-dashboard");
         } else if (roles.includes("DRIVER")) {
-          router.push("/driver-dashboard");
+          router.push("/dashboard/driver-dashboard");
         } else if (roles.includes("CUSTOMER")) {
-          router.push("/customer-dashboard");
+          router.push("/dashboard/customer-dashboard");
         } else {
           router.push("/dashboard");
         }

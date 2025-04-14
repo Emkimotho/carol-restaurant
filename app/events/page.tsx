@@ -1,158 +1,75 @@
-"use client"; // Needed if using Next.js 13 App Router in a client component
+"use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
-import styles from "./Events.module.css";
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import EventCard from "@/components/Events/EventCard";
+import styles from "@/components/Events/Events.module.css";
 
-// Example event image inside /public/images (adjust path/filename if needed)
-const tasteAfricaImage = "/images/taste-africa.jpg";
+export interface EventData {
+  id: string;
+  title: string;
+  description: string;
+  image?: string;
+  location: string;
+  date: string;
+  time: string;
+  adultPrice: number;
+  kidPrice: number;
+  availableTickets: number;
+  isFree: boolean;
+  adultOnly: boolean;
+}
 
-const Events: React.FC = () => {
-  // Mock data for demonstration (replace with real backend data)
-  const [event] = useState({
-    title: "African Networking",
-    description:
-      "A delightful event showcasing African food, music, and culture.",
-    image: tasteAfricaImage,
-    location: "123 Event Street, City, Country",
-    date: "2024-12-01",
-    time: "6:00 PM",
-    prices: {
-      adults: 50,
-      kids: 20,
-    },
-    availableTickets: 100, // Total number of tickets available
-  });
+export default function EventsPage() {
+  const [events, setEvents] = useState<EventData[]>([]);
 
-  // Booking state: start at zero for both adults and kids
-  const [booking, setBooking] = useState({
-    adults: 0,
-    kids: 0,
-  });
-
-  // State for total price and remaining tickets
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [ticketsLeft, setTicketsLeft] = useState(event.availableTickets);
-
-  // Handle input changes for booking fields
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setBooking((prev) => ({
-      ...prev,
-      [name]: parseInt(value) || 0, // default to 0 if input is cleared
-    }));
-  };
-
-  // Recalculate the total price
-  const calculateTotal = () => {
-    const newTotal =
-      booking.adults * event.prices.adults + booking.kids * event.prices.kids;
-    setTotalPrice(newTotal);
-  };
-
-  // Booking confirmation and validation
-  const handleBook = () => {
-    const totalTickets = booking.adults + booking.kids;
-
-    // Check if no participants
-    if (totalTickets === 0) {
-      alert("Add at least one participant.");
-      return;
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch("/api/events");
+        if (!res.ok) throw new Error("Failed to fetch events");
+        const data = await res.json();
+        const eventsFromDB: EventData[] = data.events.map((ev: any) => ({
+          ...ev,
+          date: new Date(ev.date).toISOString(),
+        }));
+        setEvents(eventsFromDB);
+      } catch (error) {
+        console.error(error);
+        toast.error("Error fetching events");
+      }
     }
+    fetchEvents();
+  }, []);
 
-    // Check if enough tickets are left
-    if (totalTickets > ticketsLeft) {
-      alert("Not enough tickets available!");
-      return;
-    }
-
-    // Payment logic (e.g., Clover) would go here
-
-    // Update available tickets after successful booking
-    setTicketsLeft((prev) => prev - totalTickets);
-    alert(`Booking confirmed! Total price: $${totalPrice}`);
-  };
+  if (!events || events.length === 0) {
+    return (
+      <section className={styles.eventsPage} style={{ textAlign: "center", padding: "2rem" }}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          height="100"
+          viewBox="0 0 24 24"
+          width="100"
+          fill="#ccc"
+          style={{ marginBottom: "1rem" }}
+        >
+          <path d="M0 0h24v24H0z" fill="none" />
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H8v-2h4v2zm4-4H8v-2h8v2zm0-4H8V7h8v2z" />
+        </svg>
+        <h2>No events available at the moment.</h2>
+        <p>Please check back later for upcoming events.</p>
+      </section>
+    );
+  }
 
   return (
-    <section className={styles["events-section"]}>
-      <div className="container">
-        <div className={styles["event-card"]}>
-          {/* Event Image */}
-          <div className={styles["event-image-wrapper"]}>
-            <Image
-              src={event.image}
-              alt={event.title}
-              width={400}
-              height={300}
-              className={styles["event-image"]}
-            />
-          </div>
-
-          {/* Event Details */}
-          <div className={styles["event-details"]}>
-            <h2>{event.title}</h2>
-            <p>{event.description}</p>
-            <p>
-              <strong>Location:</strong> {event.location}
-            </p>
-            <p>
-              <strong>Date &amp; Time:</strong> {event.date} at {event.time}
-            </p>
-            <p>
-              <strong>Available Tickets:</strong> {ticketsLeft}
-            </p>
-            <div className={styles["ticket-prices"]}>
-              <p>
-                <strong>Adults:</strong> ${event.prices.adults} each
-              </p>
-              <p>
-                <strong>Kids:</strong> ${event.prices.kids} each
-              </p>
-            </div>
-          </div>
-
-          {/* Booking Form */}
-          <div className={styles["booking-form"]}>
-            <h3>Book Your Tickets</h3>
-            <div className={styles["form-group"]}>
-              <label htmlFor="adults">Adults</label>
-              <input
-                type="number"
-                id="adults"
-                name="adults"
-                min={0}
-                value={booking.adults}
-                onChange={handleChange}
-                onBlur={calculateTotal}
-              />
-            </div>
-            <div className={styles["form-group"]}>
-              <label htmlFor="kids">Kids</label>
-              <input
-                type="number"
-                id="kids"
-                name="kids"
-                min={0}
-                value={booking.kids}
-                onChange={handleChange}
-                onBlur={calculateTotal}
-              />
-            </div>
-
-            {/* Total Price */}
-            <div className={styles["total-price"]}>
-              <strong>Total Price: ${totalPrice}</strong>
-            </div>
-
-            {/* Book Now Button */}
-            <button className="btn btn-primary" onClick={handleBook}>
-              Book Now
-            </button>
-          </div>
-        </div>
+    <section className={styles.eventsPage}>
+      <h1 className={styles.eventsHeader}>Upcoming Events</h1>
+      <div className={styles.eventsGrid}>
+        {events.map((event) => (
+          <EventCard key={event.id} event={event} />
+        ))}
       </div>
     </section>
   );
-};
-
-export default Events;
+}

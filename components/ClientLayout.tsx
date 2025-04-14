@@ -1,9 +1,12 @@
+// File: components/ClientLayout.tsx
+
 "use client";
 
 import React, { useContext } from "react";
 import Header from "@/components/Header/Header";
 import Footer from "@/components/Footer/Footer";
-import SidebarCart from "@/components/SidebarCart/SidebarCart";
+// Removed SidebarCart import since we no longer use a sidebar cart
+// import SidebarCart from "@/components/SidebarCart/SidebarCart";
 import { CartContext } from "@/contexts/CartContext";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -14,7 +17,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <Header />
       <main style={{ marginTop: "70px" }}>{children}</main>
       <Footer />
-      <SidebarCart isOpen={isSidebarCartOpen} onClose={closeSidebarCart} />
+      {/* Since we are now using a full-page cart, the SidebarCart is no longer rendered.
+          If needed, you can remove the open/close logic later from CartContext as well. */}
+      {/* <SidebarCart isOpen={isSidebarCartOpen} onClose={closeSidebarCart} /> */}
     </>
   );
 }

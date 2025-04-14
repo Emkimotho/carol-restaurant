@@ -1,0 +1,33 @@
+/* File: components/dashboard/AdminDashboard/UserCard.module.css */
+
+/* 
+  Note: Added margin-top to ensure user cards aren’t overlapped by a fixed header.
+  You may also consider adding padding to the parent container if that suits your layout better.
+*/
+.userCard {
+  background-color: #fff;
+  padding: 1rem;
+  margin-top: 1rem; /* Prevents the card from being hidden under a fixed header */
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1;
+}
+
+.userCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.userName {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.userRole {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}

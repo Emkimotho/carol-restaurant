@@ -1,3 +1,5 @@
+// File: utils/types.ts
+
 /**
  * Represents a menu category (main sections or subcategories).
  */
@@ -65,6 +67,10 @@ export interface MenuItem {
   category: MenuCategory;
   // Option groups allow for further customization.
   optionGroups?: MenuItemOptionGroup[];
+  // NEW: Optional Clover Item ID for integrating with Clover inventory and payments.
+  cloverItemId?: string;
+  // NEW: Stock field to track inventory.
+  stock: number;
 }
 
 /**

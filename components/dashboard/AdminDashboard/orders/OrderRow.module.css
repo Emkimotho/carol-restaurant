@@ -1,0 +1,30 @@
+/* File: components/dashboard/AdminDashboard/orders/OrderRow.module.css */
+
+.row {
+    transition: background-color 0.3s ease;
+  }
+  
+  .row:hover {
+    background-color: #f9f9f9;
+  }
+  
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .button {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    background-color: #0070f3;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+  }
+  
+  .button:hover {
+    background-color: #005bb5;
+  }
+  

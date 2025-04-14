@@ -1,12 +1,12 @@
 // File: prisma/seed.cjs
 
-const { PrismaClient, RoleName } = require('@prisma/client');
-const bcrypt = require('bcrypt');
+const { PrismaClient, RoleName } = require("@prisma/client");
+const bcrypt = require("bcrypt");
 
 const prisma = new PrismaClient();
 
 // Define default roles
-const roleNames = ['SUPERADMIN', 'ADMIN', 'STAFF', 'DRIVER', 'CUSTOMER'];
+const roleNames = ["SUPERADMIN", "ADMIN", "STAFF", "DRIVER", "CUSTOMER"];
 
 async function main() {
   // Upsert roles
@@ -17,11 +17,11 @@ async function main() {
       create: { name: roleName },
     });
   }
-  console.log('Default roles seeded');
+  console.log("Default roles seeded");
 
   // Admin account credentials (update as needed)
-  const adminEmail = 'admin@example.com';
-  const adminPassword = 'password123';
+  const adminEmail = "admin@example.com";
+  const adminPassword = "password123";
 
   // Check if an admin account exists
   const existingAdmin = await prisma.user.findUnique({
@@ -37,8 +37,8 @@ async function main() {
       data: {
         email: adminEmail,
         password: hashedPassword,
-        firstName: 'Admin',
-        lastName: 'User',
+        firstName: "Admin",
+        lastName: "User",
         isVerified: true,
       },
     });
@@ -57,10 +57,15 @@ async function main() {
         },
       });
     }
-    console.log('Admin account created.');
+    console.log("Admin account created.");
   } else {
-    console.log('Admin account already exists.');
+    console.log("Admin account already exists.");
   }
+
+  // ----- REMOVED: No longer seeding posts or blogNews records -----
+  // because you want to create them via admin UI & API calls.
+
+  console.log("Seeding complete (only default roles and admin user).");
 }
 
 main()

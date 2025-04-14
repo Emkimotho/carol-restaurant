@@ -4,26 +4,25 @@ import React, { useContext, useState, useEffect } from "react";
 import styles from "./Checkout.module.css";
 import { CartContext } from "@/contexts/CartContext";
 import { AuthContext } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import GuestChoice from "@/components/checkout/GuestChoice";
 import GuestDetails from "@/components/checkout/GuestDetails";
 import OrderTypeStep from "@/components/checkout/OrderTypeStep";
 import DeliveryAddressStep from "@/components/checkout/DeliveryAddressStep";
 import OrderSummaryStep from "@/components/checkout/OrderSummaryStep";
 import PaymentStep from "@/components/checkout/PaymentStep";
-import {
-  validatePhoneNumber,
-  formatPhoneNumber,
-  calculateDeliveryFee,
-} from "@/utils/checkoutUtils";
+import { validatePhoneNumber, formatPhoneNumber } from "@/utils/checkoutUtils";
 
 const Checkout: React.FC = () => {
-  const { cartItems, getTotalPrice, clearCart } = useContext(CartContext)!;
+  const { cartItems, getTotalPrice } = useContext(CartContext)!;
   const { user } = useContext(AuthContext)!;
   const router = useRouter();
+  const searchParams = useSearchParams();
 
+  // currentStep drives our multi-step flow.
+  // (Default value is 1.)
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [orderType, setOrderType] = useState<string>("");
+  const [orderType, setOrderType] = useState<string>(""); // e.g., "pickup" or "delivery"
   const [guestDetails, setGuestDetails] = useState({
     firstName: "",
     lastName: "",
@@ -48,18 +47,56 @@ const Checkout: React.FC = () => {
   const [isGuest, setIsGuest] = useState<boolean | null>(null);
 
   const taxRate = 0.07;
+  // Fallback delivery fee; real logic is applied in summary step.
   const [deliveryFee, setDeliveryFee] = useState<number>(0);
 
-  // Update the delivery fee whenever orderType changes.
+  // Debug log current step.
   useEffect(() => {
-    setDeliveryFee(orderType === "delivery" ? calculateDeliveryFee() : 0);
+    console.log("[Checkout] currentStep =", currentStep);
+  }, [currentStep]);
+
+  // Adjust fallback delivery fee based on order type.
+  useEffect(() => {
+    if (orderType === "delivery") {
+      console.log("[Checkout] User selected delivery. Setting fallback fee = 0");
+      setDeliveryFee(0);
+    } else {
+      setDeliveryFee(0);
+    }
   }, [orderType]);
 
-  // Scroll to the top when currentStep changes.
+  // Scroll to top on step change.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
 
+  // ---
+  // EFFECT: Check if there is a forced step from the query parameter.
+  // If the URL has ?step=orderSummary, force the order summary step.
+  // If orderType is not set yet, we default it to "pickup" (adjust as needed).
+  // For logged-in users: summary = step 2 for pickup, step 3 for delivery.
+  // For guest users: summary = step 3 for pickup, step 4 for delivery.
+  useEffect(() => {
+    const stepParam = searchParams.get("step");
+    if (stepParam === "orderSummary") {
+      // If no order type was set (user returning from scheduling) then default to "pickup"
+      if (!orderType) {
+        console.log("[Checkout] No orderType detected, defaulting to 'pickup' for resume.");
+        setOrderType("pickup");
+      }
+      let summaryStep: number;
+      if (user) {
+        summaryStep = orderType === "delivery" ? 3 : 2;
+      } else {
+        summaryStep = orderType === "delivery" ? 4 : 3;
+      }
+      console.log("[Checkout] Forcing order summary step:", summaryStep);
+      setCurrentStep(summaryStep);
+    }
+  }, [searchParams, orderType, user]);
+
+  // ---
+  // Field change handlers
   const handleGuestDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setGuestDetails((prev) => ({
@@ -99,8 +136,12 @@ const Checkout: React.FC = () => {
     }
   };
 
+  // ---
+  // Navigation Handlers
   const handleNextStep = () => {
-    // Navigation logic based on user authentication and form completeness.
+    console.log("[Checkout] handleNextStep at currentStep:", currentStep);
+
+    // --- Guest flow: Step 1 if not logged in.
     if (!user && currentStep === 1 && isGuest === true) {
       const { firstName, lastName, email, phone } = guestDetails;
       if (!firstName || !lastName || !email || !phone) {
@@ -108,19 +149,29 @@ const Checkout: React.FC = () => {
         return;
       }
       if (!validatePhoneNumber(phone)) {
-        alert("Please enter a valid phone number in the format (XXX) XXX-XXXX.");
+        alert("Please enter a valid phone number in (XXX) XXX-XXXX format.");
         return;
       }
       setCurrentStep(2);
+      return;
     } else if (!user && currentStep === 1 && isGuest === false) {
       router.push("/login");
-    } else if ((currentStep === 1 && user) || (currentStep === 2 && !user)) {
+      return;
+    }
+
+    // --- Order type step (logged in: step 1; guest: step 2).
+    if ((user && currentStep === 1) || (!user && currentStep === 2 && isGuest)) {
       if (!orderType) {
         alert("Please select an order type.");
         return;
       }
+      console.log("[Checkout] next -> selected orderType =", orderType);
       setCurrentStep(currentStep + 1);
-    } else if (
+      return;
+    }
+
+    // --- Delivery address step (only required if orderType === "delivery").
+    if (
       orderType === "delivery" &&
       ((user && currentStep === 2) || (!user && currentStep === 3))
     ) {
@@ -130,14 +181,22 @@ const Checkout: React.FC = () => {
         return;
       }
       setCurrentStep(currentStep + 1);
-    } else if (
+      return;
+    }
+
+    // --- Order summary step.
+    if (
       (orderType === "pickup" &&
         ((user && currentStep === 2) || (!user && currentStep === 3))) ||
       (orderType === "delivery" &&
         ((user && currentStep === 3) || (!user && currentStep === 4)))
     ) {
       setCurrentStep(currentStep + 1);
-    } else if (
+      return;
+    }
+
+    // --- Payment step: ensure billing address if needed.
+    if (
       (orderType === "pickup" &&
         ((user && currentStep === 3) || (!user && currentStep === 4))) ||
       (orderType === "delivery" &&
@@ -157,9 +216,11 @@ const Checkout: React.FC = () => {
         }
       }
       setCurrentStep(currentStep + 1);
-    } else {
-      setCurrentStep(currentStep + 1);
+      return;
     }
+
+    // --- Otherwise, simply advance to next step.
+    setCurrentStep(currentStep + 1);
   };
 
   const handlePreviousStep = () => {
@@ -168,12 +229,16 @@ const Checkout: React.FC = () => {
     }
   };
 
+  // ---
+  // Render the appropriate step.
   const renderStep = () => {
+    // --- Guest-related step(s).
     if (!user && currentStep === 1) {
       if (isGuest === null) {
         return <GuestChoice onSelect={(choice) => setIsGuest(choice)} />;
       } else if (isGuest === false) {
         router.push("/login");
+        return null;
       } else {
         return (
           <GuestDetails
@@ -183,7 +248,9 @@ const Checkout: React.FC = () => {
           />
         );
       }
-    } else if ((user && currentStep === 1) || (!user && currentStep === 2 && isGuest)) {
+    }
+    // --- Order type selection.
+    if ((user && currentStep === 1) || (!user && currentStep === 2 && isGuest)) {
       return (
         <OrderTypeStep
           orderType={orderType}
@@ -192,7 +259,9 @@ const Checkout: React.FC = () => {
           onBack={handlePreviousStep}
         />
       );
-    } else if (
+    }
+    // --- Delivery address step.
+    if (
       orderType === "delivery" &&
       ((user && currentStep === 2) || (!user && currentStep === 3))
     ) {
@@ -204,7 +273,9 @@ const Checkout: React.FC = () => {
           onBack={handlePreviousStep}
         />
       );
-    } else if (
+    }
+    // --- Order summary step.
+    if (
       (orderType === "pickup" &&
         ((user && currentStep === 2) || (!user && currentStep === 3))) ||
       (orderType === "delivery" &&
@@ -215,7 +286,7 @@ const Checkout: React.FC = () => {
           cartItems={cartItems}
           getTotalPrice={getTotalPrice}
           orderType={orderType}
-          deliveryFee={deliveryFee}
+          deliveryFee={deliveryFee} // fallback fee; dynamic logic is in OrderSummaryStep
           tip={tip}
           customTip={customTip}
           onTipChange={handleTipChange}
@@ -225,7 +296,9 @@ const Checkout: React.FC = () => {
           onBack={handlePreviousStep}
         />
       );
-    } else if (
+    }
+    // --- Payment step.
+    if (
       (orderType === "pickup" &&
         ((user && currentStep === 3) || (!user && currentStep === 4))) ||
       (orderType === "delivery" &&
@@ -244,6 +317,7 @@ const Checkout: React.FC = () => {
         />
       );
     }
+    return null;
   };
 
   return (

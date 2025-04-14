@@ -1,7 +1,7 @@
-/* BlogPage.module.css */
 .blog-page {
   padding: 50px 20px;
-  background-color: var(--light-gray, #f9f9f9);
+  background-color: var(--light-gray);
+  font-family: var(--font-body);
 }
 
 .blog-page-title {
@@ -9,6 +9,7 @@
   font-size: 2.5rem;
   color: var(--primary-color);
   margin-bottom: 40px;
+  font-family: var(--font-heading);
 }
 
 .filter-container {
@@ -21,7 +22,7 @@
 
 .search-input {
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color-dark);
   border-radius: 5px;
   width: 250px;
   font-size: 1rem;

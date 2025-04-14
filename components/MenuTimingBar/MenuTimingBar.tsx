@@ -45,7 +45,7 @@ const MenuTimingBar: React.FC = () => {
       router.push("/schedule-order");
       return;
     }
-    // Otherwise, no schedule remains (instant order)
+    // For ASAP, no schedule is needed.
   };
 
   // If user chooses Schedule:
@@ -68,21 +68,27 @@ const MenuTimingBar: React.FC = () => {
       {showPopup && (
         <div className={styles.popupOverlay}>
           <div className={styles.popupModal}>
-            <h3 className={styles.popupTitle}>Change Order Timing</h3>
-            <p className={styles.popupMessage}>
-              You can place your order instantly (ASAP) or schedule it for later.
-              Pickup/delivery type will be chosen in checkout.
-              {isOpen
-                ? " If you plan ahead, you can schedule your order."
-                : " Since the restaurant is closed, scheduling is required."}
-            </p>
-            <div className={styles.popupButtons}>
+            <div className={styles.popupHeader}>
+              <h3 className={styles.popupTitle}>Change Order Timing</h3>
+            </div>
+            <div className={styles.popupBody}>
+              <p>
+                You can place your order instantly (ASAP) or schedule it for later.
+                Pickup/delivery type will be chosen in checkout.
+              </p>
+              {!isOpen && (
+                <p className={styles.closedMessage}>
+                  We are currently closed. You can only schedule your order for a future time.
+                </p>
+              )}
+            </div>
+            <div className={styles.popupFooter}>
               {isOpen && (
-                <button className={styles.popupBtn} onClick={chooseASAP}>
+                <button className={styles.popupBtnPrimary} onClick={chooseASAP}>
                   ASAP Order
                 </button>
               )}
-              <button className={styles.popupBtn} onClick={chooseSchedule}>
+              <button className={styles.popupBtnSecondary} onClick={chooseSchedule}>
                 Schedule Order
               </button>
             </div>

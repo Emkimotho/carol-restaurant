@@ -1,0 +1,243 @@
+/* =========================================
+   Admin Dashboard - Event Manager Styling
+   Modern, Sleek, and Versatile
+========================================= */
+
+/* Panel container */
+.container {
+  background: var(--white);
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: var(--box-shadow-primary);
+  font-family: var(--font-body);
+  position: relative;
+  overflow: hidden;
+  animation: fadeIn 0.5s ease;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Heading styles */
+.heading {
+  text-align: center;
+  color: var(--dark-gray);
+  margin-bottom: 1.5rem;
+  font-size: 2.25rem;
+  letter-spacing: 0.5px;
+}
+
+/* Subheading with underline */
+.subheading {
+  color: var(--dark-gray);
+  margin-bottom: 1rem;
+  font-size: 1.75rem;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 0.25rem;
+}
+
+/* Tab buttons container */
+.tabButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Standard tab button */
+.tabButton {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.tabButton:hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-2px);
+}
+
+/* Active tab styling */
+.tabButton.active {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-bottom: 3px solid var(--secondary-color-hover);
+}
+
+/* Form group container */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Fieldset for address */
+.fieldset {
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+}
+
+.fieldsetLegend {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--dark-gray);
+  margin-bottom: 0.5rem;
+}
+
+/* Inputs and textareas */
+.input,
+.textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-size: 1rem;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  color: var(--foreground);
+  background: var(--light-gray);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--gray);
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 5px rgba(0, 191, 99, 0.3);
+}
+
+/* Label styling */
+.inputLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gray);
+  margin-bottom: 0.25rem;
+}
+
+/* File input styling */
+.fileInput {
+  padding: 0.5rem 0;
+  color: var(--foreground);
+  font-size: 0.95rem;
+}
+
+/* Image preview */
+.imagePreview {
+  max-width: 100%;
+  margin-top: 1rem;
+  border-radius: 5px;
+  box-shadow: var(--box-shadow-secondary);
+}
+
+/* Standard button styling */
+.button {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  margin-top: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.button:hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-2px);
+}
+
+/* Event list styling */
+.eventList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.eventItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.75rem 0;
+}
+
+.eventItem:last-child {
+  border-bottom: none;
+}
+
+.eventDetails {
+  font-size: 1rem;
+  color: var(--foreground);
+}
+
+/* Action button styling for list actions */
+.actionButton {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  font-size: 0.95rem;
+  margin-right: 0.75rem;
+}
+
+.actionButton:hover {
+  background-color: var(--secondary-color-hover);
+  transform: translateY(-2px);
+}
+
+/* Section spacing */
+.section {
+  margin-bottom: 2rem;
+}
+
+/* No events text styling */
+.noEvents {
+  font-size: 1rem;
+  color: var(--gray);
+  text-align: center;
+}
+
+/* Submissions section styling */
+.submissionsSection {
+  padding: 1rem;
+  background: var(--white);
+  border-radius: 10px;
+  box-shadow: var(--box-shadow-primary);
+  margin: 2rem auto;
+  max-width: 800px;
+  width: 100%;
+}
+
+/* Submission buttons container */
+.submissionButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Submission lists */
+.submissionLists {
+  padding: 1rem;
+  background: var(--light-gray);
+  border-radius: 5px;
+}

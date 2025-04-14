@@ -1,19 +1,16 @@
-// File: 19thhole/components/Header/Header.tsx
-
 "use client";
 
 import React, { useState, useEffect, useRef, useContext } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FaShoppingCart } from "react-icons/fa";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
 /**
  * Hook: useIsMobile
- * Detects if the viewport width is less than or equal to the given breakpoint.
- * Returns a boolean.
+ * Detects if the viewport width is <= the given breakpoint.
  */
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
@@ -35,12 +32,13 @@ const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navbarRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const { cartItems, openSidebarCart } = useContext(CartContext)!;
+  const router = useRouter();
+  const { cartItems } = useContext(CartContext)!;
 
-  // Sum up quantity of all cart items
+  // Calculate total items in the cart
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close mobile menu if user clicks outside of navbar
+  // Close the mobile menu if user clicks outside of it
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
@@ -53,12 +51,13 @@ const Header: React.FC = () => {
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
+  // Navigate to /cart
   const handleCartClick = () => {
     closeMobileMenu();
-    openSidebarCart();
+    router.push("/cart");
   };
 
-  // Navigation items
+  // Define your nav items
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/menu", label: "Menu" },
@@ -71,10 +70,10 @@ const Header: React.FC = () => {
     { href: "/login", label: "Login" },
   ];
 
-  // ------ DESKTOP NAVBAR ------ //
+  // -------------- DESKTOP NAV --------------
   const desktopHeader = (
     <nav className={styles.desktopNavbar} ref={navbarRef}>
-      {/* Left: Logo */}
+      {/* Logo Section */}
       <div className={styles.logoContainer}>
         <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
           <Image
@@ -88,7 +87,7 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
-      {/* Middle: Navigation Links */}
+      {/* Navigation Links */}
       <ul className={styles.navList}>
         {navItems.map(({ href, label, external }) => {
           const isActive = !external && pathname === href;
@@ -99,18 +98,14 @@ const Header: React.FC = () => {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`${styles.navLink} ${
-                    isActive ? styles.activeLink : ""
-                  }`}
+                  className={`${styles.navLink} ${isActive ? styles.activeLink : ""}`}
                 >
                   {label}
                 </a>
               ) : (
                 <Link
                   href={href}
-                  className={`${styles.navLink} ${
-                    isActive ? styles.activeLink : ""
-                  }`}
+                  className={`${styles.navLink} ${isActive ? styles.activeLink : ""}`}
                 >
                   {label}
                 </Link>
@@ -120,25 +115,24 @@ const Header: React.FC = () => {
         })}
       </ul>
 
-      {/* Right: Cart Button */}
+      {/* Cart Button with ID for the flying ball animation */}
       <button
         onClick={handleCartClick}
         aria-label="Open Cart"
         className={styles.cartButton}
+        id="cartIconTarget"
       >
         <FaShoppingCart className={styles.cartIcon} />
-        {totalItems > 0 && (
-          <span className={styles.cartCount}>{totalItems}</span>
-        )}
+        {totalItems > 0 && <span className={styles.cartCount}>{totalItems}</span>}
       </button>
     </nav>
   );
 
-  // ------ MOBILE NAVBAR ------ //
+  // -------------- MOBILE NAV --------------
   const mobileHeader = (
     <>
       <nav className={styles.mobileNavbar} ref={navbarRef}>
-        {/* Left: Logo */}
+        {/* Mobile Logo */}
         <div className={styles.mobileLogo}>
           <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
             <Image
@@ -152,25 +146,22 @@ const Header: React.FC = () => {
           </Link>
         </div>
 
-        {/* Middle: Cart */}
+        {/* Mobile Cart Button */}
         <button
           onClick={handleCartClick}
           aria-label="Open Cart"
           className={styles.mobileCartButton}
+          id="cartIconTarget"
         >
           <FaShoppingCart className={styles.cartIcon} />
-          {totalItems > 0 && (
-            <span className={styles.mobileCartCount}>{totalItems}</span>
-          )}
+          {totalItems > 0 && <span className={styles.mobileCartCount}>{totalItems}</span>}
         </button>
 
-        {/* Right: Hamburger Button */}
+        {/* Hamburger Toggle */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"
-          className={`${styles.hamburgerButton} ${
-            mobileMenuOpen ? styles.hamburgerOpen : ""
-          }`}
+          className={`${styles.hamburgerButton} ${mobileMenuOpen ? styles.hamburgerOpen : ""}`}
         >
           <span className={styles.hamburgerBar} />
           <span className={styles.hamburgerBar} />
@@ -178,12 +169,8 @@ const Header: React.FC = () => {
         </button>
       </nav>
 
-      {/* Slide-Out Mobile Menu */}
-      <div
-        className={`${styles.mobileMenu} ${
-          mobileMenuOpen ? styles.mobileMenuOpen : ""
-        }`}
-      >
+      {/* Mobile Menu Overlay */}
+      <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.mobileMenuOpen : ""}`}>
         <button
           className={styles.closeMenuButton}
           onClick={closeMobileMenu}
@@ -218,10 +205,7 @@ const Header: React.FC = () => {
         </ul>
       </div>
 
-      {/* Dark Overlay Behind Slide-Out Menu */}
-      {mobileMenuOpen && (
-        <div className={styles.mobileOverlay} onClick={closeMobileMenu} />
-      )}
+      {mobileMenuOpen && <div className={styles.mobileOverlay} onClick={closeMobileMenu} />}
     </>
   );
 

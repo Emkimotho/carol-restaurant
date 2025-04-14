@@ -1,81 +1,137 @@
+/* BlogDetailPage.module.css */
+
+/* Container for the detailed blog post */
 .blog-detail-page {
-    padding: 50px 20px;
-    background-color: #f9f9f9; /* Light grey background */
-    max-width: 1000px;
-    margin: 0 auto;
-  }
-  
-  .blog-detail-header {
-    text-align: center;
-    margin-bottom: 30px;
+  width: 90%;
+  max-width: 800px;               /* Fixed maximum width for improved readability */
+  margin: 40px auto;              /* Center page with vertical spacing */
+  padding: 40px 20px;
+  background-color: var(--white); /* Global white background */
+  font-family: var(--font-body);
+  color: var(--black);            /* Default text in black */
+  line-height: 1.8;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Modern card-like shadow */
+  border-radius: 8px;
+}
+
+/* Header styles */
+.blog-detail-header {
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+/* Header Image */
+.header-image {
+  width: 100%;
+  max-height: 280px;              /* Reduced height to maintain fixed layout */
+  object-fit: contain;            /* Scale image to fit within the container without cropping */
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/* Title */
+.blog-detail-title {
+  font-size: 2.5rem;
+  color: var(--primary-color);    /* Titles in primary color */
+  margin-bottom: 10px;
+  font-family: var(--font-heading);
+  line-height: 1.2;
+}
+
+/* Meta information (post author, date, time) */
+.blog-detail-meta {
+  font-size: 1rem;
+  color: var(--secondary-color);  /* Meta text in secondary color */
+  margin-bottom: 20px;
+}
+
+/* Content styles */
+.blog-detail-content {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  text-align: left;
+}
+
+/* Paragraph spacing */
+.blog-detail-content p {
+  margin-bottom: 1.5em;
+}
+
+/* Headings within content */
+.blog-detail-content h1,
+.blog-detail-content h2,
+.blog-detail-content h3,
+.blog-detail-content h4 {
+  margin: 1em 0 0.5em;
+  font-family: var(--font-heading);
+  color: var(--primary-color);    /* Content headings in primary color */
+}
+
+/* Responsive inline images */
+.blog-detail-content img,
+.blog-detail-content p img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 20px 0;
+  border-radius: 8px;
+  box-shadow: var(--box-shadow-secondary);
+}
+
+/* Blockquotes styling */
+.blog-detail-content blockquote {
+  margin: 1.5em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--primary-color);
+  background-color: var(--light-gray);
+  font-style: italic;
+  color: var(--black);
+}
+
+/* Comments section styling */
+.comments-section {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.comments-section h3 {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  margin-bottom: 15px;
+  font-family: var(--font-heading);
+}
+
+/* Loading & error messages */
+.loading,
+.error {
+  text-align: center;
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  margin-top: 50px;
+}
+
+/* Link animations scoped within the blog detail page */
+.blog-detail-page a {
+  transition: color 0.3s ease;
+}
+
+.blog-detail-page a:hover {
+  color: var(--secondary-color);
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+  .blog-detail-page {
+    padding: 20px 10px;
+    margin: 20px auto;
   }
   
   .blog-detail-title {
-    font-size: 2.5rem;
-    color: var(--primary-color);
-    margin-bottom: 10px;
-  }
-  
-  .blog-detail-meta {
-    font-size: 1rem;
-    color: #777777; /* Grey color for meta information */
-  }
-  
-  .blog-detail-gallery {
-    margin-bottom: 30px;
+    font-size: 2rem;
   }
   
   .blog-detail-content {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: #555555; /* Dark grey for content */
+    font-size: 1rem;
   }
-  
-  .blog-detail-content img {
-    width: 100%;
-    height: auto;
-    margin: 20px 0;
-    border-radius: 8px;
-  }
-  
-  .blog-interactions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-  }
-  
-  .interaction-button {
-    background-color: var(--primary-color);
-    color: #ffffff;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    font-size: 0.9rem;
-  }
-  
-  .interaction-button:hover {
-    background-color: var(--secondary-color);
-  }
-  
-  .comments-section {
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid #dddddd;
-  }
-  
-  .comments-section h3 {
-    font-size: 1.5rem;
-    color: var(--primary-color);
-    margin-bottom: 15px;
-  }
-  
-  .loading,
-  .error {
-    text-align: center;
-    font-size: 1.2rem;
-    color: var(--primary-color);
-    margin-top: 50px;
-  }
-  
+}

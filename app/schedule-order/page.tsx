@@ -1,33 +1,60 @@
 "use client";
 
 import React, { useState, useContext } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "react-toastify";
 import { OrderContext } from "@/contexts/OrderContext";
 import { useOpeningHours } from "@/contexts/OpeningHoursContext";
 import styles from "./schedule.module.css";
+import { convertTo12Hour } from "../../utils/timeUtils"; // Utility: "09:00" → "9:00 AM"
+
+/**
+ * Helper: Convert a 12-hour time string (e.g., "9:00 AM")
+ * into an object with hour and minute in 24-hour format.
+ */
+const parseTime12Hour = (timeStr: string): { hour: number; minute: number } => {
+  const [time, modifier] = timeStr.split(" ");
+  let [hours, minutes] = time.split(":").map(Number);
+  if (modifier.toUpperCase() === "PM" && hours < 12) {
+    hours += 12;
+  }
+  if (modifier.toUpperCase() === "AM" && hours === 12) {
+    hours = 0;
+  }
+  return { hour: hours, minute: minutes };
+};
 
 const ScheduleOrderPage: React.FC = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get returnUrl from the query parameter; if none provided, default to "/menu".
+  // IMPORTANT: If your checkout is a parent route with query params, it should be like "/checkout?step=orderSummary"
+  let returnUrl = searchParams.get("returnUrl") || "/menu";
+  
+  // If the returnUrl mistakenly points to a sub-route that doesn't exist, correct it.
+  if (returnUrl === "/checkout/summary") {
+    returnUrl = "/checkout?step=orderSummary";
+  }
 
-  // OrderContext
-  const context = useContext(OrderContext);
-  if (!context) {
+  // OrderContext: used to set the scheduled time.
+  const orderContext = useContext(OrderContext);
+  if (!orderContext) {
     throw new Error("OrderContext must be used within an OrderProvider");
   }
-  const { order, setSchedule } = context;
+  const { setSchedule } = orderContext;
 
-  // OpeningHoursContext
+  // OpeningHoursContext: used to determine available days and time slots.
   const { openingHours } = useOpeningHours();
 
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  // selectedTime stores a formatted 12-hour time string (e.g., "9:00 AM")
   const [selectedTime, setSelectedTime] = useState<string>("");
+  // currentStep: 1 => Choose Day; 2 => Choose Time
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [errorMsg, setErrorMsg] = useState("");
 
-  /**
-   * Generate an array of the next 7 days.
-   * Then filter out days that are "closed" or where we've already passed the close time for today.
-   */
+  // Generate an array of the next 7 days based on opening hours.
   const daysToShow = Array.from({ length: 7 })
     .map((_, i) => {
       const d = new Date();
@@ -35,23 +62,23 @@ const ScheduleOrderPage: React.FC = () => {
       return d;
     })
     .filter((day) => {
-      const dayAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
-        day.getDay()
-      ];
+      const dayAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][day.getDay()];
       const dayHours = openingHours[dayAbbr];
-      if (!dayHours || dayHours.open === "Closed") return false;
-
+      if (!dayHours) return false;
+      if (
+        dayHours.open.toLowerCase().includes("closed") ||
+        dayHours.close.toLowerCase().includes("closed")
+      ) {
+        return false;
+      }
+      // For today, ensure we haven't passed the closing time.
       const now = new Date();
-      const sameDay = day.toDateString() === now.toDateString();
-
-      if (sameDay) {
+      if (day.toDateString() === now.toDateString()) {
         const [closeHour, closeMin] = dayHours.close.split(":").map(Number);
         const closeTime = new Date(now);
         closeTime.setHours(closeHour, closeMin, 0, 0);
-
         if (now >= closeTime) return false;
       }
-
       return true;
     });
 
@@ -61,27 +88,33 @@ const ScheduleOrderPage: React.FC = () => {
     setErrorMsg("");
   };
 
+  // Generate 30-minute time slots for the chosen day.
   const getTimeSlots = (date: Date): string[] => {
-    const dayAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
-      date.getDay()
-    ];
+    const dayAbbr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()];
     const dayHours = openingHours[dayAbbr];
-    if (!dayHours || dayHours.open === "Closed") return [];
+    if (!dayHours) return [];
+    if (
+      dayHours.open.toLowerCase().includes("closed") ||
+      dayHours.close.toLowerCase().includes("closed")
+    ) {
+      return [];
+    }
 
     const [openHour, openMin] = dayHours.open.split(":").map(Number);
     const [closeHour, closeMin] = dayHours.close.split(":").map(Number);
 
     const slots: string[] = [];
-    let current = new Date(date);
+    const current = new Date(date);
     current.setHours(openHour, openMin, 0, 0);
-
     const closeTime = new Date(date);
     closeTime.setHours(closeHour, closeMin, 0, 0);
 
     while (current < closeTime) {
-      const hh = current.getHours().toString().padStart(2, "0");
-      const mm = current.getMinutes().toString().padStart(2, "0");
-      slots.push(`${hh}:${mm}`);
+      const timeStr = `${current.getHours().toString().padStart(2, "0")}:${current
+        .getMinutes()
+        .toString()
+        .padStart(2, "0")}`;
+      slots.push(convertTo12Hour(timeStr));
       current.setMinutes(current.getMinutes() + 30);
     }
     return slots;
@@ -96,27 +129,31 @@ const ScheduleOrderPage: React.FC = () => {
     if (currentStep === 1) {
       if (!selectedDay) {
         setErrorMsg("Please select a day first.");
+        toast.error("Please select a day first.");
         return;
       }
       setCurrentStep(2);
     } else {
       if (!selectedTime) {
         setErrorMsg("Please select a valid time slot.");
+        toast.error("Please select a valid time slot.");
         return;
       }
-
       const scheduledDate = new Date(selectedDay);
-      const [hourStr, minStr] = selectedTime.split(":");
-      scheduledDate.setHours(Number(hourStr), Number(minStr), 0, 0);
+      const { hour, minute } = parseTime12Hour(selectedTime);
+      scheduledDate.setHours(hour, minute, 0, 0);
 
       if (scheduledDate <= new Date()) {
         setErrorMsg("Please choose a future time slot.");
+        toast.error("Please choose a future time slot.");
         return;
       }
-
       console.log("[ScheduleOrderPage] Confirming schedule at", scheduledDate.toISOString());
+      // Save the scheduled time in OrderContext.
       setSchedule(scheduledDate.toISOString(), "scheduled_pickup");
-      router.push("/menu");
+
+      console.log("Redirecting to returnUrl:", returnUrl);
+      router.push(returnUrl);
     }
   };
 
@@ -124,7 +161,7 @@ const ScheduleOrderPage: React.FC = () => {
     if (currentStep === 2) {
       setCurrentStep(1);
     } else {
-      router.push("/menu");
+      router.push(returnUrl);
     }
   };
 
@@ -133,9 +170,7 @@ const ScheduleOrderPage: React.FC = () => {
       return (
         <div className={styles.dayGrid}>
           {daysToShow.length === 0 && (
-            <p style={{ textAlign: "center" }}>
-              No open days available in the next 7 days.
-            </p>
+            <p style={{ textAlign: "center" }}>No open days available in the next 7 days.</p>
           )}
           {daysToShow.map((day) => {
             const isSelected =
@@ -162,18 +197,17 @@ const ScheduleOrderPage: React.FC = () => {
       return (
         <div className={styles.timeGrid}>
           {slots.map((slot) => {
+            const potentialDate = new Date(selectedDay);
+            const { hour, minute } = parseTime12Hour(slot);
+            potentialDate.setHours(hour, minute, 0, 0);
+            const isPast = potentialDate < new Date();
             const isSelected = slot === selectedTime;
-            const potDate = new Date(selectedDay);
-            const [hh, mm] = slot.split(":");
-            potDate.setHours(Number(hh), Number(mm), 0, 0);
-            const isPast = potDate < new Date();
-
             return (
               <div
                 key={slot}
-                className={`${styles.timeSlot}
-                  ${isPast ? styles.timeSlotClosed : ""}
-                  ${isSelected ? styles.timeSlotSelected : ""}`}
+                className={`${styles.timeSlot} ${isPast ? styles.timeSlotClosed : ""} ${
+                  isSelected ? styles.timeSlotSelected : ""
+                }`}
                 onClick={() => {
                   if (!isPast) handleSelectTime(slot);
                 }}
@@ -190,15 +224,11 @@ const ScheduleOrderPage: React.FC = () => {
   return (
     <div className={styles.scheduleContainer}>
       <div className={styles.stepIndicator}>
-        <div
-          className={`${styles.stepItem} ${currentStep === 1 ? styles.stepItemActive : ""}`}
-        >
+        <div className={`${styles.stepItem} ${currentStep === 1 ? styles.stepItemActive : ""}`}>
           1
         </div>
         <div className={styles.stepLabel}>Choose Day</div>
-        <div
-          className={`${styles.stepItem} ${currentStep === 2 ? styles.stepItemActive : ""}`}
-        >
+        <div className={`${styles.stepItem} ${currentStep === 2 ? styles.stepItemActive : ""}`}>
           2
         </div>
         <div className={styles.stepLabel}>Choose Time</div>

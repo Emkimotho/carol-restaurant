@@ -1,6 +1,6 @@
 /* File: app/globals.css */
 
-/* 1. Import Bootstrap first */
+/* 1. Import Bootstrap */
 @import "bootstrap/dist/css/bootstrap.min.css";
 
 /* 2. Tailwind Directives */
@@ -55,17 +55,14 @@ html {
   font-size: 16px;
 }
 
-/* Remove default top padding from the body to eliminate the unwanted gap.
-   Previously, body had: padding-top: var(--navbar-height);
-   Now, header spacing is managed within specific layout components. */
 body {
   font-family: var(--font-body);
   background-color: var(--background);
   color: var(--foreground);
   line-height: 1.6;
-  /* padding-top: var(--navbar-height);  <-- Removed to fix gap issue */
 }
 
+/* Media elements */
 img,
 video {
   max-width: 100%;
@@ -89,52 +86,38 @@ a:focus {
   text-decoration: underline;
 }
 
-/* 5. Global Button Overrides with Sweeping Hover Effect */
+/* 5. Button Styles */
+/* Base button styling: primary buttons by default */
 button,
-.btn,
-button.btn {
-  position: relative;
-  z-index: 0; /* Ensure overlay can go behind text */
-  overflow: hidden;
+.btn {
   background-color: var(--primary-color);
+  color: var(--black);
   border: none;
   padding: 12px 20px;
-  color: var(--white);
   font-size: 1rem;
   border-radius: 5px;
   cursor: pointer;
-  /* Delay text color transition so it changes after the sweep */
-  transition: color 0.3s ease 0.5s;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Sweeping overlay behind text */
-button::before,
-.btn::before,
-button.btn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
+/* Secondary button variant */
+button.secondary,
+.btn-secondary {
   background-color: var(--secondary-color);
-  transition: transform 0.5s ease;
-  /* Place it behind the button text */
-  z-index: -1;
 }
 
-/* Animate the overlay left to right on hover */
-button:hover::before,
-.btn:hover::before,
-button.btn:hover::before {
-  transform: translateX(100%);
-}
-
-/* On hover, change the text color (delayed) to black */
+/* Hover effects: 
+   - All buttons change text color to white on hover.
+   - Secondary buttons (and any button with class "secondary" or "btn-secondary")
+     change their background to the primary color on hover.
+   - Primary buttons remain with the primary background on hover, only text changes.
+*/
 button:hover,
 .btn:hover,
-button.btn:hover {
-  color: var(--black);
+button.secondary:hover,
+.btn-secondary:hover {
+  background-color: var(--primary-color);
+  color: var(--white);
 }
 
 /* 6. Checkbox Styling */
@@ -157,9 +140,7 @@ input[type="checkbox"] {
   max-width: 90%;
 }
 
-/* Override sweeping effect for .close-btn so it remains a simple "x" */
 .popup-window .close-btn {
-  /* Override general button styles that create the sweep effect */
   position: absolute;
   top: 0.5rem;
   right: 0.75rem;
@@ -171,14 +152,14 @@ input[type="checkbox"] {
   color: var(--black);
   cursor: pointer;
   overflow: visible;
-  z-index: auto;         /* remove the stacking context */
-  transition: none;      /* no color transition or sweep effect */
+  z-index: auto;
+  transition: none;
 }
 
 .popup-window .close-btn::before {
   content: "x";
-  position: static;      /* no absolute positioning on the pseudo-element */
-  background: none;      /* remove the sweeping background color */
+  position: static;
+  background: none;
   transition: none;
   z-index: auto;
 }

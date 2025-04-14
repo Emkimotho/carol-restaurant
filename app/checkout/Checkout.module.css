@@ -1,12 +1,17 @@
 /* File: app/checkout/Checkout.module.css */
 
+/* 
+  Note: Global variables, resets, and base styles are defined in app/globals.css.
+  This file only contains module-specific styles.
+*/
+
 /* ====== Main Checkout Container ====== */
 .checkoutContainer {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-  background-color: var(--white);
-  border-radius: 0.75rem;
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: var(--white);
+  border-radius: 12px;
   box-shadow: var(--box-shadow-primary);
 }
 
@@ -22,16 +27,15 @@
   font-size: 2.5rem;
   font-family: var(--font-heading);
   color: var(--primary-color);
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 /* ====== Section Styling ====== */
 .checkoutSection {
-  background: linear-gradient(135deg, var(--white) 0%, var(--light-gray) 100%);
-  padding: 1.5rem 2rem;
-  border-radius: 0.625rem;
+  background: var(--light-gray);
+  padding: 2rem;
+  border-radius: 8px;
   box-shadow: var(--box-shadow-secondary);
-  position: relative;
   margin-bottom: 2rem;
 }
 
@@ -39,19 +43,20 @@
   font-size: 1.8rem;
   font-family: var(--font-heading);
   color: var(--primary-color);
-  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
   position: relative;
 }
 
 .checkoutSection h4::after {
-  content: '';
-  width: 50px;
-  height: 3px;
-  background-color: var(--secondary-color);
+  content: "";
   position: absolute;
-  bottom: -10px;
   left: 0;
-  border-radius: 0.25rem;
+  bottom: 0;
+  width: 60px;
+  height: 4px;
+  background-color: var(--secondary-color);
+  border-radius: 2px;
 }
 
 .checkoutSection p {
@@ -61,12 +66,12 @@
   font-family: var(--font-body);
 }
 
-/* ====== Order Summary Specific ====== */
+/* ====== Order Summary Container ====== */
 .orderSummary {
   border: 1px solid var(--border-color);
-  padding: 1.25rem;
-  border-radius: 0.5rem;
-  background-color: var(--white);
+  padding: 1.5rem;
+  border-radius: 8px;
+  background: var(--white);
 }
 
 .orderItem {
@@ -80,7 +85,7 @@
 .orderItem h5 {
   font-size: 1.1rem;
   color: var(--primary-color);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
 .orderItem p {
@@ -89,11 +94,12 @@
   margin: 2px 0;
 }
 
+/* ====== Totals Block ====== */
 .orderTotal {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
 .orderTotal h5 {
@@ -107,7 +113,42 @@
   font-weight: 600;
 }
 
+/* ====== Delivery Details ====== */
+.deliveryDetails {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--white);
+  border-left: 4px solid var(--secondary-color);
+  border-radius: 4px;
+}
+
+.deliveryDetails h5 {
+  font-size: 1rem;
+  color: var(--secondary-color);
+  margin-bottom: 0.3rem;
+}
+
+.deliveryDetails p {
+  font-size: 0.95rem;
+  color: var(--dark-gray);
+  margin: 2px 0;
+}
+
+/* ====== Pickup Details ====== */
+.pickupDetails {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--dark-gray);
+}
+
 /* ====== Tip Selection ====== */
+.tipSelection {
+  margin-top: 2rem;
+}
+
 .tipSelection h5 {
   font-size: 1.2rem;
   color: var(--primary-color);
@@ -117,15 +158,15 @@
 .tipOptions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .tipOptions .btn {
-  flex: 1 1 calc(33.333% - 0.75rem);
-  padding: 0.75rem 0;
+  flex: 1 1 calc(33.33% - 1rem);
+  padding: 0.8rem;
   font-size: 0.95rem;
-  border-radius: 0.5rem;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  border-radius: 8px;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* ====== Navigation Buttons ====== */
@@ -133,31 +174,31 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 2rem;
 }
 
 .navigationButtons .btn {
   flex: 1;
-  padding: 0.75rem 0;
+  padding: 0.9rem;
   font-size: 1rem;
 }
 
 /* ====== Generic Button Styles ====== */
 .btn {
   display: inline-block;
-  padding: 0.75rem 1.5rem;
+  padding: 0.8rem 1.5rem;
   font-size: 1rem;
   font-family: var(--font-body);
-  border-radius: 0.5rem;
+  border-radius: 8px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s, box-shadow 0.3s;
   border: none;
 }
 
 .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 .btnPrimary {
@@ -171,54 +212,74 @@
 }
 
 .btnOutlinePrimary {
-  background-color: transparent;
+  background: transparent;
   color: var(--primary-color);
   border: 2px solid var(--primary-color);
 }
 
-.btnSweepWave {
-  position: relative;
-  overflow: hidden;
+/* ====== Payment & Billing Styles ====== */
+.paymentOptions {
+  margin-bottom: 2rem;
 }
 
-/* ====== Schedule Page (Day/Time Picker) ====== */
+.billingAddress {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+/* ====== Success Message ====== */
+.successMessage {
+  text-align: center;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--light-gray);
+  color: var(--primary-color);
+  margin-top: 2rem;
+}
+
+/* ====== Scheduling UI (Day/Time Picker) ====== */
 .dayGrid,
 .timeGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 1rem;
   justify-content: center;
   margin-bottom: 2rem;
 }
 
 .dayCard,
 .timeSlot {
-  width: 90px;
-  padding: 0.75rem;
-  border-radius: 6px;
+  width: 100px;
+  padding: 1rem;
+  border-radius: 8px;
   text-align: center;
   cursor: pointer;
-  background: var(--light-gray);
+  background: var(--white);
   color: var(--dark-gray);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .dayCard:hover,
 .timeSlot:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 .dayCardSelected,
 .timeSlotSelected {
   border: 2px solid var(--primary-color);
-  background: #e6f7ec;
+  background: #e8f4fc;
 }
 
 .dayCardClosed,
 .timeSlotClosed {
-  background: #f8d7da;
-  color: #721c24;
+  background: #fbeaea;
+  color: #b71c1c;
   cursor: not-allowed;
 }
 
@@ -232,26 +293,26 @@
 }
 
 .stepItem {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--light-gray);
   color: var(--dark-gray);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  transition: background 0.3s ease, transform 0.3s ease;
+  font-weight: bold;
+  transition: background 0.3s, transform 0.3s;
 }
 
 .stepItemActive {
   background: var(--primary-color);
-  color: #fff;
-  transform: scale(1.05);
+  color: var(--white);
+  transform: scale(1.1);
 }
 
 .stepLabel {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--dark-gray);
   text-align: center;
 }
@@ -265,18 +326,18 @@
 
 .btnCancel,
 .btnPrimary {
-  min-width: 100px;
-  padding: 0.75rem 1.5rem;
+  min-width: 120px;
+  padding: 0.8rem 1.5rem;
   font-size: 1rem;
-  border-radius: 6px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.3s ease;
+  transition: background 0.3s, transform 0.3s;
 }
 
 .btnCancel {
   background-color: var(--gray);
-  color: #fff;
+  color: var(--white);
 }
 
 .btnCancel:hover {
@@ -284,37 +345,9 @@
   transform: scale(1.03);
 }
 
-.btnPrimary {
-  background-color: var(--primary-color);
-  color: #fff;
-}
-
 .btnPrimary:hover {
   background-color: var(--primary-color-hover);
   transform: scale(1.03);
-}
-
-/* ====== Payment & Billing ====== */
-.paymentOptions {
-  margin-bottom: 1.5rem;
-}
-
-.billingAddress {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  background-color: var(--white);
-}
-
-.successMessage {
-  text-align: center;
-  padding: 2rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  background-color: var(--light-gray);
-  color: var(--primary-color);
-  margin-top: 2rem;
 }
 
 /* ====== Responsive Design ====== */
@@ -323,45 +356,36 @@
     padding: 1.5rem;
   }
 
+  .checkoutPage h1 {
+    font-size: 2rem;
+  }
+
   .checkoutSection h4 {
-    font-size: 1.5rem;
-  }
-
-  .guestChoiceTitle {
-    font-size: 1.4rem;
-  }
-
-  .guestChoiceIntro {
-    font-size: 0.95rem;
-  }
-
-  .guestChoiceButtons {
-    flex-direction: column;
-    gap: 1rem;
+    font-size: 1.6rem;
   }
 
   .btn {
-    font-size: 0.95rem;
-    padding: 0.6rem 1.2rem;
-  }
-
-  .orderTypeOptions .btn {
-    font-size: 0.95rem;
-    padding: 0.5rem 0;
-  }
-
-  .orderSummary .orderItem h5,
-  .orderSummary .orderItem p {
-    font-size: 0.95rem;
-  }
-
-  .orderTotal h5,
-  .orderTotal p {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    padding: 0.7rem 1.2rem;
   }
 
   .tipOptions .btn {
     flex: 1 1 100%;
     font-size: 0.9rem;
+  }
+
+  .dayCard,
+  .timeSlot {
+    width: 85px;
+    padding: 0.8rem;
+  }
+
+  .stepItem {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stepLabel {
+    font-size: 0.75rem;
   }
 }

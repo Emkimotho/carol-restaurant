@@ -1,0 +1,191 @@
+/* Overall page container */
+.pageContainer {
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  max-width: 1200px;
+  margin: 2rem auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Heading */
+.heading {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Tab Buttons */
+.tabButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.tabButton {
+  background-color: var(--gray);
+  color: var(--white);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.tabButton:hover {
+  background-color: var(--gray-hover);
+}
+
+.active {
+  background-color: var(--primary-color);
+}
+
+/* Table title heading */
+.tableTitle {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* The single horizontal scrollbar for each table */
+.tableScroll {
+  overflow-x: auto;
+  /* We rely on a single horizontal scrollbar here if table is too wide */
+  margin-bottom: 2rem;
+  background-color: #fff; 
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Actual table */
+.sheetTable {
+  width: 100%;
+  min-width: 750px; /* ensures columns fit on smaller screens if needed */
+  border-collapse: collapse;
+  background-color: #fafafa;
+  font-family: var(--font-body);
+}
+
+.sheetTable th,
+.sheetTable td {
+  border: 1px solid #ddd;
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.sheetTable th {
+  background-color: #f4f4f4;
+  font-weight: 600;
+}
+
+/* Row striping */
+.sheetTable tbody tr:nth-child(even) {
+  background-color: #fdfdfd;
+}
+
+/* Sticky columns for # and Name */
+.stickyCol1,
+.stickyCol2 {
+  position: sticky;
+  background-color: #fff;
+  z-index: 2;
+}
+
+/* The first column (#) */
+.stickyCol1 {
+  left: 0;
+  width: 50px;
+  min-width: 50px;
+}
+
+/* The second column (Name) */
+.stickyCol2 {
+  left: 50px; /* must match .stickyCol1 width */
+  width: 140px;
+  min-width: 140px;
+}
+
+/* Delete & View Buttons */
+.deleteButton {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.deleteButton:hover {
+  background-color: var(--secondary-color-hover);
+}
+
+.viewButton {
+  background: transparent;
+  color: var(--primary-color);
+  border: none;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  text-decoration: underline;
+  font-size: 0.9rem;
+  padding: 0;
+  transition: color 0.3s ease;
+}
+
+.viewButton:hover {
+  color: var(--primary-color-hover);
+}
+
+/* Modal Backdrop */
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+/* Modal Content */
+.modalContent {
+  position: relative;
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Close Button in Modal */
+.modalClose {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #444;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.3s ease;
+}
+
+.modalClose:hover {
+  color: #000;
+}
+
+.modalMessage {
+  white-space: pre-wrap;
+  margin-top: 1.25rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}

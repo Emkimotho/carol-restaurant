@@ -1,0 +1,118 @@
+/* Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Content */
+.modalContent {
+  background: #fff;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 600px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Modal Header */
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.modalHeader h2 {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  cursor: pointer;
+  color: #888;
+}
+
+/* Modal Body */
+.modalBody {
+  font-size: 0.95rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.label {
+  font-weight: bold;
+  color: #555;
+}
+
+.value {
+  color: #333;
+}
+
+.itemsSection {
+  margin-top: 1rem;
+}
+
+.mainItemDetail {
+  padding: 0.5rem;
+  background: #f7f7f7;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.itemName {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #333;
+}
+
+.note {
+  margin: 0.25rem 0 0 0;
+  font-style: italic;
+  color: #666;
+}
+
+.accompanimentsSection {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #fcfcfc;
+  border-left: 4px solid #0070f3;
+  border-radius: 4px;
+}
+
+.accompanimentsSection h4 {
+  margin: 0 0 0.5rem 0;
+  color: #0070f3;
+  font-size: 1rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

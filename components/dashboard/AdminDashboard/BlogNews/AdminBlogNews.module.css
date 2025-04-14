@@ -1,0 +1,144 @@
+/* ========== Admin container styling ========== */
+.container {
+  padding: 20px;
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin: 20px;
+  font-family: var(--font-body);
+}
+
+/* Header inside the container */
+.container h2 {
+  margin-bottom: 20px;
+  color: var(--primary-color);
+  font-family: var(--font-heading);
+}
+
+/* Button for creating new posts */
+.newButton {
+  background-color: var(--primary-color);
+  color: var(--white);
+  padding: 10px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.newButton:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* Table styling for listing posts */
+.postTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.postTable th,
+.postTable td {
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  text-align: left;
+}
+
+/* Edit button styling */
+.editButton {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 6px 12px;
+  margin-right: 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.editButton:hover {
+  background-color: var(--secondary-color-hover);
+}
+
+/* Delete button styling */
+.deleteButton {
+  background-color: var(--dark-gray);
+  color: var(--white);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.deleteButton:hover {
+  background-color: var(--gray-hover);
+}
+
+/* ========== Admin form container styling ========== */
+.formContainer {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-family: var(--font-body);
+}
+
+/* Form header styling */
+.formContainer h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--primary-color);
+  font-family: var(--font-heading);
+}
+
+/* Form layout */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Label styling within the form */
+.form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  color: var(--dark-gray);
+}
+
+/* Input, textarea, and select styling */
+.form input[type="text"],
+.form input[type="date"],
+.form textarea,
+.form select {
+  padding: 8px;
+  border: 1px solid var(--border-color-dark);
+  border-radius: 5px;
+  font-size: 1rem;
+  font-family: var(--font-body);
+}
+
+/* Textarea resize styling */
+.form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Submit button styling */
+.submitButton {
+  background-color: var(--primary-color);
+  color: var(--white);
+  padding: 10px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.submitButton:hover {
+  background-color: var(--primary-color-hover);
+}
