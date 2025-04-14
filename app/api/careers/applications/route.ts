@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import sendEmail from "@/services/emailService";
+import sendEmail from "@/services/EmailService";
 
 export async function GET() {
   try {

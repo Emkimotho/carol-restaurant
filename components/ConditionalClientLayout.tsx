@@ -10,18 +10,12 @@ interface ConditionalClientLayoutProps {
 
 const ConditionalClientLayout = ({ children }: ConditionalClientLayoutProps) => {
   const pathname = usePathname();
-  const isDashboardRoute =
-    pathname?.startsWith("/admin-dashboard") ||
-    pathname?.startsWith("/superadmin-dashboard") ||
-    pathname?.startsWith("/staff-dashboard") ||
-    pathname?.startsWith("/driver-dashboard");
 
-  // If the current route is a dashboard route, do not wrap with ClientLayout (header/footer)
-  if (isDashboardRoute) {
+  // If the current route is under /dashboard, do not wrap with the public layout.
+  if (pathname && pathname.startsWith("/dashboard")) {
     return <>{children}</>;
   }
 
-  // Otherwise, wrap with the public ClientLayout
   return <ClientLayout>{children}</ClientLayout>;
 };
 

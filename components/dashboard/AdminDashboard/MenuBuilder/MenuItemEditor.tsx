@@ -1,5 +1,3 @@
-// File: components/admin/MenuItemEditor.tsx
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -45,27 +43,24 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   const [price, setPrice] = useState(editingItem?.price || 0);
   const [imageUrl, setImageUrl] = useState(editingItem?.image || "");
   const [hasSpiceLevel, setHasSpiceLevel] = useState(editingItem?.hasSpiceLevel || false);
-  const [showInGolfMenu, setShowInGolfMenu] = useState(
-    (editingItem as any)?.showInGolfMenu || false
-  );
-  const [optionGroups, setOptionGroups] = useState<MenuItemOptionGroup[]>(
-    editingItem?.optionGroups || []
-  );
+  const [showInGolfMenu, setShowInGolfMenu] = useState((editingItem as any)?.showInGolfMenu || false);
+  const [optionGroups, setOptionGroups] = useState<MenuItemOptionGroup[]>(editingItem?.optionGroups || []);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [selectedSubcategory, setSelectedSubcategory] = useState(categoryId || "");
-  
-  // NEW: State for Clover Item ID (populated via the dropdown)
+
+  // NEW: State for Clover Item ID (populated via the dropdown) – now required.
   const [cloverItemId, setCloverItemId] = useState(editingItem?.cloverItemId || "");
-  // NEW: State for stock (inventory) - should be auto-populated from Clover.
+  // NEW: State for stock (inventory) – should be auto-populated from Clover.
   const [stock, setStock] = useState<number>(editingItem?.stock ?? 0);
 
-  // Inline validation errors
+  // Inline validation errors (added cloverItemId)
   const [errors, setErrors] = useState<{
     title?: string;
     price?: string;
     subcategory?: string;
     stock?: string;
+    cloverItemId?: string;
   }>({});
 
   const queryClient = useQueryClient();
@@ -209,11 +204,14 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       price?: string;
       subcategory?: string;
       stock?: string;
+      cloverItemId?: string;
     } = {};
     if (!title.trim()) newErrors.title = "Title is required.";
     if (price <= 0) newErrors.price = "Price must be greater than zero.";
     if (!selectedSubcategory) newErrors.subcategory = "Subcategory is required.";
     if (stock < 0) newErrors.stock = "Stock cannot be negative.";
+    // Ensure the Clover Item ID is filled.
+    if (!cloverItemId.trim()) newErrors.cloverItemId = "Clover ID is required.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -395,12 +393,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       <div className={styles.field}>
         <label htmlFor="stock">Stock:</label>
         {process.env.NODE_ENV === "development" ? (
-          <input
-            id="stock"
-            type="number"
-            value={stock}
-            readOnly
-          />
+          <input id="stock" type="number" value={stock} readOnly />
         ) : (
           <input
             id="stock"
@@ -436,9 +429,10 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         </label>
       </div>
 
-      {/* Use the CloverItemSelect dropdown component */}
+      {/* Clover Item Select is now required */}
       <div className={styles.field}>
         <CloverItemSelect value={cloverItemId} onChange={setCloverItemId} />
+        {errors.cloverItemId && <span className={styles.error}>{errors.cloverItemId}</span>}
       </div>
 
       <div className={styles.optionGroups}>

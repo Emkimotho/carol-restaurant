@@ -1,5 +1,3 @@
-// File: app/api/clover/payment/route.ts
-
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -56,12 +54,17 @@ export async function POST(request: Request) {
     }
 
     // Construct the payment payload.
-    // Use the cloverItemId from the first valid item.
-    // Use a valid tender ID from your sandbox (e.g., "EQA3JDQ5NDBGM").
+    // Instead of using only the first valid item, we build an array
+    // of order items using all valid Clover item IDs.
     const payload = {
       amount: amountInCents,
       currency: "USD",
-      order: { id: validItems[0].cloverItemId },
+      order: {
+        items: validItems.map((item: any) => ({
+          id: item.cloverItemId,
+          quantity: item.quantity || 1,
+        })),
+      },
       note: `Customer: ${customerName || "N/A"}, Address: ${customerAddress || "N/A"}`,
       tender: { id: "EQA3JDQ5NDBGM" },
       source: "com.clover.webapi",

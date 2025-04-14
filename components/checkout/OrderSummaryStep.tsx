@@ -1,4 +1,3 @@
-// File: components/checkout/OrderSummaryStep.tsx
 "use client";
 
 import React, { useContext, useEffect, useState, useRef } from "react";
@@ -20,14 +19,9 @@ import {
 } from "@/utils/calculateDeliveryFee";
 import { DeliveryChargesContext } from "@/contexts/DeliveryChargesContext";
 
-//
-// TYPES AND INTERFACES
-//
-
 interface SelectedOptions {
   [groupId: string]: {
     selectedChoiceIds: string[];
-    // Maps a choiceId -> array of nested choice IDs
     nestedSelections?: { [choiceId: string]: string[] };
   };
 }
@@ -46,20 +40,9 @@ interface OptionGroup {
   }[];
 }
 
-//
-// PRICE CALCULATION FOR ITEMS
-//
-
-/**
- * Calculates the final price for an item by including its base price,
- * the price adjustments from its option groups and nested options,
- * and multiplying by the item quantity.
- */
 function calculateItemPrice(item: any): number {
-  // Start with the base item price (or 0 if undefined)
   let basePrice = item.price ?? 0;
 
-  // If the item has option groups and selected options, iterate through them.
   if (item.optionGroups && item.selectedOptions) {
     item.optionGroups.forEach((group: OptionGroup) => {
       const groupState = item.selectedOptions[group.id];
@@ -85,11 +68,6 @@ function calculateItemPrice(item: any): number {
   return basePrice * quantity;
 }
 
-//
-// LOADING BAR COMPONENT
-//
-// A simple loading bar component that shows a progress animation.
-//
 const LoadingBar: React.FC = () => (
   <>
     <div
@@ -129,10 +107,6 @@ const LoadingBar: React.FC = () => (
   </>
 );
 
-//
-// ORDER SUMMARY STEP COMPONENT
-//
-
 export interface OrderSummaryStepProps {
   cartItems: any[];
   getTotalPrice: () => number;
@@ -160,35 +134,21 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
   deliveryFee,
   taxRate,
 }) => {
-  //--------------------------------------
-  // CONTEXT & HOOKS
-  //--------------------------------------
   const { order, setOrder } = useContext(OrderContext)!;
-  const { schedule, orderId, deliveryAddress } = order;
+  // Use the dynamic order id from the DB by destructuring "id" as orderId
+  const { schedule, id: orderId, deliveryAddress } = order;
   const router = useRouter();
   const { isOpen } = useOpeningHours();
-  const { deliveryCharges: adminSettings, loading: adminLoading } = useContext(
-    DeliveryChargesContext
-  )!;
+  const { deliveryCharges: adminSettings, loading: adminLoading } = useContext(DeliveryChargesContext)!;
 
-  // Local state for formatted scheduled time.
   const [formattedSchedule, setFormattedSchedule] = useState("Instant Order (ASAP)");
-  // Local state for delivery fee calculation parameters.
-  const [deliveryCalculationParams, setDeliveryCalculationParams] =
-    useState<DeliveryCalculationParams | null>(null);
-  // Ref to ensure the distance is fetched only once.
+  const [deliveryCalculationParams, setDeliveryCalculationParams] = useState<DeliveryCalculationParams | null>(null);
   const hasFetchedDistance = useRef(false);
-  // Use the provided tax rate or fallback to the default TAX_RATE.
   const usedTaxRate = typeof taxRate === "number" ? taxRate : TAX_RATE;
-
-  // Default restaurant address for pickup/delivery.
   const restaurantAddress =
     process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ||
     "20025 Mount Aetna Road, Hagerstown, MD 21742";
 
-  //--------------------------------------
-  // FORMAT THE SCHEDULE TIME
-  //--------------------------------------
   useEffect(() => {
     if (schedule) {
       const dateObj = new Date(schedule);
@@ -205,9 +165,6 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
     }
   }, [schedule]);
 
-  //--------------------------------------
-  // FETCH DELIVERY ESTIMATES (if order type includes "delivery")
-  //--------------------------------------
   useEffect(() => {
     if (!orderType.includes("delivery")) return;
     if (
@@ -233,7 +190,6 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
         freeDeliveryThreshold: parseFloat(adminSettings.freeDeliveryThreshold),
       };
 
-      // Note: Use the getTotalPrice function to calculate the order subtotal.
       setDeliveryCalculationParams({
         distance: estimates.distance,
         travelTimeMinutes: estimates.travelTimeMinutes,
@@ -247,14 +203,8 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
     });
   }, [orderType, deliveryAddress, restaurantAddress, cartItems, adminSettings, getTotalPrice]);
 
-  //--------------------------------------
-  // SUBTOTAL, TIP, TAX, AND TOTAL CALCULATIONS
-  //--------------------------------------
-  // Calculate subtotal from cart items.
   const subtotal = cartItems.reduce((sum, item) => sum + calculateItemPrice(item), 0);
-  // Calculate tip amount based on the provided tip value.
   const tipAmount = calculateTipAmount(subtotal, tip, customTip);
-  // Calculate tax amount using the used tax rate.
   const taxAmount = calculateTaxAmount(subtotal, usedTaxRate);
 
   let dynamicDeliveryFee = 0;
@@ -262,25 +212,16 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
     const feeResult = calculateDeliveryFee(deliveryCalculationParams);
     dynamicDeliveryFee = feeResult.customerFee;
   }
-  const finalDeliveryFee = deliveryCalculationParams
-    ? dynamicDeliveryFee
-    : deliveryFee || 0;
-
-  // Calculate the final total including tip, tax, and delivery fee.
+  const finalDeliveryFee = deliveryCalculationParams ? dynamicDeliveryFee : deliveryFee || 0;
   const total = calculateTotalWithTipAndTax(subtotal, tipAmount, taxAmount, finalDeliveryFee);
 
-  //--------------------------------------
-  // HANDLER: Proceed to Next Step
-  //--------------------------------------
   const handleNext = () => {
-    // If the restaurant is closed and no schedule is set, force scheduling.
     if (!schedule && !isOpen) {
       alert("Restaurant is currently closed. Please schedule your order.");
       router.push("/schedule-order?returnUrl=/checkout?step=orderSummary");
       return;
     }
 
-    // Save cart items and final total in the order context.
     setOrder((prev) => ({
       ...prev,
       items: cartItems,
@@ -290,9 +231,6 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
     onNext();
   };
 
-  //--------------------------------------
-  // HELPER: Get Order Type Label (based on the orderType string)
-  //--------------------------------------
   const getOrderTypeLabel = (type: string): string => {
     switch (type) {
       case "pickup":
@@ -312,23 +250,15 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
     }
   };
 
-  //--------------------------------------
-  // CONTENT: Conditional Rendering
-  //--------------------------------------
   const content = adminLoading ? (
     <LoadingBar />
   ) : (
     <div>
       <h4>Order Summary</h4>
-
-      {/* Order ID */}
       <div className={styles.orderId}>
         <strong>Order ID:</strong> {orderId || "N/A"}
       </div>
-
       <hr />
-
-      {/* Render each cart item */}
       {cartItems.map((item, index) => (
         <div key={index} className={styles.orderItem}>
           <h5>{(item.title || item.name) + ` x ${item.quantity}`}</h5>
@@ -338,16 +268,11 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
           <p>${calculateItemPrice(item).toFixed(2)}</p>
         </div>
       ))}
-
       <hr />
-
-      {/* Subtotal */}
       <div className={styles.orderTotal}>
         <h5>Subtotal:</h5>
         <p>${subtotal.toFixed(2)}</p>
       </div>
-
-      {/* Order Type, Scheduled Time & Address Info */}
       <div className={styles.orderSummary} style={{ marginTop: "1.5rem" }}>
         <div className={styles.orderTotal}>
           <h5>Order Type:</h5>
@@ -357,14 +282,11 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
           <h5>Scheduled Time:</h5>
           <p>{formattedSchedule}</p>
         </div>
-
-        {/* Delivery Details */}
         {orderType.includes("delivery") && deliveryAddress && (
           <div className={styles.deliveryDetails}>
             <h5>Delivery Address:</h5>
             <p>
-              {deliveryAddress.street}, {deliveryAddress.city},{" "}
-              {deliveryAddress.state} {deliveryAddress.zipCode}
+              {deliveryAddress.street}, {deliveryAddress.city}, {deliveryAddress.state} {deliveryAddress.zipCode}
             </p>
             {deliveryAddress.deliveryOption && (
               <>
@@ -384,8 +306,6 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
             )}
           </div>
         )}
-
-        {/* Pickup Details */}
         {orderType.includes("pickup") && (
           <div className={styles.pickupDetails}>
             <h5>Pickup Location:</h5>
@@ -396,17 +316,10 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
             </p>
           </div>
         )}
-
-        {/* Delivery Fee Breakdown */}
         {orderType.includes("delivery") && deliveryCalculationParams && (
-          <CheckoutDeliveryInfo
-            {...deliveryCalculationParams}
-            orderSubtotal={subtotal}
-          />
+          <CheckoutDeliveryInfo {...deliveryCalculationParams} orderSubtotal={subtotal} />
         )}
       </div>
-
-      {/* Tip Selection */}
       <div className={`${styles.tipSelection} mt-4`}>
         <h5>Add a Tip?</h5>
         <div className={styles.tipOptions}>
@@ -456,8 +369,6 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
           </div>
         )}
       </div>
-
-      {/* Tip, Tax, and Final Total */}
       <div className={`${styles.orderTotal} mt-4`}>
         <h5>Tip Amount:</h5>
         <p>${tipAmount.toFixed(2)}</p>
@@ -469,8 +380,6 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
           ${parseFloat(total.toString()).toFixed(2)}
         </p>
       </div>
-
-      {/* Navigation Buttons */}
       <div className={styles.navigationButtons}>
         <button
           onClick={onBack}

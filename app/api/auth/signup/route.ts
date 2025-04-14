@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
-import sendEmail from "@/services/emailService";
+import sendEmail from "@/services/EmailService";
 
 const prisma = new PrismaClient();
 
