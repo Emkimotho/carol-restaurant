@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     const data = await cloverResponse.json();
     console.log("API: Clover API response data:", data);
 
-    // If Clover does not return a checkoutUrl, fallback to our REDIRECT_URL
+    // If this Clover does not return a checkoutUrl, fallback to our REDIRECT_URL
     const checkoutUrl = data.checkoutUrl || REDIRECT_URL;
     return NextResponse.json({ checkoutUrl });
   } catch (error) {

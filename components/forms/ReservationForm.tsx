@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import Image from 'next/image';
-import styles from '@/components/forms/Reservation.module.css';
+import styles from '@/components/forms/ReservationForm.module.css';
 
 
 interface FormData {
