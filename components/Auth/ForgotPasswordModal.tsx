@@ -12,7 +12,7 @@
 */
 
 import React, { useState } from "react";
-import styles from "./Login.module.css";
+import styles from "./ForgotPasswordModal.module.css";
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;

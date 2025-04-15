@@ -1,9 +1,9 @@
-// File: 19thhole/components/Auth/LoginForm.tsx
 "use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import styles from "./Login.module.css";
+// Update the import to use the new CSS module
+import styles from "./LoginForm.module.css";
 
 interface LoginFormProps {
   onOpenForgotPassword: () => void;
@@ -12,7 +12,10 @@ interface LoginFormProps {
 
 const backendURL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api/auth";
 
-const LoginForm: React.FC<LoginFormProps> = ({ onOpenForgotPassword, onOpenSignup }) => {
+const LoginForm: React.FC<LoginFormProps> = ({
+  onOpenForgotPassword,
+  onOpenSignup,
+}) => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

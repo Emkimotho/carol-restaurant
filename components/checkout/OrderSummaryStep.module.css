@@ -21,6 +21,17 @@
   font-family: var(--font-body);
 }
 
+/* New style for order ID displayed in secondary color */
+.orderIdSecondary {
+  font-size: 1rem;
+  color: var(--secondary-color);
+  margin-bottom: 1rem;
+  font-family: var(--font-body);
+  font-weight: bold;
+  border-left: 3px solid var(--secondary-color);
+  padding-left: 8px;
+}
+
 .orderItem {
   margin-bottom: 1rem;
   border-bottom: 1px dashed var(--border-color);
@@ -141,4 +152,50 @@
   cursor: pointer;
   border: none;
   transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+/* Revised Hover effects for buttons: background turns secondary,
+   slowly sweeps (translates) horizontally without scaling */
+.btn:hover {
+  background-color: var(--secondary-color);
+  animation: sweep 3s infinite ease-in-out;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Slow sweeping animation: Only horizontal translation, no scaling */
+@keyframes sweep {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* Loading bar styles */
+.loadingBarContainer {
+  width: 100%;
+  height: 4px;
+  background-color: #e0e0e0;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.loadingBarInner {
+  width: 50%;
+  height: 100%;
+  background-color: var(--primary-color);
+  position: absolute;
+  left: -50%;
+  animation: loadingAnim 1.5s infinite;
+}
+
+@keyframes loadingAnim {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(200%); }
 }

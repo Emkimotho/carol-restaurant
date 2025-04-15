@@ -70,26 +70,8 @@ function calculateItemPrice(item: any): number {
 
 const LoadingBar: React.FC = () => (
   <>
-    <div
-      style={{
-        width: "100%",
-        height: "4px",
-        backgroundColor: "#e0e0e0",
-        position: "relative",
-        overflow: "hidden",
-        marginBottom: "1rem",
-      }}
-    >
-      <div
-        style={{
-          width: "50%",
-          height: "100%",
-          backgroundColor: "var(--primary-color)",
-          position: "absolute",
-          left: "-50%",
-          animation: "loadingAnim 1.5s infinite",
-        }}
-      />
+    <div className={styles.loadingBarContainer}>
+      <div className={styles.loadingBarInner} />
     </div>
     <style jsx global>{`
       @keyframes loadingAnim {
@@ -135,8 +117,8 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
   taxRate,
 }) => {
   const { order, setOrder } = useContext(OrderContext)!;
-  // Use the dynamic order id from the DB by destructuring "id" as orderId
-  const { schedule, id: orderId, deliveryAddress } = order;
+  // Destructure to get the dynamic, human-friendly order id from the order.
+  const { schedule, orderId, deliveryAddress } = order;
   const router = useRouter();
   const { isOpen } = useOpeningHours();
   const { deliveryCharges: adminSettings, loading: adminLoading } = useContext(DeliveryChargesContext)!;
@@ -255,7 +237,8 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
   ) : (
     <div>
       <h4>Order Summary</h4>
-      <div className={styles.orderId}>
+      {/* Order ID is displayed below the summary header using a secondary color */}
+      <div className={styles.orderIdSecondary}>
         <strong>Order ID:</strong> {orderId || "N/A"}
       </div>
       <hr />
@@ -273,7 +256,7 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
         <h5>Subtotal:</h5>
         <p>${subtotal.toFixed(2)}</p>
       </div>
-      <div className={styles.orderSummary} style={{ marginTop: "1.5rem" }}>
+      <div className={styles.orderSummary}>
         <div className={styles.orderTotal}>
           <h5>Order Type:</h5>
           <p>{getOrderTypeLabel(orderType)}</p>
@@ -320,7 +303,7 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
           <CheckoutDeliveryInfo {...deliveryCalculationParams} orderSubtotal={subtotal} />
         )}
       </div>
-      <div className={`${styles.tipSelection} mt-4`}>
+      <div className={styles.tipSelection}>
         <h5>Add a Tip?</h5>
         <div className={styles.tipOptions}>
           <button
@@ -355,7 +338,7 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
           </button>
         </div>
         {tip === "custom" && (
-          <div className={`${styles.formGroup} mt-3`}>
+          <div className={styles.formGroup}>
             <label htmlFor="customTip">Custom Tip Amount</label>
             <input
               type="number"
@@ -369,16 +352,14 @@ const OrderSummaryStep: React.FC<OrderSummaryStepProps> = ({
           </div>
         )}
       </div>
-      <div className={`${styles.orderTotal} mt-4`}>
+      <div className={styles.orderTotal}>
         <h5>Tip Amount:</h5>
         <p>${tipAmount.toFixed(2)}</p>
         <h5>Tax ({(usedTaxRate * 100).toFixed(2)}%):</h5>
         <p>${taxAmount.toFixed(2)}</p>
         <hr />
-        <h5 style={{ fontWeight: "bold", color: "#000" }}>Total:</h5>
-        <p style={{ fontWeight: "bold", color: "#000" }}>
-          ${parseFloat(total.toString()).toFixed(2)}
-        </p>
+        <h5>Total:</h5>
+        <p>${parseFloat(total.toString()).toFixed(2)}</p>
       </div>
       <div className={styles.navigationButtons}>
         <button

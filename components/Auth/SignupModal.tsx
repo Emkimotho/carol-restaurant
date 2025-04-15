@@ -1,8 +1,7 @@
-// File: 19thhole/components/Auth/SignupModal.tsx
 "use client";
 
 import React, { useState } from "react";
-import styles from "./Login.module.css";
+import styles from "./SignupModal.module.css";
 
 interface SignupModalProps {
   isOpen: boolean;

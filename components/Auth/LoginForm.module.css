@@ -1,0 +1,115 @@
+/* LoginForm.module.css */
+/* ==========================================================================
+   Login Form Container
+   ========================================================================== */
+   .loginForm {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  
+  /* ==========================================================================
+     Error Message Styles
+     ========================================================================== */
+  .error {
+    color: var(--secondary-color, #d05433);
+    background-color: rgba(255, 0, 0, 0.1);
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  /* ==========================================================================
+     Form Group Styles
+     ========================================================================== */
+  .formGroup {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+  }
+  
+  .formGroup label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color, #0070f3);
+    transition: color 0.3s ease;
+  }
+  
+  .dark-mode .formGroup label {
+    color: #ddd;
+  }
+  
+  .formGroup input {
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    border: 2px solid var(--border-color, #ccc);
+    border-radius: 8px;
+    background-color: var(--light-gray, #f5f5f5);
+    color: var(--dark-gray, #333);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .dark-mode .formGroup input {
+    background-color: #444;
+    color: #eee;
+    border: 2px solid #555;
+  }
+  
+  .formGroup input:focus {
+    border-color: var(--primary-color, #0070f3);
+    box-shadow: 0 0 10px rgba(0, 191, 99, 0.4);
+    outline: none;
+  }
+  
+  /* ==========================================================================
+     Submit Button Styles
+     ========================================================================== */
+  .submitButton {
+    width: 100%;
+    background-color: var(--primary-color, #0070f3);
+    color: var(--white, #ffffff);
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    margin-top: 0.5rem;
+  }
+  
+  .submitButton:hover {
+    background-color: var(--secondary-color, #005bb5);
+    transform: translateY(-2px);
+  }
+  
+  /* ==========================================================================
+     Links Section Styles
+     ========================================================================== */
+  .links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .linkButton {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--primary-color, #0070f3);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+  }
+  
+  .linkButton:hover {
+    color: var(--secondary-color, #005bb5);
+  }
+  
