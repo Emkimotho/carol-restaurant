@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
-    // Parse request body for email and password.
+    // Parse the incoming request for email and password.
     const { email, password } = await request.json();
 
     if (!email || !password) {
@@ -17,19 +17,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Look up the user by email and select the necessary fields.
-    // Removed firstName and lastName because they are not defined in the Prisma User model.
+    // Fetch the user by email. The selected fields match your Prisma schema.
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
         id: true,
         email: true,
         password: true,
-        isVerified: true, // Ensure this field exists in your schema.
-        roles: { 
-          select: { 
-            role: { select: { name: true } } 
-          }
+        firstName: true,
+        lastName: true,
+        isVerified: true,
+        roles: {
+          select: {
+            role: { select: { name: true } },
+          },
         },
       },
     });
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if the user has verified their email.
+    // Check if the user is verified.
     if (!user.isVerified) {
       return NextResponse.json(
         { message: "Please verify your email before logging in" },
@@ -63,24 +64,25 @@ export async function POST(request: Request) {
       throw new Error("JWT_SECRET is not defined in your environment variables");
     }
 
-    // Generate a JWT token using the secret from the environment.
+    // Generate a JWT token using the user information.
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // Prepare the JSON response.
+    // Create a JSON response including selected user data.
     const response = NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
-        // Removed firstName and lastName from the response as well.
-        roles: user.roles.map((ur) => ur.role.name),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: user.roles.map((userRole) => userRole.role.name),
       },
     });
 
-    // Set the HTTP-only cookie with the JWT token.
+    // Set an HTTP-only cookie with the JWT token.
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
