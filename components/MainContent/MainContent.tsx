@@ -74,17 +74,17 @@ const MainContent: React.FC = () => {
                   Black Rock Golf Course
                 </a>
                 , we offer an exquisite{" "}
-                <Link href="/menu" legacyBehavior>
-                  <a className={styles.sweepLink}>menu</a>
+                <Link href="/menu" className={styles.sweepLink}>
+                  menu
                 </Link>{" "}
                 and unparalleled{" "}
-                <Link href="/about" legacyBehavior>
-                  <a className={styles.sweepLink}>service</a>
+                <Link href="/about" className={styles.sweepLink}>
+                  service
                 </Link>{" "}
                 that caters to all your senses. Click &quot;Read More&quot; to see our services...
               </p>
-              <Link href="/about" legacyBehavior>
-                <a className={styles.readMoreBtn}>Read More</a>
+              <Link href="/about" className={styles.readMoreBtn}>
+                Read More
               </Link>
             </motion.div>
           </div>

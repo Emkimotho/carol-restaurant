@@ -7,7 +7,6 @@ export async function POST(request: Request) {
     console.log("API: Received payment request payload:", body);
 
     // Destructure the expected fields.
-    // We do NOT require a local website order id.
     const { items, totalAmount, customerName, customerAddress } = body;
 
     // Validate required fields.
@@ -19,12 +18,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // Filter for items that include a valid cloverItemId.
-    const validItems = items.filter((item: any) => item.cloverItemId);
-    if (validItems.length === 0) {
-      console.error("API Error: No item includes a valid Clover item ID.");
+    // Validate that items is an array.
+    if (!Array.isArray(items)) {
+      console.error("API Error: 'items' must be an array.");
       return NextResponse.json(
-        { error: "No item includes a valid Clover item ID" },
+        { error: "'items' must be an array." },
+        { status: 400 }
+      );
+    }
+
+    // Ensure every item includes a valid Clover item ID.
+    const missingCloverId = items.find((item: any) => !item.cloverItemId);
+    if (missingCloverId) {
+      console.error("API Error: Every item must include a valid Clover item ID.");
+      return NextResponse.json(
+        { error: "Every item must include a valid Clover item ID." },
         { status: 400 }
       );
     }
@@ -43,10 +51,9 @@ export async function POST(request: Request) {
     // Retrieve Clover credentials from environment variables.
     const CLOVER_ACCESS_TOKEN = process.env.CLOVER_ACCESS_TOKEN;
     const MERCHANT_ID = process.env.MERCHANT_ID;
-    // Update default redirect URL to point to your payment confirmation page.
+    // Default redirect URL (update to your production payment confirmation page as needed).
     const REDIRECT_URL =
-      process.env.CLOVER_REDIRECT_URL ||
-      "https://yourdomain.com/payment-confirmation";
+      process.env.CLOVER_REDIRECT_URL || "https://yourdomain.com/payment-confirmation";
       
     if (!CLOVER_ACCESS_TOKEN || !MERCHANT_ID) {
       console.error("API Error: Missing Clover credentials in environment variables.");
@@ -54,13 +61,11 @@ export async function POST(request: Request) {
     }
 
     // Construct the payment payload.
-    // Instead of using only the first valid item, we build an array
-    // of order items using all valid Clover item IDs.
     const payload = {
       amount: amountInCents,
       currency: "USD",
       order: {
-        items: validItems.map((item: any) => ({
+        items: items.map((item: any) => ({
           id: item.cloverItemId,
           quantity: item.quantity || 1,
         })),
@@ -95,7 +100,7 @@ export async function POST(request: Request) {
     const data = await cloverResponse.json();
     console.log("API: Clover API response data:", data);
 
-    // If this Clover does not return a checkoutUrl, fallback to our REDIRECT_URL
+    // Fallback to the redirect URL if checkoutUrl is not provided.
     const checkoutUrl = data.checkoutUrl || REDIRECT_URL;
     return NextResponse.json({ checkoutUrl });
   } catch (error) {
