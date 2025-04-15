@@ -1,4 +1,5 @@
 // File: app/api/auth/login/route.ts
+
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     }
 
     // Look up the user by email and include their roles.
+    // Ensure that your Prisma schema includes the "isVerified" field in the User model.
     const user = await prisma.user.findUnique({
       where: { email },
       include: { roles: { include: { role: true } } },
@@ -32,6 +34,7 @@ export async function POST(request: Request) {
     }
 
     // Check if the user has verified their email.
+    // The "isVerified" property should be part of the user record.
     if (!user.isVerified) {
       return NextResponse.json(
         { message: "Please verify your email before logging in" },
