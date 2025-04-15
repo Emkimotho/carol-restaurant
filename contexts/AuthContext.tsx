@@ -1,4 +1,3 @@
-// File: contexts/AuthContext.tsx
 'use client';
 
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
@@ -8,6 +7,7 @@ export interface User {
   name: string;
   email: string;
   roles: string[]; // e.g., ["ADMIN", "CUSTOMER"]
+  isVerified: boolean; // Newly added property to check email verification status
   // Additional properties as needed
 }
 
