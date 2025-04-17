@@ -22,11 +22,16 @@
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@prisma/client": "^6.6.0",
+    "@tailwindcss/postcss": "^4.1.4",
     "@tanstack/react-query": "^5.69.0",
+    "@types/node": "^20",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "bootstrap": "^5.3.3",
     "disqus-react": "^1.1.6",
+    "eslint": "^9.22.0",
+    "eslint-config-next": "^15.2.2",
     "formidable": "^3.5.2",
     "formik": "^2.4.6",
     "framer-motion": "^12.6.2",
@@ -35,6 +40,7 @@
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.4",
     "nodemailer": "^6.10.0",
+    "postcss": "^8.5.3",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.5",
     "react-datepicker": "^7.5.0",
@@ -46,17 +52,11 @@
     "remark-gfm": "^4.0.1",
     "sharp": "^0.33.5",
     "swr": "^2.3.3",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.2",
     "uuid": "^11.0.3",
     "yup": "^1.4.0",
-    "zod": "^3.24.2",
-
-    "@tailwindcss/postcss": "^4.1.4",
-    "postcss": "^8.5.3",
-    "autoprefixer": "^10.4.21",
-    "tailwindcss": "^4.1.4",
-
-    "typescript": "^5.8.2",
-    "@types/node": "^20"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.25.9",
@@ -65,8 +65,6 @@
     "@types/react-dom": "^18",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
-    "eslint": "^9.22.0",
-    "eslint-config-next": "^15.2.2",
     "prisma": "^6.6.0",
     "ts-node": "^10.9.2"
   }
