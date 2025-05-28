@@ -1,6 +1,7 @@
 {
   "extends": ["next/core-web-vitals"],
   "rules": {
+    // Disallow direct fetch calls to /api/orders in favor of hooks
     "no-restricted-syntax": [
       "error",
       {

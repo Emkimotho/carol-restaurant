@@ -28,13 +28,14 @@
     ],
     "typeRoots": [
       "node_modules/@types",
-      "utilities/types"
+      "types"
     ]
   },
   "include": [
     "next-env.d.ts",
     "app/**/*",
-    "utilities/types/**/*.d.ts",
+    "types/**/*.d.ts",         
+    "utils/**/*.d.ts",         
     "global.d.ts",
     "prisma/seed.cjs",
     "**/*.ts",
