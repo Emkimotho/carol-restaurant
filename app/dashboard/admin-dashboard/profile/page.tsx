@@ -10,7 +10,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import styles from "@/components/dashboard/AdminDashboard/Profile.module.css";
+import styles from "@/components/dashboard/AdminDashboard/profile.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
