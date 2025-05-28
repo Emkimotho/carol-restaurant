@@ -1,3 +1,5 @@
+// File: components/ConditionalClientLayout.tsx
+// Description: Wraps routes in the public ClientLayout except for any of the dashboard routes
 "use client";
 
 import React from "react";
@@ -11,11 +13,18 @@ interface ConditionalClientLayoutProps {
 const ConditionalClientLayout = ({ children }: ConditionalClientLayoutProps) => {
   const pathname = usePathname();
 
-  // If the current route is under /dashboard, do not wrap with the public layout.
-  if (pathname && pathname.startsWith("/dashboard")) {
+  // Bypass the public ClientLayout on ALL dashboard routes
+  if (
+    pathname?.startsWith("/dashboard/admin-dashboard") ||
+    pathname?.startsWith("/dashboard/driver-dashboard") ||
+    pathname?.startsWith("/dashboard/staff-dashboard") ||
+    pathname?.startsWith("/dashboard/server-dashboard") ||    // ← added
+    pathname?.startsWith("/dashboard/cashier-dashboard")      // ← added
+  ) {
     return <>{children}</>;
   }
 
+  // All other routes use the public ClientLayout
   return <ClientLayout>{children}</ClientLayout>;
 };
 

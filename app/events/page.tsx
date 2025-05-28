@@ -1,3 +1,4 @@
+// File: app/events/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -9,15 +10,18 @@ export interface EventData {
   id: string;
   title: string;
   description: string;
-  image?: string;
+  image?: string | null;
   location: string;
-  date: string;
-  time: string;
+  date: string;         // ISO date string
+  startTime: string;    // "HH:MM" format
+  endTime: string;      // "HH:MM" format
   adultPrice: number;
   kidPrice: number;
+  kidPriceInfo?: string | null;
   availableTickets: number;
   isFree: boolean;
   adultOnly: boolean;
+  faqs?: { id: string; question: string; answer: string }[];
 }
 
 export default function EventsPage() {
@@ -28,10 +32,23 @@ export default function EventsPage() {
       try {
         const res = await fetch("/api/events");
         if (!res.ok) throw new Error("Failed to fetch events");
-        const data = await res.json();
-        const eventsFromDB: EventData[] = data.events.map((ev: any) => ({
-          ...ev,
-          date: new Date(ev.date).toISOString(),
+        const { events: fetched } = await res.json();
+        const eventsFromDB: EventData[] = fetched.map((ev: any) => ({
+          id:               ev.id,
+          title:            ev.title,
+          description:      ev.description,
+          image:            ev.image,
+          location:         ev.location,
+          date:             ev.date,
+          startTime:        ev.startTime,
+          endTime:          ev.endTime,
+          adultPrice:       ev.adultPrice,
+          kidPrice:         ev.kidPrice,
+          kidPriceInfo:     ev.kidPriceInfo,
+          availableTickets: ev.availableTickets,
+          isFree:           ev.isFree,
+          adultOnly:        ev.adultOnly,
+          faqs:             ev.faqs,
         }));
         setEvents(eventsFromDB);
       } catch (error) {
@@ -42,9 +59,12 @@ export default function EventsPage() {
     fetchEvents();
   }, []);
 
-  if (!events || events.length === 0) {
+  if (events.length === 0) {
     return (
-      <section className={styles.eventsPage} style={{ textAlign: "center", padding: "2rem" }}>
+      <section
+        className={styles.eventsPage}
+        style={{ textAlign: "center", padding: "2rem" }}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           height="100"

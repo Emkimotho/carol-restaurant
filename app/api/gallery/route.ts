@@ -1,9 +1,11 @@
+// File: app/api/gallery/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import formidable from "formidable";
 import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
+import type { IncomingMessage } from "http";
 
 export const config = {
   api: {
@@ -48,80 +50,95 @@ export async function POST(request: Request) {
     (stream as any).headers = headers;
 
     return new Promise((resolve) => {
-      const form = formidable({ multiples: false, uploadDir, keepExtensions: true });
-      form.parse(stream, async (err, fields, files) => {
-        console.log("Formidable callback triggered.");
-        if (err) {
-          console.error("Error parsing form data:", err);
-          return resolve(
-            NextResponse.json({ error: "Error parsing form data" }, { status: 500 })
-          );
-        }
-        console.log("Parsed fields:", fields);
-        console.log("Parsed files:", files);
+      const form = formidable({
+        multiples: false,
+        uploadDir,
+        keepExtensions: true,
+      });
 
-        const { alt, title, description } = fields;
-        let file = files.file; // expecting the file field to be named "file"
-        if (Array.isArray(file)) {
-          file = file[0];
-        }
-        if (!file) {
-          console.error("No file uploaded.");
-          return resolve(
-            NextResponse.json({ error: "No file uploaded" }, { status: 400 })
-          );
-        }
-
-        // Use the unique newFilename from formidable to avoid naming conflicts
-        const fileName = file.newFilename;
-        const newPath = path.join(uploadDir, fileName);
-        const oldPath = file.filepath;
-        try {
-          fs.renameSync(oldPath, newPath);
-        } catch (renameError) {
-          console.error("File rename error, attempting copy:", renameError);
-          try {
-            fs.copyFileSync(oldPath, newPath);
-            fs.unlinkSync(oldPath);
-          } catch (copyError) {
-            console.error("File copy error:", copyError);
+      // Cast stream to IncomingMessage so formidable.parse accepts it
+      form.parse(
+        stream as unknown as IncomingMessage,
+        async (err, fields, files) => {
+          console.log("Formidable callback triggered.");
+          if (err) {
+            console.error("Error parsing form data:", err);
             return resolve(
-              NextResponse.json({ error: "File upload error" }, { status: 500 })
+              NextResponse.json(
+                { error: "Error parsing form data" },
+                { status: 500 }
+              )
+            );
+          }
+          console.log("Parsed fields:", fields);
+          console.log("Parsed files:", files);
+
+          const { alt, title, description } = fields;
+          let file = (files as any).file; // expecting the file field to be named "file"
+          if (Array.isArray(file)) {
+            file = file[0];
+          }
+          if (!file) {
+            console.error("No file uploaded.");
+            return resolve(
+              NextResponse.json({ error: "No file uploaded" }, { status: 400 })
+            );
+          }
+
+          // Use the unique newFilename from formidable to avoid naming conflicts
+          const fileName = file.newFilename;
+          const newPath = path.join(uploadDir, fileName);
+          const oldPath = file.filepath;
+          try {
+            fs.renameSync(oldPath, newPath);
+          } catch (renameError) {
+            console.error("File rename error, attempting copy:", renameError);
+            try {
+              fs.copyFileSync(oldPath, newPath);
+              fs.unlinkSync(oldPath);
+            } catch (copyError) {
+              console.error("File copy error:", copyError);
+              return resolve(
+                NextResponse.json({ error: "File upload error" }, { status: 500 })
+              );
+            }
+          }
+
+          // Construct the file URL relative to the public folder
+          const fileUrl = `/images/${fileName}`;
+          if (!alt || !title || !description) {
+            console.error("Missing fields:", { alt, title, description });
+            return resolve(
+              NextResponse.json({ error: "Missing fields" }, { status: 400 })
+            );
+          }
+
+          try {
+            const image = await prisma.galleryImage.create({
+              data: {
+                src: fileUrl,
+                alt: String(alt),
+                title: String(title),
+                description: String(description),
+              },
+            });
+            console.log("Image created:", image);
+            return resolve(NextResponse.json(image));
+          } catch (dbError) {
+            console.error("Database error:", dbError);
+            return resolve(
+              NextResponse.json({ error: "Database error" }, { status: 500 })
             );
           }
         }
-
-        // Construct the file URL relative to the public folder
-        const fileUrl = `/images/${fileName}`;
-        if (!alt || !title || !description) {
-          console.error("Missing fields:", { alt, title, description });
-          return resolve(
-            NextResponse.json({ error: "Missing fields" }, { status: 400 })
-          );
-        }
-
-        try {
-          const image = await prisma.galleryImage.create({
-            data: {
-              src: fileUrl,
-              alt: String(alt),
-              title: String(title),
-              description: String(description),
-            },
-          });
-          console.log("Image created:", image);
-          return resolve(NextResponse.json(image));
-        } catch (dbError) {
-          console.error("Database error:", dbError);
-          return resolve(
-            NextResponse.json({ error: "Database error" }, { status: 500 })
-          );
-        }
-      });
+      );
     });
-  } catch (outerError) {
+  } catch (outerError: unknown) {
     console.error("Outer error in POST handler:", outerError);
-    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unexpected error" },
+      { status: 500 }
+    );
   }
 }
 
@@ -141,8 +158,11 @@ export async function DELETE(request: Request) {
       fs.unlinkSync(filePath);
     }
     return NextResponse.json(image);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Delete error:", error);
-    return NextResponse.json({ error: "Failed to delete image" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete image" },
+      { status: 500 }
+    );
   }
 }

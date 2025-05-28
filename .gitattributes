@@ -1,0 +1,8 @@
+﻿# enforce LF line endings in the repo, convert CRLF on checkout
+# *.sql, *.ts, *.css, etc. get normalized to LF
+
+*       text=auto
+*.sql   text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.css   text eol=lf

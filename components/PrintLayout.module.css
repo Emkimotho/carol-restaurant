@@ -1,0 +1,25 @@
+/* File: components/PrintLayout.module.css */
+
+/* Letter-head styling */
+.printHeader {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+.printHeader h1 {
+  margin: 0;
+  font-size: 1.5em;
+}
+.printHeader address {
+  font-style: normal;
+  line-height: 1.2;
+}
+.rangeLine {
+  margin-top: 0.5rem;
+  font-weight: bold;
+}
+
+/* Wrapper around the page’s content */
+.printContainer {
+  width: 100%;
+  /* preserve any parent padding or margins */
+}

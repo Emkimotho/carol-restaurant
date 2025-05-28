@@ -164,15 +164,9 @@
 
 /* Slow sweeping animation: Only horizontal translation, no scaling */
 @keyframes sweep {
-  0% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(5px);
-  }
-  100% {
-    transform: translateX(0);
-  }
+  0% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
 }
 
 /* Loading bar styles */
@@ -198,4 +192,21 @@
   0% { transform: translateX(0); }
   50% { transform: translateX(100%); }
   100% { transform: translateX(200%); }
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Alcohol‐warning box shown in GolfOrderSummary                   */
+/* ────────────────────────────────────────────────────────────────── */
+.alcoholNotice {
+  padding: 1rem;
+  background-color: #fff4e5;
+  border: 1px solid #f5c26b;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+}
+
+.alcoholText {
+  margin: 0 0 0.5rem;
+  font-weight: 500;
+  color: #b35e00;
 }

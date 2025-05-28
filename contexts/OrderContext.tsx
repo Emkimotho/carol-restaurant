@@ -1,22 +1,25 @@
 // File: contexts/OrderContext.tsx
 "use client";
 
-import React, { createContext, useState, ReactNode, useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { useAuth } from "./AuthContext";
 
-/**
- * Helper function to generate a human-friendly Order ID.
- * It uses the current date and a portion of a UUID to produce a string like "ORD-20250413-ABC123".
- */
-function generateOrderId(): string {
-  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const randomPart = uuidv4().split("-")[0].toUpperCase();
-  return `ORD-${datePart}-${randomPart}`;
-}
+/* ──────────────────────────────────────────────────────────────────── */
+/*  Type helpers                                                       */
+/* ──────────────────────────────────────────────────────────────────── */
+// Updated to match Prisma enum
+export type DeliveryType =
+  | "PICKUP_AT_CLUBHOUSE"
+  | "ON_COURSE"
+  | "EVENT_PAVILION"
+  | "DELIVERY";
+export type PaymentMethod = "CARD" | "CASH";
 
-/**
- * Interface defining the structure of a delivery address.
- */
 export interface DeliveryAddress {
   street: string;
   aptSuite?: string;
@@ -27,45 +30,95 @@ export interface DeliveryAddress {
   deliveryInstructions?: string;
 }
 
-/**
- * The Order interface describes the shape of an order.
- * - `id` is an optional field that will store the database record ID after order creation.
- * - `orderId` is the human-friendly order ID.
- * - `createdAt` holds the creation timestamp, which is important for display purposes.
- * - `status` tracks the current order state (e.g., "ORDER_RECEIVED", "IN_PROGRESS", etc.).
- * - **New Fields:**  
- *    - `customerName` optionally holds the name of the customer.
- *    - `customerAddress` optionally holds the customer's address.
- */
+/** The full Order object stored in React state */
 export interface Order {
-  id?: string;            // Optional: Primary key from the database when the order is created.
+  /* identifiers */
+  id?: string;
+  orderId: string | null;
+
+  /* cart snapshot */
   items: any[];
+  totalAmount: number;
+
+  /* workflow / lifecycle */
+  status: string;
+  createdAt: string;
   schedule: string | null;
   orderType: string | null;
-  orderId: string | null; // Human-friendly order ID.
-  deliveryAddress?: DeliveryAddress; // May be undefined if not set.
-  totalAmount: number;    // Total cost of the order.
-  status: string;         // Order status (e.g., "ORDER_RECEIVED", "IN_PROGRESS", etc.)
-  createdAt?: string;     // Timestamp when the order was created.
-  customerName?: string;  // Optional: Customer's name.
-  customerAddress?: string; // Optional: Customer's address.
+
+  /* golf fields */
+  deliveryType: DeliveryType;
+  cartId?: string | null;
+  holeNumber?: number | null;
+  // eventLocationId removed
+
+  /* payment */
+  paymentMethod: PaymentMethod;
+
+  /* customer */
+  customerId?: string;
+  customerName?: string;
+
+  /* guest */
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+
+  /* tip */
+  tip: string;
+  customTip: string;
+
+  /* financials */
+  subtotal: number;
+  taxAmount: number;
+  tipAmount: number;
+  customerDeliveryFee: number;
+  restaurantDeliveryFee: number;
+  totalDeliveryFee: number;
+  driverPayout: number;
+
+  /* delivery snapshot */
+  deliveryStreet: string;
+  deliveryCity: string;
+  deliveryState: string;
+  deliveryZip: string;
+  deliveryAddress: DeliveryAddress;
+
+  /* billing snapshot */
+  billingAddress: DeliveryAddress;
+
+  /* metrics */
+  deliveryDistanceMiles: number;
+  deliveryTimeMinutes: number;
+
+  /* alcohol flags */
+  containsAlcohol: boolean;
+  ageVerified: boolean;
 }
 
-/**
- * OrderContextType defines the methods and state exposed by the OrderContext.
- */
+/* What the context provides */
 export interface OrderContextType {
   order: Order;
   setOrder: React.Dispatch<React.SetStateAction<Order>>;
+
+  /* helpers */
   setSchedule: (isoString: string, orderType?: string) => void;
   clearSchedule: () => void;
-  setDeliveryAddress: (deliveryAddress: DeliveryAddress) => void;
+  setDeliveryAddress: (addr: DeliveryAddress) => void;
+  setBillingAddress: (addr: DeliveryAddress) => void;
+
+  setDeliveryType: (dt: DeliveryType) => void;
+  setCartInfo: (cartId: string | null, hole: number | null) => void;
+  // setEventLocation removed
+
+  setPaymentMethod: (pm: PaymentMethod) => void;
+  setContainsAlcohol: (flag: boolean) => void;
+  setAgeVerified: (flag: boolean) => void;
 }
 
-/**
- * Create the OrderContext, which will be used throughout the app.
- */
-export const OrderContext = createContext<OrderContextType | undefined>(undefined);
+export const OrderContext = createContext<OrderContextType | undefined>(
+  undefined
+);
 
 const LOCAL_STORAGE_ORDER_KEY = "orderState";
 
@@ -73,141 +126,180 @@ interface OrderProviderProps {
   children: ReactNode;
 }
 
-/**
- * OrderProvider is the context provider for order state management.
- * It handles initialization (with localStorage support), persistence, and provides methods to update the order.
- */
 export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
-  // 1) Lazy initializer: Attempt to load the order from localStorage.
+  const { user } = useAuth();
+
+  /* blank template */
+  const createBlankOrder = (): Order => ({
+    id: undefined,
+    orderId: null,
+    items: [],
+    totalAmount: 0,
+    status: "ORDER_RECEIVED",
+    createdAt: new Date().toISOString(),
+    schedule: null,
+    orderType: null,
+
+    /* golf defaults */
+    deliveryType: "PICKUP_AT_CLUBHOUSE",
+    cartId: null,
+    holeNumber: null,
+    // eventLocationId omitted
+
+    /* payment */
+    paymentMethod: "CARD",
+
+    /* customer / guest */
+    customerId: user?.id.toString() ?? "",
+    customerName: user?.name ?? "",
+    guestName: "",
+    guestEmail: "",
+    guestPhone: "",
+
+    /* tip */
+    tip: "0",
+    customTip: "0",
+
+    /* financials */
+    subtotal: 0,
+    taxAmount: 0,
+    tipAmount: 0,
+    customerDeliveryFee: 0,
+    restaurantDeliveryFee: 0,
+    totalDeliveryFee: 0,
+    driverPayout: 0,
+
+    /* delivery snapshot */
+    deliveryStreet: user?.streetAddress ?? "",
+    deliveryCity: user?.city ?? "",
+    deliveryState: user?.state ?? "",
+    deliveryZip: user?.zip ?? "",
+    deliveryAddress: {
+      street: user?.streetAddress ?? "",
+      aptSuite: user?.aptSuite ?? "",
+      city: user?.city ?? "",
+      state: user?.state ?? "",
+      zipCode: user?.zip ?? "",
+      deliveryOption: undefined,
+      deliveryInstructions: "",
+    },
+
+    /* billing snapshot */
+    billingAddress: {
+      street: "",
+      aptSuite: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      deliveryOption: undefined,
+      deliveryInstructions: "",
+    },
+
+    /* metrics */
+    deliveryDistanceMiles: 0,
+    deliveryTimeMinutes: 0,
+
+    /* alcohol flags */
+    containsAlcohol: false,
+    ageVerified: false,
+  });
+
+  /* lazy-load from localStorage */
   const getInitialOrder = (): Order => {
-    if (typeof window !== "undefined") {
-      const storedOrder = localStorage.getItem(LOCAL_STORAGE_ORDER_KEY);
-      if (storedOrder) {
-        try {
-          const parsed = JSON.parse(storedOrder);
-          // Ensure orderId exists; if not, generate one.
-          if (!parsed.orderId) {
-            parsed.orderId = generateOrderId();
-          }
-          // Ensure totalAmount is present, defaulting to 0 if not.
-          if (typeof parsed.totalAmount !== "number") {
-            parsed.totalAmount = 0;
-          }
-          // Ensure status exists; default to "ORDER_RECEIVED".
-          if (!parsed.status) {
-            parsed.status = "ORDER_RECEIVED";
-          }
-          // Ensure createdAt exists; default to the current time.
-          if (!parsed.createdAt) {
-            parsed.createdAt = new Date().toISOString();
-          }
-          // Optional fields: customerName and customerAddress remain as is if present.
-          localStorage.setItem(LOCAL_STORAGE_ORDER_KEY, JSON.stringify(parsed));
-          return parsed;
-        } catch (error) {
-          console.error("Error parsing order from localStorage", error);
-        }
-      }
+    if (typeof window === "undefined") return createBlankOrder();
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_ORDER_KEY);
+      if (!raw) return createBlankOrder();
+      const parsed = JSON.parse(raw) as Order;
+
+      /* ensure defaults */
+      parsed.schedule ??= null;
+      parsed.orderType ??= null;
+      parsed.deliveryType ??= "PICKUP_AT_CLUBHOUSE";
+      parsed.cartId ??= null;
+      parsed.holeNumber ??= null;
+      parsed.paymentMethod ??= "CARD";
+
+      parsed.containsAlcohol ??= false;
+      parsed.ageVerified ??= false;
+
+      localStorage.setItem(
+        LOCAL_STORAGE_ORDER_KEY,
+        JSON.stringify(parsed)
+      );
+      return parsed;
+    } catch {
+      return createBlankOrder();
     }
-    // Default order if nothing is stored in localStorage.
-    return {
-      items: [],
+  };
+
+  const [order, setOrder] = useState<Order>(getInitialOrder);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  /* persist */
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      localStorage.setItem(
+        LOCAL_STORAGE_ORDER_KEY,
+        JSON.stringify(order)
+      );
+    } catch (err) {
+      console.error("[OrderContext] save failed", err);
+    }
+  }, [order, mounted]);
+
+  /* helpers */
+  const setSchedule = (iso: string, ot?: string) =>
+    setOrder((prev) => ({
+      ...prev,
+      schedule: iso,
+      orderType: ot ?? prev.orderType,
+    }));
+
+  const clearSchedule = () =>
+    setOrder((prev) => ({
+      ...prev,
       schedule: null,
       orderType: null,
-      orderId: generateOrderId(),
-      totalAmount: 0,
-      status: "ORDER_RECEIVED", // Default status.
-      createdAt: new Date().toISOString(),
-      // Default customer fields can be left undefined.
-      customerName: undefined,
-      customerAddress: undefined,
-    };
-  };
+    }));
 
-  const [order, setOrder] = useState<Order>(getInitialOrder());
-  const [hasMounted, setHasMounted] = useState(false);
+  const setDeliveryAddress = (addr: DeliveryAddress) =>
+    setOrder((prev) => ({
+      ...prev,
+      deliveryAddress: addr,
+      deliveryStreet: addr.street,
+      deliveryCity: addr.city,
+      deliveryState: addr.state,
+      deliveryZip: addr.zipCode,
+    }));
 
-  // 2) Mark the component as mounted to prevent SSR mismatches.
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
+  const setBillingAddress = (addr: DeliveryAddress) =>
+    setOrder((prev) => ({
+      ...prev,
+      billingAddress: addr,
+    }));
 
-  // 3) Persist the order state to localStorage whenever it changes, after the component has mounted.
-  useEffect(() => {
-    if (!hasMounted) return;
-    if (typeof window !== "undefined") {
-      localStorage.setItem(LOCAL_STORAGE_ORDER_KEY, JSON.stringify(order));
-    }
-  }, [order, hasMounted]);
+  const setDeliveryType = (dt: DeliveryType) =>
+    setOrder((prev) => ({ ...prev, deliveryType: dt }));
 
-  // 4) setSchedule function: Update schedule (and optionally orderType) if the value has changed.
-  const setSchedule = (isoString: string, type?: string) => {
-    setOrder((prev) => {
-      if (prev.schedule === isoString && (!type || prev.orderType === type)) {
-        return prev; // No change.
-      }
-      return {
-        ...prev,
-        schedule: isoString,
-        orderType: type ?? prev.orderType,
-      };
-    });
-  };
+  const setCartInfo = (cartId: string | null, hole: number | null) =>
+    setOrder((prev) => ({ ...prev, cartId, holeNumber: hole }));
 
-  // 5) clearSchedule function: Clear the schedule and orderType values.
-  const clearSchedule = () => {
-    setOrder((prev) => {
-      if (!prev.schedule && !prev.orderType) return prev; // No change.
-      return {
-        ...prev,
-        schedule: null,
-        orderType: null,
-      };
-    });
-  };
+  // setEventLocation is no longer needed
 
-  // 6) setDeliveryAddress function: Update the delivery address if it has changed.
-  const setDeliveryAddress = (newAddress: DeliveryAddress) => {
-    setOrder((prev) => {
-      // Build a complete previous address with defaults.
-      const oldAddress: DeliveryAddress = {
-        street: prev.deliveryAddress?.street || "",
-        aptSuite: prev.deliveryAddress?.aptSuite || "",
-        city: prev.deliveryAddress?.city || "",
-        state: prev.deliveryAddress?.state || "",
-        zipCode: prev.deliveryAddress?.zipCode || "",
-        deliveryOption: prev.deliveryAddress?.deliveryOption || "",
-        deliveryInstructions: prev.deliveryAddress?.deliveryInstructions || "",
-      };
+  const setPaymentMethod = (pm: PaymentMethod) =>
+    setOrder((prev) => ({ ...prev, paymentMethod: pm }));
 
-      const comparableNew: DeliveryAddress = {
-        street: newAddress.street || "",
-        aptSuite: newAddress.aptSuite || "",
-        city: newAddress.city || "",
-        state: newAddress.state || "",
-        zipCode: newAddress.zipCode || "",
-        deliveryOption: newAddress.deliveryOption || "",
-        deliveryInstructions: newAddress.deliveryInstructions || "",
-      };
+  const setContainsAlcohol = (flag: boolean) =>
+    setOrder((prev) => ({ ...prev, containsAlcohol: flag }));
 
-      // If the addresses match, skip updating.
-      if (
-        oldAddress.street === comparableNew.street &&
-        oldAddress.aptSuite === comparableNew.aptSuite &&
-        oldAddress.city === comparableNew.city &&
-        oldAddress.state === comparableNew.state &&
-        oldAddress.zipCode === comparableNew.zipCode &&
-        oldAddress.deliveryOption === comparableNew.deliveryOption &&
-        oldAddress.deliveryInstructions === comparableNew.deliveryInstructions
-      ) {
-        return prev; // No change.
-      }
-      return { ...prev, deliveryAddress: comparableNew };
-    });
-  };
+  const setAgeVerified = (flag: boolean) =>
+    setOrder((prev) => ({ ...prev, ageVerified: flag }));
 
-  // Do not render children until the component has mounted to prevent hydration errors.
-  if (!hasMounted) return null;
+  if (!mounted) return null;
 
   return (
     <OrderContext.Provider
@@ -217,6 +309,12 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
         setSchedule,
         clearSchedule,
         setDeliveryAddress,
+        setBillingAddress,
+        setDeliveryType,
+        setCartInfo,
+        setPaymentMethod,
+        setContainsAlcohol,
+        setAgeVerified,
       }}
     >
       {children}

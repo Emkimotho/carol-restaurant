@@ -1,11 +1,10 @@
-/* Container styled to resemble the dashboard content with sufficient spacing */
-/* Adjusted margin-top to ensure the header does not overlap the title */
+/* File: components/dashboard/AdminDashboard/UserManagement/UserManagement.module.css */
 .userManagementContainer {
-  margin-top: 120px;           /* Increased top margin for clear spacing under the fixed header */
+  margin-top: 120px;
   padding: 2rem;
-  background-color: #fff;      /* White background for a card-like look */
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--box-shadow-primary);
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
@@ -13,13 +12,42 @@
 
 .title {
   font-size: 2rem;
-  margin-bottom: 1.5rem;
-  color: #2c3e50;
+  font-family: var(--font-heading);
+  color: var(--dark-gray);
   text-align: center;
+  margin-bottom: 1.5rem;
 }
 
+/* Tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tabButton {
+  padding: 0.6rem 1.4rem;
+  background: var(--light-gray);
+  border: none;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s;
+}
+
+.tabButton:hover {
+  background: var(--border-color);
+}
+
+.active {
+  background: var(--primary-color);
+  color: var(--white);
+}
+
+/* Grid of user cards */
 .userGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
 }

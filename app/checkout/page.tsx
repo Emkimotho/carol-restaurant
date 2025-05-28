@@ -1,322 +1,346 @@
+/* ------------------------------------------------------------------
+   File: app/checkout/page.tsx
+   ------------------------------------------------------------------
+   Top‑level, client‑side “wizard” that walks the user through every
+   step of placing an order.
+
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MAIN‑MENU FLOW (menuType === "MAIN")
+     1. Guest Choice  (ask if checking‑out as guest or login)
+     2. Order Type    (pickup | delivery)
+     3. Delivery Addr (IF delivery)
+     4. Summary
+     5. Payment
+
+   GOLF / MIXED FLOW (menuType !== "MAIN")
+     1. Guest Choice
+     2. Golf Delivery Type (clubhouse pickup | on‑course delivery | event)
+     3. Summary
+     4. Payment
+
+   Notes
+   ────────────────────────────────────────────────────────────────
+   • Any menuType other than "MAIN" is treated as golf‑style.
+   • Golf / Mixed orders never persist `orderType` or `deliveryAddress`.
+   • Step indices differ between guest / logged‑in scenarios.
+   • ?step=orderSummary deep‑link supported.
+-------------------------------------------------------------------*/
+
 "use client";
 
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { CartContext } from "@/contexts/CartContext";
-import { AuthContext } from "@/contexts/AuthContext";
-import GuestChoice from "@/components/checkout/GuestChoice";
-import GuestDetails from "@/components/checkout/GuestDetails";
-import OrderTypeStep from "@/components/checkout/OrderTypeStep";
-import DeliveryAddressStep from "@/components/checkout/DeliveryAddressStep";
-import OrderSummaryStep from "@/components/checkout/OrderSummaryStep";
-import PaymentStep from "@/components/checkout/PaymentStep";
-import { validatePhoneNumber, formatPhoneNumber } from "@/utils/checkoutUtils";
+import { useAuth } from "@/contexts/AuthContext";
+import type { CartItem } from "@/utils/types";
+
+import GuestChoice            from "@/components/checkout/GuestChoice";
+import GuestDetails           from "@/components/checkout/GuestDetails";
+import OrderTypeStep          from "@/components/checkout/OrderTypeStep";
+import DeliveryAddressStep    from "@/components/checkout/DeliveryAddressStep";
+import GolfDeliveryStep       from "@/components/checkout/GolfDeliveryStep";
+import OrderSummaryStep       from "@/components/checkout/OrderSummaryStep";
+import PaymentStep            from "@/components/checkout/PaymentStep";
+
+import {
+  formatPhoneNumber,
+  validatePhoneNumber,
+} from "@/utils/checkoutUtils";
+
 import checkoutStyles from "./CheckoutPage.module.css";
 
+/* ───────────────── helper: Customer profile schema ────────────── */
+interface Profile {
+  firstName:      string;
+  lastName:       string;
+  email:          string;
+  phone:          string | null;
+  streetAddress:  string | null;
+  aptSuite:       string | null;
+  city:           string | null;
+  state:          string | null;
+  zip:            string | null;
+  country:        string | null;
+}
+
+/* =================================================================
+                          COMPONENT
+================================================================== */
 const Checkout: React.FC = () => {
-  const { cartItems, getTotalPrice } = useContext(CartContext)!;
-  const { user } = useContext(AuthContext)!;
+  /* ────────── contexts ────────── */
+  const { cartItems, getTotalPrice, menuType } = useContext(CartContext)!;
+  const golfOrder = menuType !== "MAIN";          // GOLF or MIXED flow
+
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // currentStep drives our multi-step flow.
-  // (Default value is 1.)
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const [orderType, setOrderType] = useState<string>(""); // e.g., "pickup" or "delivery"
+  /* ────────── wizard index ───────── */
+  const [currentStep, setCurrentStep] = useState(1);
+
+  /* MAIN‑menu: pickup | delivery */
+  const [orderType, setOrderType] =
+    useState<"" | "pickup" | "delivery">("");
+
+  /* guest vs logged‑in */
+  const [isGuest, setIsGuest] = useState<boolean | null>(null);
   const [guestDetails, setGuestDetails] = useState({
     firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
+    lastName:  "",
+    email:     "",
+    phone:     "",
   });
+
+  /* delivery address (MAIN + delivery) */
   const [deliveryAddress, setDeliveryAddress] = useState({
-    street: "",
-    city: "",
-    state: "",
-    zipCode: "",
+    street:               "",
+    aptSuite:             "",
+    city:                 "",
+    state:                "",
+    zipCode:              "",
+    deliveryOption:       "",
+    deliveryInstructions: "",
   });
-  const [billingAddress, setBillingAddress] = useState({
-    street: "",
-    city: "",
-    state: "",
-    zipCode: "",
-  });
-  const [isSameAddress, setIsSameAddress] = useState<boolean>(true);
-  const [tip, setTip] = useState<string>("0");
-  const [customTip, setCustomTip] = useState<string>("");
-  const [isGuest, setIsGuest] = useState<boolean | null>(null);
 
-  const taxRate = 0.07;
-  // Fallback delivery fee; real logic is applied in summary step.
-  const [deliveryFee, setDeliveryFee] = useState<number>(0);
+  /* tip state */
+  const [tip, setTip]           = useState("0");
+  const [customTip, setCustomTip] = useState("");
 
-  // Debug log current step.
-  useEffect(() => {
-    console.log("[Checkout] currentStep =", currentStep);
-  }, [currentStep]);
-
-  // Adjust fallback delivery fee based on order type.
-  useEffect(() => {
-    if (orderType === "delivery") {
-      console.log("[Checkout] User selected delivery. Setting fallback fee = 0");
-      setDeliveryFee(0);
-    } else {
-      setDeliveryFee(0);
-    }
-  }, [orderType]);
-
-  // Scroll to top on step change.
+  /* ───────────────── UI nicety: scroll top on step change ───────── */
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
 
-  // ---
-  // EFFECT: Check if there is a forced step from the query parameter.
+  /* ───────────────── preload user address (logged‑in) ──────────── */
   useEffect(() => {
-    const stepParam = searchParams.get("step");
-    if (stepParam === "orderSummary") {
-      // If no order type was set (user returning from scheduling) then default to "pickup"
-      if (!orderType) {
-        console.log("[Checkout] No orderType detected, defaulting to 'pickup' for resume.");
-        setOrderType("pickup");
-      }
-      let summaryStep: number;
-      if (user) {
-        summaryStep = orderType === "delivery" ? 3 : 2;
-      } else {
-        summaryStep = orderType === "delivery" ? 4 : 3;
-      }
-      console.log("[Checkout] Forcing order summary step:", summaryStep);
-      setCurrentStep(summaryStep);
-    }
-  }, [searchParams, orderType, user]);
+    if (!user) return;
+    (async () => {
+      try {
+        const res = await fetch("/api/customer/dashboard");
+        if (!res.ok) throw new Error();
+        const { profile }: { profile: Profile } = await res.json();
 
-  // --- Field change handlers
-  const handleGuestDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setDeliveryAddress({
+          street:            profile.streetAddress  ?? "",
+          aptSuite:          profile.aptSuite       ?? "",
+          city:              profile.city           ?? "",
+          state:             profile.state          ?? "",
+          zipCode:           profile.zip            ?? "",
+          deliveryOption:    "handToMe",
+          deliveryInstructions: "",
+        });
+      } catch {
+        /* ignore profile fetch errors */
+      }
+    })();
+  }, [user]);
+
+  /* ───────────────── redirect non‑logged user when choosing login ─ */
+  useEffect(() => {
+    if (!user && currentStep === 1 && isGuest === false) {
+      router.push(`/login?redirect=${encodeURIComponent("/checkout")}`);
+    }
+  }, [user, isGuest, currentStep, router]);
+
+  /* ───────────────── deep‑link ?step=orderSummary ──────────────── */
+  useEffect(() => {
+    if (searchParams.get("step") !== "orderSummary") return;
+
+    if (!golfOrder && !orderType) setOrderType("pickup");
+
+    const idx = golfOrder
+      ? user ? 2 : 3
+      : user
+        ? orderType === "delivery" ? 3 : 2
+        : orderType === "delivery" ? 4 : 3;
+
+    setCurrentStep(idx);
+  }, [searchParams, golfOrder, orderType, user]);
+
+  /* ───────────────── input utils ─────────────── */
+  const handleGuestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setGuestDetails((prev) => ({
+    setGuestDetails(prev => ({
       ...prev,
       [name]: name === "phone" ? formatPhoneNumber(value) : value,
     }));
   };
 
-  const handleDeliveryAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setDeliveryAddress((prev) => ({ ...prev, [name]: value }));
+  const handleAddrChange =
+    (setter: React.Dispatch<React.SetStateAction<typeof deliveryAddress>>) =>
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >,
+    ) => setter(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleTipChange = (v: string) => {
+    setTip(v);
+    if (v !== "custom") setCustomTip("");
   };
 
-  const handleBillingAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setBillingAddress((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleTipChange = (value: string) => {
-    setTip(value);
-    if (value !== "custom") {
-      setCustomTip("");
-    }
-  };
-
-  const handleCustomTipChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomTip(e.target.value);
-  };
-
-  const handleSameAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setIsSameAddress(checked);
-    if (checked) {
-      setBillingAddress(deliveryAddress);
-    } else {
-      setBillingAddress({ street: "", city: "", state: "", zipCode: "" });
-    }
-  };
-
-  // --- Navigation Handlers
-  const handleNextStep = () => {
-    console.log("[Checkout] handleNextStep at currentStep:", currentStep);
-
-    // --- Guest flow: Step 1 if not logged in.
-    if (!user && currentStep === 1 && isGuest === true) {
+  /* ───────────────── wizard nav: NEXT ────────── */
+  const next = () => {
+    /* guest info validation */
+    if (!user && currentStep === 1 && isGuest) {
       const { firstName, lastName, email, phone } = guestDetails;
       if (!firstName || !lastName || !email || !phone) {
         alert("Please complete all guest details.");
         return;
       }
       if (!validatePhoneNumber(phone)) {
-        alert("Please enter a valid phone number in (XXX) XXX-XXXX format.");
+        alert("Enter a valid phone number e.g. (555) 555‑5555.");
         return;
       }
       setCurrentStep(2);
       return;
-    } else if (!user && currentStep === 1 && isGuest === false) {
-      router.push("/login");
-      return;
     }
 
-    // --- Order type step (logged in: step 1; guest: step 2).
-    if ((user && currentStep === 1) || (!user && currentStep === 2 && isGuest)) {
+    /* MAIN – order type must be chosen */
+    if (
+      !golfOrder &&
+      ((user && currentStep === 1) ||
+        (!user && currentStep === 2 && isGuest))
+    ) {
       if (!orderType) {
         alert("Please select an order type.");
         return;
       }
-      console.log("[Checkout] next -> selected orderType =", orderType);
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(s => s + 1);
       return;
     }
 
-    // --- Delivery address step (only required if orderType === "delivery").
+    /* MAIN – delivery addr validation */
     if (
+      !golfOrder &&
       orderType === "delivery" &&
       ((user && currentStep === 2) || (!user && currentStep === 3))
     ) {
       const { street, city, state, zipCode } = deliveryAddress;
       if (!street || !city || !state || !zipCode) {
-        alert("Please complete your delivery address.");
+        alert("Please enter your delivery address.");
         return;
       }
-      setCurrentStep(currentStep + 1);
+      setCurrentStep(s => s + 1);
       return;
     }
 
-    // --- Order summary step.
-    if (
-      (orderType === "pickup" &&
-        ((user && currentStep === 2) || (!user && currentStep === 3))) ||
-      (orderType === "delivery" &&
-        ((user && currentStep === 3) || (!user && currentStep === 4)))
-    ) {
-      setCurrentStep(currentStep + 1);
-      return;
-    }
-
-    // --- Payment step: ensure billing address if needed.
-    if (
-      (orderType === "pickup" &&
-        ((user && currentStep === 3) || (!user && currentStep === 4))) ||
-      (orderType === "delivery" &&
-        ((user && currentStep === 4) || (!user && currentStep === 5)))
-    ) {
-      if (orderType === "pickup") {
-        const { street, city, state, zipCode } = billingAddress;
-        if (!street || !city || !state || !zipCode) {
-          alert("Please complete your billing address.");
-          return;
-        }
-      } else if (orderType === "delivery" && !isSameAddress) {
-        const { street, city, state, zipCode } = billingAddress;
-        if (!street || !city || !state || !zipCode) {
-          alert("Please complete your billing address.");
-          return;
-        }
-      }
-      setCurrentStep(currentStep + 1);
-      return;
-    }
-
-    // --- Otherwise, simply advance to next step.
-    setCurrentStep(currentStep + 1);
+    /* generic advance */
+    setCurrentStep(s => s + 1);
   };
 
-  const handlePreviousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+  const back = () => {
+    if (currentStep > 1) setCurrentStep(s => s - 1);
   };
 
-  // --- Render Step Function
+  /* ───────────────── RENDER STEP ────────────── */
   const renderStep = () => {
-    // --- Guest-related step(s).
+    /* step 1: guest choice / guest details */
     if (!user && currentStep === 1) {
-      if (isGuest === null) {
-        return <GuestChoice onSelect={(choice) => setIsGuest(choice)} />;
-      } else if (isGuest === false) {
-        router.push("/login");
-        return null;
-      } else {
-        return (
-          <GuestDetails
-            guestDetails={guestDetails}
-            onChange={handleGuestDetailsChange}
-            onNext={handleNextStep}
-          />
-        );
-      }
+      return isGuest === null ? (
+        <GuestChoice onSelect={setIsGuest} />
+      ) : (
+        <GuestDetails
+          guestDetails={guestDetails}
+          onChange={handleGuestChange}
+          onNext={next}
+        />
+      );
     }
-    // --- Order type selection.
-    if ((user && currentStep === 1) || (!user && currentStep === 2 && isGuest)) {
+
+    /* MAIN – choose pickup / delivery */
+    if (
+      !golfOrder &&
+      ((user && currentStep === 1) ||
+        (!user && currentStep === 2 && isGuest))
+    ) {
       return (
         <OrderTypeStep
           orderType={orderType}
           onSelectOrderType={setOrderType}
-          onNext={handleNextStep}
-          onBack={handlePreviousStep}
+          onNext={next}
+          onBack={back}
         />
       );
     }
-    // --- Delivery address step.
+
+    /* GOLF – select pickup / on‑course / event */
     if (
+      golfOrder &&
+      ((user && currentStep === 1) || (!user && currentStep === 2))
+    ) {
+      return <GolfDeliveryStep onNext={next} onBack={back} />;
+    }
+
+    /* MAIN – enter delivery address */
+    if (
+      !golfOrder &&
       orderType === "delivery" &&
       ((user && currentStep === 2) || (!user && currentStep === 3))
     ) {
       return (
         <DeliveryAddressStep
           deliveryAddress={deliveryAddress}
-          onChange={handleDeliveryAddressChange}
-          onNext={handleNextStep}
-          onBack={handlePreviousStep}
+          onChange={handleAddrChange(setDeliveryAddress)}
+          onNext={next}
+          onBack={back}
         />
       );
     }
-    // --- Order summary step.
-    if (
-      (orderType === "pickup" &&
-        ((user && currentStep === 2) || (!user && currentStep === 3))) ||
-      (orderType === "delivery" &&
-        ((user && currentStep === 3) || (!user && currentStep === 4)))
-    ) {
+
+    /* Summary step */
+    const atSummary = golfOrder
+      ? (user && currentStep === 2) || (!user && currentStep === 3)
+      : (orderType === "pickup" &&
+          ((user && currentStep === 2) || (!user && currentStep === 3))) ||
+        (orderType === "delivery" &&
+          ((user && currentStep === 3) || (!user && currentStep === 4)));
+
+    if (atSummary) {
+      const containsAlcohol = cartItems.some(ci => ci.isAlcohol);
+
       return (
         <OrderSummaryStep
-          cartItems={cartItems}
+          cartItems={cartItems.map(ci => ({
+            ...ci,
+            spiceLevel: ci.spiceLevel ?? undefined,
+          }))}
           getTotalPrice={getTotalPrice}
-          orderType={orderType}
-          deliveryFee={deliveryFee} // fallback fee; dynamic logic is in OrderSummaryStep
+          orderType={golfOrder ? "" : orderType}
           tip={tip}
           customTip={customTip}
           onTipChange={handleTipChange}
-          onCustomTipChange={handleCustomTipChange}
-          taxRate={taxRate}
-          onNext={handleNextStep}
-          onBack={handlePreviousStep}
+          onCustomTipChange={e => setCustomTip(e.target.value)}
+          taxRate={0.07}
+          onNext={next}
+          onBack={back}
+          isGolf={golfOrder}
+          containsAlcohol={containsAlcohol}
         />
       );
     }
-    // --- Payment step.
-    if (
-      (orderType === "pickup" &&
-        ((user && currentStep === 3) || (!user && currentStep === 4))) ||
-      (orderType === "delivery" &&
-        ((user && currentStep === 4) || (!user && currentStep === 5)))
-    ) {
-      return (
-        <PaymentStep
-          orderType={orderType}
-          isSameAddress={isSameAddress}
-          billingAddress={billingAddress}
-          deliveryAddress={deliveryAddress}
-          onBillingAddressChange={handleBillingAddressChange}
-          onSameAddressChange={handleSameAddressChange}
-          onNext={handleNextStep}
-          onBack={handlePreviousStep}
-        />
-      );
-    }
-    return null;
+
+    /* Payment step */
+    const atPayment = golfOrder
+      ? (user && currentStep === 3) || (!user && currentStep === 4)
+      : (orderType === "pickup" &&
+          ((user && currentStep === 3) || (!user && currentStep === 4))) ||
+        (orderType === "delivery" &&
+          ((user && currentStep === 4) || (!user && currentStep === 5)));
+
+    if (atPayment) return <PaymentStep />;
+
+    return null; // should never hit
   };
 
+  /* ───────────────── JSX shell ─────────────── */
   return (
     <div className={checkoutStyles.checkoutContainer}>
       <div className={checkoutStyles.checkoutPage}>
-        <h1 className={`${checkoutStyles.textCenter} ${checkoutStyles.mb4}`}>Checkout</h1>
+        <h1 className={`${checkoutStyles.textCenter} ${checkoutStyles.mb4}`}>
+          Checkout
+        </h1>
         {renderStep()}
       </div>
     </div>

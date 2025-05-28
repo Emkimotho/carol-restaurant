@@ -1,7 +1,12 @@
-/* File: components/MenuItem/MenuItem.module.css */
+/* ------------------------------------------------------------------ */
+/*  File: components/MenuItem/MenuItem.module.css                     */
+/* ------------------------------------------------------------------ */
 
-/* Container for the entire menu item card */
+/* ================================================================== */
+/*  Card container                                                    */
+/* ================================================================== */
 .container {
+  position: relative;              /* NEW → for ribbon / badges      */
   display: flex;
   flex-direction: column;
   background-color: var(--white);
@@ -15,10 +20,11 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Image container styling - forced 500×500 */
+/* ================================================================== */
+/*  Image container (forced 300 × 300)                                */
+/* ================================================================== */
 .photo {
   width: 100%;
-  height: auto;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -36,7 +42,9 @@
   transform: scale(1.1);
 }
 
-/* Details section styling */
+/* ================================================================== */
+/*  Details block                                                     */
+/* ================================================================== */
 .details {
   padding: 15px;
   display: flex;
@@ -44,7 +52,6 @@
   gap: 0.5rem;
 }
 
-/* Title styling */
 .title {
   font-size: 1.5rem;
   color: var(--primary-color);
@@ -52,7 +59,6 @@
   font-family: var(--font-heading);
 }
 
-/* Description styling */
 .description {
   font-size: 1rem;
   color: var(--gray);
@@ -60,7 +66,6 @@
   font-family: var(--font-body);
 }
 
-/* Price styling */
 .price {
   font-size: 1.2rem;
   color: var(--secondary-color);
@@ -68,7 +73,9 @@
   font-weight: bold;
 }
 
-/* Add to Cart Button styling */
+/* ================================================================== */
+/*  CTA button                                                        */
+/* ================================================================== */
 .btnAddToCart {
   background-color: var(--primary-color);
   color: var(--white);
@@ -76,9 +83,9 @@
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
   width: 100%;
   text-align: center;
+  transition: background-color 0.3s ease, transform 0.3s ease;
   font-family: var(--font-body);
 }
 
@@ -87,7 +94,15 @@
   transform: scale(1.05);
 }
 
-/* Muted text for items not available for online purchase */
+.btnAddToCart:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ================================================================== */
+/*  Muted text                                                        */
+/* ================================================================== */
 .textMuted {
   color: var(--gray);
   font-style: italic;
@@ -96,15 +111,16 @@
   font-family: var(--font-body);
 }
 
-/* NEW STYLES: 2-button popup for "ASAP" or "Schedule" */
-
+/* ================================================================== */
+/*  2‑button popup styles (kept intact)                               */
+/* ================================================================== */
 .orderChoiceOverlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -118,7 +134,7 @@
   width: 95%;
   max-width: 400px;
   text-align: center;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   position: relative;
 }
 
@@ -161,7 +177,6 @@
   transform: scale(1.03);
 }
 
-/* "Cancel" button for the popup */
 .btnCloseChoice {
   background-color: #666;
   color: #fff;
@@ -178,3 +193,56 @@
   background-color: #555;
   transform: scale(1.02);
 }
+
+/* ================================================================== */
+/*  Golf‑flag overlay (red)                                           */
+/* ================================================================== */
+.golfBadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.golfBadgeRed {
+  color: var(--secondary-color);     /* sleek red */
+}
+
+/* ================================================================== */
+/*  Sold‑out ribbon (NEW)                                             */
+/* ================================================================== */
+.soldOut {
+  position: absolute;
+  top: 10px;
+  right: -35px;
+  background: #dc2626;              /* Tailwind red‑600 */
+  color: #fff;
+  padding: 0.25rem 2.1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  transform: rotate(45deg);
+  z-index: 2;
+}
+
+/* ================================================================== */
+/*  Spicy pepper icon (NEW)                                           */
+/* ================================================================== */
+.spicy {
+  margin-left: 0.3rem;
+  font-size: 0.9rem;
+}
+
+/* ================================================================== */
+/*  Fade‑in utility (referenced by Menu.module.css)                   */
+/* ================================================================== */
+/* (No changes here – kept for future reference) */

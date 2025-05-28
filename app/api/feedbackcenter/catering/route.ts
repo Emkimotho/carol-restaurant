@@ -6,9 +6,13 @@ export async function GET() {
     const caterings = await prisma.catering.findMany({
       orderBy: { createdAt: 'desc' },
     });
+
     return NextResponse.json({ success: true, data: caterings });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 
@@ -17,9 +21,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { fullName, email, phone, date, time, venue, guests, message } = body;
 
-    // Basic validation
     if (!fullName || !email || !phone || !date || !time || !venue || !guests) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     const dateObj = new Date(date);
@@ -39,6 +45,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: newCatering });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMessage =
+      error instanceof Error ? error.message : "An unknown error occurred";
+
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

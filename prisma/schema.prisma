@@ -1,60 +1,63 @@
 // File: prisma/schema.prisma
+// ───────────────────────────────────────────────────────────────────
+// 19th-Hole — master Prisma schema  (updated 25 May 2025)
+// • Added DELIVERY to DeliveryType enum
+// • Added Payout model and Role/UserRole models
+// ───────────────────────────────────────────────────────────────────
 
-// Datasource & Generator
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_DATABASE_URL")
 }
+
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"  
+  output   = "../node_modules/.prisma/client"
 }
 
-
-
-/*
-  ================================
-  Models for User Authentication & Roles
-  ================================
-*/
+// =====================================================================
+// 1. User Authentication, Roles, & Account Status
+// =====================================================================
 
 model User {
-  id                      Int          @id @default(autoincrement())
-  email                   String       @unique @db.VarChar(255)
-  password                String       @db.Text
-  firstName               String       @db.VarChar(100)
-  lastName                String       @db.VarChar(100)
-  phone                   String?      @db.VarChar(20)
-  streetAddress           String?      @db.VarChar(255)
-  aptSuite                String?      @db.VarChar(100)
-  city                    String?      @db.VarChar(100)
-  state                   String?      @db.VarChar(50)
-  zip                     String?      @db.VarChar(20)
-  country                 String?      @db.VarChar(50)
-  resetToken              String?      @db.VarChar(255)
+  id                      Int           @id @default(autoincrement())
+  email                   String        @unique @db.VarChar(255)
+  password                String        @db.Text
+  firstName               String        @db.VarChar(100)
+  lastName                String        @db.VarChar(100)
+  phone                   String?       @db.VarChar(20)
+  streetAddress           String?       @db.VarChar(255)
+  aptSuite                String?       @db.VarChar(100)
+  city                    String?       @db.VarChar(100)
+  state                   String?       @db.VarChar(50)
+  zip                     String?       @db.VarChar(20)
+  country                 String?       @db.VarChar(50)
+  resetToken              String?       @db.VarChar(255)
   resetTokenExpiry        DateTime?
-  isVerified              Boolean      @default(false)
-  verificationToken       String?      @db.VarChar(255)
+  isVerified              Boolean       @default(false)
+  verificationToken       String?       @db.VarChar(255)
   verificationTokenExpiry DateTime?
+  status                  AccountStatus @default(ACTIVE)
   roles                   UserRole[]
-  createdAt               DateTime     @default(now())
-  updatedAt               DateTime     @updatedAt
-}
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 
-model Role {
-  id    Int       @id @default(autoincrement())
-  name  RoleName  @unique
-  users UserRole[]
-}
+  /// all status-change records this user made
+  statusChanges OrderStatusHistory[] @relation("UserStatusChanges")
 
-model UserRole {
-  user   User @relation(fields: [userId], references: [id])
-  userId Int
-  role   Role @relation(fields: [roleId], references: [id])
-  roleId Int
+  staffProfile  StaffProfile?
+  driverProfile DriverProfile?
 
-  @@id([userId, roleId])
+  customerOrders   Order[] @relation("CustomerOrders")
+  driverDeliveries Order[] @relation("DriverOrders")
+  staffOrders      Order[] @relation("StaffOrders")
+
+  collectedCash CashCollection[] @relation("CashCollectedBy")
+  settledCash   CashCollection[] @relation("CashSettledBy")
+
+  /// all payouts (driver, staff, server, cashier, admin) for this user
+  payouts Payout[]
 }
 
 enum RoleName {
@@ -63,142 +66,167 @@ enum RoleName {
   STAFF
   DRIVER
   CUSTOMER
+  PREP
+  SERVER
+  CASHIER
 }
 
-/*
-  ================================
-  Models for the Dynamic Menu System
-  ================================
-*/
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
 
-/**
- * Represents main sections or subcategories (e.g., "Breakfast", "Desserts").
- */
+// =====================================================================
+// 2. Roles & Join Table
+// =====================================================================
+
+model Role {
+  id    Int        @id @default(autoincrement())
+  name  RoleName   @unique
+  users UserRole[]
+}
+
+model UserRole {
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId Int
+
+  @@id([userId, roleId])
+}
+
+// =====================================================================
+// 3. Staff & Driver Profiles
+// =====================================================================
+
+model StaffProfile {
+  id       Int     @id @default(autoincrement())
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   Int     @unique
+  photoUrl String
+  position String?
+}
+
+model DriverProfile {
+  id            Int    @id @default(autoincrement())
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        Int    @unique
+  photoUrl      String
+  licenseNumber String
+  carMakeModel  String
+}
+
+// =====================================================================
+// 4. Dynamic Menu System
+// =====================================================================
+
+enum MenuCategoryType {
+  MainMenu
+  GolfMenu
+}
+
 model MenuCategory {
-  id        String     @id @default(cuid())
+  id        String           @id @default(cuid())
   name      String
-  type      String     // e.g., "MainMenu" or "GolfMenu"
-  order     Int        @default(0)
+  type      MenuCategoryType @default(MainMenu)
+  order     Int              @default(0)
+  hidden    Boolean          @default(false)
   menuItems MenuItem[]
 }
 
-/**
- * Represents a single menu item available for order.
- */
 model MenuItem {
-  id             String                 @id @default(cuid())
+  id             String   @id @default(cuid())
   title          String
   description    String?
   price          Float
   image          String?
-  hasSpiceLevel  Boolean                @default(false)
-  showInGolfMenu Boolean                @default(false)
-  createdAt      DateTime               @default(now())
-  
-  // Relationship to its category
-  category    MenuCategory   @relation(fields: [categoryId], references: [id])
-  categoryId  String
+  hasSpiceLevel  Boolean  @default(false)
+  isAlcohol      Boolean  @default(false)
+  showInGolfMenu Boolean  @default(false)
+  createdAt      DateTime @default(now())
 
-  // Option groups for further customization
+  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+
   optionGroups MenuItemOptionGroup[]
+  cloverItemId String?
+  stock        Int                   @default(0)
 
-  // NEW: Clover integration fields
-  cloverItemId String?   // Optional field to store the Clover item ID
-  stock        Int       @default(0) // Inventory, auto-populated from Clover
+  /// back-relation for OrderLineItem
+  lineItems OrderLineItem[]
+
+  @@index([categoryId])
 }
 
-/**
- * Captures an option group for a menu item (e.g., "Choose Protein").
- */
 model MenuItemOptionGroup {
-  id          String              @id @default(cuid())
+  id          String @id @default(cuid())
   title       String
   minRequired Int
   maxAllowed  Int?
-  optionType  String              // e.g., "single-select", "multi-select", "dropdown"
+  optionType  String
 
-  // Relationship to the parent MenuItem
-  menuItem   MenuItem   @relation(fields: [menuItemId], references: [id])
+  menuItem   MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
   menuItemId String
-
-  // Choices within this option group
   choices    MenuOptionChoice[]
 }
 
-/**
- * Represents a single choice within an option group (e.g., "Beef", "Chicken").
- */
 model MenuOptionChoice {
-  id              String              @id @default(cuid())
-  label           String              // e.g., "Beef", "Chicken"
+  id              String @id @default(cuid())
+  label           String
   priceAdjustment Float?
 
-  // Relationship to the parent MenuItemOptionGroup
-  optionGroup   MenuItemOptionGroup @relation(fields: [optionGroupId], references: [id])
-  optionGroupId String
-
-  // Optionally, a nested option group for further customization
-  nestedOptionGroup NestedOptionGroup?
+  optionGroup       MenuItemOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  optionGroupId     String
+  nestedOptionGroup NestedOptionGroup?  @relation("ChoiceToNestedGroup")
 }
 
-/**
- * Represents a nested option group (e.g., if "Fries" is selected, choose a sauce).
- */
 model NestedOptionGroup {
-  id             String               @id @default(cuid())
-  title          String
-  minRequired    Int
-  maxAllowed     Int?
+  id          String @id @default(cuid())
+  title       String
+  minRequired Int
+  maxAllowed  Int?
 
-  // Relationship to the parent MenuOptionChoice
-  parentChoice   MenuOptionChoice    @relation(fields: [parentChoiceId], references: [id])
-  parentChoiceId String              @unique
-
-  // Nested choices within this group
+  parentChoice   MenuOptionChoice     @relation("ChoiceToNestedGroup", fields: [parentChoiceId], references: [id], onDelete: Cascade)
+  parentChoiceId String               @unique
   choices        NestedOptionChoice[]
 }
 
-/**
- * Represents a single nested choice within a nested option group.
- */
 model NestedOptionChoice {
   id              String            @id @default(cuid())
   label           String
   priceAdjustment Float?
-
-  // Relationship to the parent NestedOptionGroup
-  nestedGroup   NestedOptionGroup @relation(fields: [nestedGroupId], references: [id])
-  nestedGroupId String
-
-  // NEW: (Optional) Clover integration for nested choices, if needed.
-  cloverItemId  String?   // Optional Clover item ID
-  stock         Int       @default(0) // Inventory tracking for this nested choice
+  nestedGroup     NestedOptionGroup @relation(fields: [nestedGroupId], references: [id], onDelete: Cascade)
+  nestedGroupId   String
+  cloverItemId    String?
+  stock           Int               @default(0)
 }
 
-/*
-  ================================
-  Other Schemas
-  ================================
-*/
+// =====================================================================
+// 5. Events & Bookings
+// =====================================================================
 
-// Events Schema
 model Event {
-  id               String    @id @default(cuid())
+  id               String   @id @default(cuid())
   title            String
   description      String
   location         String
   date             DateTime
-  time             String
+  startTime        String   @default("00:00")
+  endTime          String   @default("00:00")
   adultPrice       Float
   kidPrice         Float
+  kidPriceInfo     String?
   availableTickets Int
   image            String?
   isFree           Boolean
   adultOnly        Boolean
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  rsvps            RSVP[]
-  bookings         Booking[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  rsvps    RSVP[]
+  bookings Booking[]
+  faqs     Faq[]
 }
 
 model RSVP {
@@ -223,7 +251,19 @@ model Booking {
   totalPrice Float
   createdAt  DateTime @default(now())
 }
-// Careers Schema
+
+model Faq {
+  id       String @id @default(cuid())
+  eventId  String
+  event    Event  @relation(fields: [eventId], references: [id])
+  question String
+  answer   String
+}
+
+// =====================================================================
+// 6. Careers & Applications
+// =====================================================================
+
 model Career {
   id           String        @id @default(cuid())
   title        String
@@ -247,7 +287,10 @@ model Application {
   updatedAt     DateTime @updatedAt
 }
 
-// Gallery Schema
+// =====================================================================
+// 7. Gallery & Opening Hours
+// =====================================================================
+
 model GalleryImage {
   id          Int      @id @default(autoincrement())
   src         String
@@ -257,17 +300,16 @@ model GalleryImage {
   createdAt   DateTime @default(now())
 }
 
-// Opening Hours Schema
 model OpeningHour {
   id    Int    @id @default(autoincrement())
-  day   String @unique  // e.g., "Sun", "Mon", etc.
-  open  String // Time in HH:mm format or "Closed"
-  close String // Time in HH:mm format or "Closed"
+  day   String @unique
+  open  String
+  close String
 }
 
-/*
-  CONTACT, CATERING, AND RESERVATION SCHEMAS
-*/
+// =====================================================================
+// 8. Contact, Catering, Reservation
+// =====================================================================
 
 model Contact {
   id        String   @id @default(cuid())
@@ -306,7 +348,10 @@ model Reservation {
   updatedAt DateTime @updatedAt
 }
 
-// Blog and News Schema
+// =====================================================================
+// 9. Blog / News
+// =====================================================================
+
 model BlogNews {
   id        String   @id @default(cuid())
   title     String
@@ -315,13 +360,16 @@ model BlogNews {
   content   String
   author    String
   date      DateTime
-  type      String   // "blog" or "news"
+  type      String
   image     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Recommendation Schema
+// =====================================================================
+// 10. Recommendations
+// =====================================================================
+
 model Recommendation {
   id                  String   @id @default(cuid())
   title               String
@@ -335,7 +383,9 @@ model Recommendation {
   updatedAt           DateTime @updatedAt
 }
 
-// Delivery Charges
+// =====================================================================
+// 11. Delivery Charges
+// =====================================================================
 
 model DeliveryCharges {
   id                      Int      @id @default(1)
@@ -348,61 +398,233 @@ model DeliveryCharges {
   updatedAt               DateTime @updatedAt
 }
 
-// =========================================
-// Orders Schema
-// =========================================
+// =====================================================================
+// 12. Carts (Golf Course)
+// =====================================================================
 
-/*
-  The Order model stores a single customer's order.
-  - `orderId` is a human-friendly identifier (e.g., "ORD-20250413-ABC123")
-  - `items` holds the ordered items as JSON data.
-  - `totalAmount` is the computed total for the order.
-  - `status` is managed via an enum for clarity and consistency.
-  - `assignedStaffId` can link to a staff member (if any).
-  - Timestamps record creation and updates.
-  - It also has a one-to-many relation with OrderStatusHistory.
-*/
+model Cart {
+  id        String   @id @default(uuid())
+  number    Int      @unique
+  createdAt DateTime @default(now())
+
+  orders Order[]
+}
+
+// =====================================================================
+// 13. Event Locations (Pavilions / Sheds)
+// =====================================================================
+
+model EventLocation {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  orders Order[]
+}
+
+// =====================================================================
+// 14. Cash Collections (On-course cash payments)
+// =====================================================================
+
+model CashCollection {
+  id          String               @id @default(uuid())
+  orderId     String               @unique
+  order       Order                @relation("OrderCashCollection", fields: [orderId], references: [id])
+  serverId    Int
+  server      User                 @relation("CashCollectedBy", fields: [serverId], references: [id])
+  amount      Float
+  status      CashCollectionStatus @default(PENDING)
+  collectedAt DateTime             @default(now())
+  settledAt   DateTime?
+  settledById Int?
+  settledBy   User?                @relation("CashSettledBy", fields: [settledById], references: [id])
+
+  @@index([serverId])
+  @@index([settledById])
+}
+
+enum CashCollectionStatus {
+  PENDING
+  SETTLED
+}
+
+// =====================================================================
+// 15. Orders, Line Items, & Status History
+// =====================================================================
+
 model Order {
-  id              String              @id @default(uuid())
-  orderId         String              // Human-friendly order ID (e.g., "ORD-20250413-ABC123")
-  customerId      String?             // Optional reference to a customer (could be a foreign key if desired)
-  items           Json                // The list of items in the order
-  totalAmount     Float               // Total price for the order
-  status          OrderStatus         @default(ORDER_RECEIVED) // Current order status, as defined in the enum
-  assignedStaffId String?             // Optional reference to a staff member assigned to this order
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id      String @id @default(uuid())
+  orderId String @unique
 
-  // Relation: An order can have many status history records.
-  statusHistory   OrderStatusHistory[]
+  // Workflow
+  schedule      DateTime? // null = ASAP
+  orderType     String?
+  deliveryType  DeliveryType  @default(PICKUP_AT_CLUBHOUSE)
+  paymentMethod PaymentMethod @default(CARD)
+
+  // Golf / delivery details
+  cartId          String?
+  cart            Cart?          @relation(fields: [cartId], references: [id])
+  holeNumber      Int?
+  eventLocationId String?
+  eventLocation   EventLocation? @relation(fields: [eventLocationId], references: [id])
+
+  // Cash collection
+  cashCollection CashCollection? @relation("OrderCashCollection")
+
+  // Relations to Users
+  customerId Int?
+  customer   User? @relation("CustomerOrders", fields: [customerId], references: [id])
+  driverId   Int?
+  driver     User? @relation("DriverOrders", fields: [driverId], references: [id])
+  staffId    Int?
+  staff      User? @relation("StaffOrders", fields: [staffId], references: [id])
+
+  // Financial breakdown
+  subtotal              Float @default(0)
+  taxAmount             Float @default(0)
+  tipAmount             Float @default(0)
+  customerDeliveryFee   Float @default(0)
+  restaurantDeliveryFee Float @default(0)
+  totalDeliveryFee      Float @default(0)
+  driverPayout          Float @default(0)
+  totalAmount           Float @default(0)
+
+  // Delivery metrics
+  deliveryDistanceMiles Float @default(0)
+  deliveryTimeMinutes   Int   @default(0)
+
+  // Guest + payload
+  guestName            String?
+  guestEmail           String?
+  guestPhone           String?
+  items                Json
+  deliveryAddress      Json?
+  deliveryInstructions String?
+
+  // Alcohol tracking
+  containsAlcohol Boolean @default(false)
+  ageVerified     Boolean @default(false)
+
+  deliveredAt DateTime?
+  status      OrderStatus @default(PENDING_PAYMENT)
+
+  /// all payout records linked to this order
+  payouts Payout[]
+
+  lineItems     OrderLineItem[]
+  statusHistory OrderStatusHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([driverId])
+  @@index([customerId])
+  @@index([staffId])
+  @@index([cartId])
+  @@index([eventLocationId])
 }
 
-/*
-  The OrderStatusHistory model logs every status change for an order.
-  Each record includes:
-  - The `status` at that point,
-  - The user (or system) responsible for the change in `changedBy`,
-  - And a timestamp of when the update happened.
-*/
+model OrderLineItem {
+  id      String @id @default(uuid())
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItemId String
+
+  quantity        Int
+  unitPrice       Float
+  spiceLevel      String?
+  specialNotes    String?
+  selectedOptions Json?
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
+
 model OrderStatusHistory {
-  id        String     @id @default(uuid())
-  orderId   String
-  order     Order      @relation(fields: [orderId], references: [id])
-  status    OrderStatus // The order status being logged
-  changedBy String      // Identifier for the user (admin/staff) who made the update
-  timestamp DateTime    @default(now())
+  id      String      @id @default(uuid())
+  order   Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+  status  OrderStatus
+
+  /// which user performed this change
+  user   User? @relation("UserStatusChanges", fields: [userId], references: [id], onDelete: SetNull)
+  userId Int?
+
+  changedBy String?
+  timestamp DateTime @default(now())
+
+  @@index([userId])
 }
 
-/*
-  Enum to represent all possible statuses for an order.
-  This enum allows us to manage order states in a predictable way.
-  Future customization can extend or modify these status labels.
-*/
 enum OrderStatus {
-  ORDER_RECEIVED       // Order has just been received and logged
-  IN_PROGRESS          // Order is being prepared
-  ORDER_READY          // Order is ready for pickup or delivery
-  PICKED_UP_BY_DRIVER  // Order has been picked up by the assigned driver/staff
-  ON_THE_WAY           // Order is en route to the customer
-  DELIVERED            // Order has been delivered to the customer
+  PENDING_PAYMENT
+  ORDER_RECEIVED
+  IN_PROGRESS
+  ORDER_READY
+  PICKED_UP_BY_DRIVER
+  ON_THE_WAY
+  DELIVERED
+  CANCELLED
+}
+
+// ───────────────────────────────────────────────────────────────────
+// DeliveryType enum — DELIVERY added 24 May 2025
+// ───────────────────────────────────────────────────────────────────
+
+enum DeliveryType {
+  PICKUP_AT_CLUBHOUSE
+  ON_COURSE
+  EVENT_PAVILION
+  DELIVERY
+}
+
+enum PaymentMethod {
+  CARD
+  CASH
+}
+
+// =====================================================================
+// 16. Payouts (added 25 May 2025)
+// =====================================================================
+
+model Payout {
+  id Int @id @default(autoincrement())
+
+  /// who gets paid (driver, staff, server, cashier, admin)
+  user   User @relation(fields: [userId], references: [id])
+  userId Int
+
+  /// optional link back to its originating Order
+  order   Order?  @relation(fields: [orderId], references: [id])
+  orderId String? // matches Order.id (UUID)
+
+  /// how much (tip share, delivery fee, etc.)
+  amount Decimal @db.Decimal(10, 2)
+
+  /// differentiate recipient roles
+  category PayoutCategory
+
+  /// mark complete
+  paid   Boolean   @default(false)
+  paidAt DateTime? // when admin clicked “Mark as Paid”
+
+  /// audit timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([orderId])
+}
+
+enum PayoutCategory {
+  DRIVER_PAYOUT
+  STAFF_TIP
+  SERVER_TIP
+  CASHIER_TIP
+  ADMIN_TIP
+  OTHER
 }

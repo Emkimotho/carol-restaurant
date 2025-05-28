@@ -1,0 +1,59 @@
+/* ----------------------------------------------------------------------
+ *  File: app/dashboard/driver-dashboard/earnings/DriverEarnings.module.css
+ * -------------------------------------------------------------------- */
+
+/* container */
+.container { padding: 2rem; font-family: var(--font-body); }
+
+/* ───────── Letter‑head (print only) ───────── */
+.printHeader      { display: none; }
+.printHeader h1   { font-family: var(--font-heading); font-size: 1.6rem; margin: 0; }
+.printHeader .rangeLine { margin: .4rem 0; font-size: .95rem; }
+.printHeader hr   { border: 0; border-top: 1px solid #aaa; margin: 1rem 0 1.2rem; }
+@media print { .printHeader { display: block; text-align: center; } }
+
+/* ───────── Tabs ───────── */
+.tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.tab {
+  padding: .45rem 1rem; border-radius: 999px; background: var(--gray);
+  color: var(--white); border: none; cursor: pointer; transition: background .15s;
+}
+.tab:hover { background: var(--gray-hover); }
+.active    { background: var(--primary-color)!important; color: var(--white); }
+
+/* ───────── Range Bar ───────── */
+.rangeBar      { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+.rangeBar input{ padding: .35rem .6rem; font: inherit; }
+.rangeBar button{ padding: .45rem 1rem; }
+
+/* ───────── KPI Cards ───────── */
+.cards { display: grid; gap: 1rem; margin-bottom: 1.5rem;
+         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.card {
+  background: var(--white); border: 1px solid var(--border-color);
+  border-radius: var(--card-radius); box-shadow: var(--card-shadow);
+  padding: 1rem 1.25rem; transition: transform .15s;
+}
+.card:hover     { transform: translateY(-3px); }
+.cardLabel      { font-size: .85rem; color: var(--text-muted); }
+.cardVal        { font-size: 1.4rem; font-weight: 600; margin-top: .25rem; }
+
+/* ───────── Chart ───────── */
+.chartWrap { padding-bottom: 2rem; }
+
+/* ───────── Action buttons ───────── */
+.actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.actions button{ padding: .45rem 1rem; }
+
+/* ───────── Table ───────── */
+.tableWrap           { overflow-x: auto; }
+.table               { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.table th, .table td { border: 1px solid var(--border-color); padding: .6rem .9rem; }
+.table th            { background: var(--light-gray); }
+.table tr:nth-child(even) td { background: #fafafa; }
+
+/* Footer totals */
+.footerCell { font-weight: 600; background: #eee; }
+
+/* Empty row */
+.empty { text-align: center; padding: 1rem 0; color: var(--text-muted); }

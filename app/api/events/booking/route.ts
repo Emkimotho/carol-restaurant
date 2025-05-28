@@ -1,40 +1,32 @@
+// File: app/api/events/bookings/route.ts
+// GET /api/events/bookings — list every booking (newest first) with event title
+// ⚠️  Make sure this file is placed exactly as shown:  app/api/events/bookings/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-interface BookingData {
-  eventId: string;
-  name: string;
-  email: string;
-  adultCount: number;
-  kidCount: number;
-  totalPrice: number;
-}
-
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    const body: BookingData = await request.json();
-
-    if (!body.eventId || !body.name || !body.email || body.adultCount <= 0) {
-      return NextResponse.json(
-        { message: "Missing or invalid booking fields" },
-        { status: 400 }
-      );
-    }
-
-    const booking = await prisma.booking.create({
-      data: {
-        eventId: body.eventId,
-        name: body.name,
-        email: body.email,
-        adultCount: body.adultCount,
-        kidCount: body.kidCount,
-        totalPrice: body.totalPrice,
-      },
+    const bookings = await prisma.booking.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { event: { select: { title: true } } },
     });
 
-    return NextResponse.json({ booking }, { status: 201 });
+    const transformed = bookings.map((b) => ({
+      id:         b.id,
+      eventId:    b.eventId,
+      eventTitle: b.event.title,
+      name:       b.name,
+      email:      b.email,
+      adultCount: b.adultCount,
+      kidCount:   b.kidCount,
+      totalPrice: b.totalPrice,
+      createdAt:  b.createdAt.toISOString(),
+    }));
+
+    return NextResponse.json({ bookings: transformed }, { status: 200 });
   } catch (error: any) {
-    console.error("Error creating booking:", error);
+    console.error("Error in GET /api/events/bookings:", error);
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 }

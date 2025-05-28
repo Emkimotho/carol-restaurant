@@ -1,97 +1,133 @@
-// File: app/api/menu/category/[catId]/route.ts
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+/* ------------------------------------------------------------------ */
+/*  File: app/api/menu/category/[catId]/route.ts                      */
+/* ------------------------------------------------------------------ */
+/*  • GET    /api/menu/category/:catId                                */
+/*  • PUT    /api/menu/category/:catId                                */
+/*  • DELETE /api/menu/category/:catId                                */
+/* ------------------------------------------------------------------ */
 
-/**
- * GET /api/menu/category/[catId]
- * Fetch a single category by its ID.
- */
+import { NextResponse } from "next/server";
+import { prisma }       from "@/lib/prisma";
+
+/* ================================================================== */
+/*  GET  /api/menu/category/:catId                                    */
+/* ================================================================== */
 export async function GET(
-  request: Request,
-  context: { params: Promise<{ catId: string }> }
+  _req: Request,
+  ctx: { params: Promise<{ catId: string }> },
 ) {
-  const { catId } = await context.params;
+  const { catId } = await ctx.params;
   try {
     const category = await prisma.menuCategory.findUnique({
-      where: { id: catId },
+      where:   { id: catId },
+      include: { menuItems: true },
     });
-
     if (!category) {
-      console.error(`GET Error: Category not found for id: ${catId}`);
       return NextResponse.json({ message: "Category not found" }, { status: 404 });
     }
-
     return NextResponse.json({ category }, { status: 200 });
   } catch (error) {
-    console.error("GET Error fetching category with id", catId, ":", error);
+    console.error("Error fetching category:", error);
     return NextResponse.json(
       { message: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-/**
- * PUT /api/menu/category/[catId]
- * Update an existing category.
- */
+/* ================================================================== */
+/*  PUT  /api/menu/category/:catId                                    */
+/* ================================================================== */
 export async function PUT(
-  request: Request,
-  context: { params: Promise<{ catId: string }> }
+  req: Request,
+  ctx: { params: Promise<{ catId: string }> },
 ) {
-  const { catId } = await context.params;
+  const { catId } = await ctx.params;
   try {
-    const { name, type, order } = await request.json();
-    if (!name || !type) {
-      console.error(`PUT Error: Name and type are required for category id: ${catId}`);
-      return NextResponse.json({ message: "Name and type are required." }, { status: 400 });
+    const body       = await req.json();
+    const updateData: Record<string, any> = {};
+
+    if (body.name   !== undefined) updateData.name   = String(body.name).trim();
+    if (body.type   !== undefined) updateData.type   = String(body.type).trim();
+    if (body.order  !== undefined) updateData.order  = Number(body.order) || 0;
+    if (body.hidden !== undefined) updateData.hidden = Boolean(body.hidden);
+
+    if (!Object.keys(updateData).length) {
+      return NextResponse.json(
+        { message: "No valid fields to update" },
+        { status: 400 },
+      );
     }
 
     const updated = await prisma.menuCategory.update({
       where: { id: catId },
-      data: {
-        name,
-        type,
-        order: order || 0,
-      },
+      data:  updateData,
     });
-
     return NextResponse.json({ category: updated }, { status: 200 });
-  } catch (error) {
-    console.error("PUT Error updating category with id", catId, ":", JSON.stringify(error));
+  } catch (error: any) {
+    console.error(`Error updating category ${catId}:`, error);
+    if (error.code === "P2025") {
+      return NextResponse.json({ message: "Category not found" }, { status: 404 });
+    }
     return NextResponse.json(
       { message: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
-/**
- * DELETE /api/menu/category/[catId]
- * Remove an existing category and its associated menu items.
- */
+/* ================================================================== */
+/*  DELETE /api/menu/category/:catId                                  */
+/* ================================================================== */
 export async function DELETE(
-  request: Request,
-  context: { params: Promise<{ catId: string }> }
+  _req: Request,
+  ctx: { params: Promise<{ catId: string }> },
 ) {
-  const { catId } = await context.params;
+  const { catId } = await ctx.params;
   try {
-    // Delete all menu items associated with this category
-    await prisma.menuItem.deleteMany({
-      where: { categoryId: catId },
-    });
+    await prisma.$transaction([
+      prisma.nestedOptionChoice.deleteMany({
+        where: {
+          nestedGroup: {
+            parentChoice: {
+              optionGroup: { menuItem: { categoryId: catId } },
+            },
+          },
+        },
+      }),
+      prisma.nestedOptionGroup.deleteMany({
+        where: {
+          parentChoice: {
+            optionGroup: { menuItem: { categoryId: catId } },
+          },
+        },
+      }),
+      prisma.menuOptionChoice.deleteMany({
+        where: { optionGroup: { menuItem: { categoryId: catId } } },
+      }),
+      prisma.menuItemOptionGroup.deleteMany({
+        where: { menuItem: { categoryId: catId } },
+      }),
+      prisma.menuItem.deleteMany({
+        where: { categoryId: catId },
+      }),
+      prisma.menuCategory.delete({
+        where: { id: catId },
+      }),
+    ]);
 
-    // Delete the category itself
-    await prisma.menuCategory.delete({
-      where: { id: catId },
-    });
-
-    return NextResponse.json({ message: "Category and its menu items deleted" }, { status: 200 });
-  } catch (error) {
-    console.error("DELETE Error deleting category and its items with id", catId, ":", JSON.stringify(error));
+    return NextResponse.json(
+      { message: "Category and related items deleted" },
+      { status: 200 },
+    );
+  } catch (error: any) {
+    console.error(`Error deleting category ${catId}:`, error);
+    if (error.code === "P2025") {
+      return NextResponse.json({ message: "Category not found" }, { status: 404 });
+    }
     return NextResponse.json(
       { message: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,6 +1,10 @@
-// File: 19thhole/services/emailService.ts
+// File: services/EmailService.ts
+// ──────────────────────────────────────────────────
+// Email sending service using Nodemailer
+// ──────────────────────────────────────────────────
 
-import nodemailer from 'nodemailer';
+// @ts-ignore: no type declarations for 'nodemailer'
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -10,7 +14,12 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = async (to: string, subject: string, text: string, html: string) => {
+const sendEmail = async (
+  to: string,
+  subject: string,
+  text: string,
+  html: string
+): Promise<void> => {
   const mailOptions = {
     from: process.env.GMAIL_USER,
     to,

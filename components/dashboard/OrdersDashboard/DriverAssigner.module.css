@@ -1,0 +1,36 @@
+/* File: components/dashboard/OrdersDashboard/DriverAssigner.module.css */
+/* -----------------------------------------------------------------------
+   Styles for the driver-picker / un-assign control inside each OrderCard
+   ----------------------------------------------------------------------- */
+
+.assigner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.label {
+  /* text label before select (if you add one) */
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--dark-gray);
+}
+
+.select {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-color-dark);
+  border-radius: 0.25rem;
+  background-color: var(--white);
+  color: var(--dark-gray);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}

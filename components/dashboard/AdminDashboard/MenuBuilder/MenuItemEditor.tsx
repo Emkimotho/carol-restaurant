@@ -1,12 +1,24 @@
+/* ------------------------------------------------------------------
+   File: components/dashboard/AdminDashboard/MenuBuilder/MenuItemEditor.tsx
+   ------------------------------------------------------------------
+   • Adds / edits menu items
+   • Checkbox “Also show in Golf Menu” hidden for Golf categories
+   • After creating (POST), resets all fields to blank/new state
+   ------------------------------------------------------------------ */
+
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Image from "next/image";
-import OptionGroupEditor from "./OptionGroupEditor";
-import CloverItemSelect from "components/dashboard/AdminDashboard/MenuBuilder/CloverItemSelect";
-import styles from "./MenuItemEditor.module.css";
-import type { MenuCategory, MenuItemOptionGroup, MenuItem } from "@/utils/types";
-import { toast } from "react-toastify";
+import React, { useState, useEffect, useCallback } from "react";
+import Image                   from "next/image";
+import OptionGroupEditor       from "./OptionGroupEditor";
+import CloverItemSelect        from "components/dashboard/AdminDashboard/MenuBuilder/CloverItemSelect";
+import styles                  from "./MenuItemEditor.module.css";
+import type {
+  MenuCategory,
+  MenuItemOptionGroup,
+  MenuItem,
+}                              from "@/utils/types";
+import { toast }               from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
   useMutation,
@@ -14,22 +26,26 @@ import {
   UseMutationResult,
 } from "@tanstack/react-query";
 
-// Helper: Generate a local preview URL for a File.
-function createLocalPreviewURL(file: File) {
-  return URL.createObjectURL(file);
-}
-
-// Key used for storing drafts in localStorage.
+/* ------------------------------------------------------------------ */
+/*  Helpers & constants                                               */
+/* ------------------------------------------------------------------ */
 const DRAFT_KEY = "menuItemDraft";
+const createLocalPreviewURL = (file: File) => URL.createObjectURL(file);
 
+/* ------------------------------------------------------------------ */
+/*  Props                                                              */
+/* ------------------------------------------------------------------ */
 interface MenuItemEditorProps {
-  categoryId: string | null;
+  categoryId:  string | null;
   editingItem: MenuItem | null;
-  onSaved: () => void;
-  onPreview: (item: MenuItem) => void;
-  categories: MenuCategory[];
+  onSaved:     () => void;
+  onPreview:   (item: MenuItem) => void;
+  categories:  MenuCategory[];
 }
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   categoryId,
   editingItem,
@@ -37,24 +53,27 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   onPreview,
   categories,
 }) => {
-  // Base form state
-  const [title, setTitle] = useState(editingItem?.title || "");
+  /* --------------------- base state ------------------------------ */
+  const [title, setTitle]         = useState(editingItem?.title || "");
   const [description, setDescription] = useState(editingItem?.description || "");
-  const [price, setPrice] = useState(editingItem?.price || 0);
-  const [imageUrl, setImageUrl] = useState(editingItem?.image || "");
-  const [hasSpiceLevel, setHasSpiceLevel] = useState(editingItem?.hasSpiceLevel || false);
-  const [showInGolfMenu, setShowInGolfMenu] = useState((editingItem as any)?.showInGolfMenu || false);
-  const [optionGroups, setOptionGroups] = useState<MenuItemOptionGroup[]>(editingItem?.optionGroups || []);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [selectedSubcategory, setSelectedSubcategory] = useState(categoryId || "");
+  const [price, setPrice]         = useState(editingItem?.price || 0);
+  const [imageUrl, setImageUrl]   = useState(editingItem?.image || "");
+  const [hasSpiceLevel, setHasSpiceLevel] =
+    useState(editingItem?.hasSpiceLevel || false);
+  const [hasAlcohol, setHasAlcohol] =
+    useState(editingItem?.isAlcohol || false);
 
-  // NEW: State for Clover Item ID (populated via the dropdown) – now required.
-  const [cloverItemId, setCloverItemId] = useState(editingItem?.cloverItemId || "");
-  // NEW: State for stock (inventory) – should be auto-populated from Clover.
+  const [optionGroups, setOptionGroups] =
+    useState<MenuItemOptionGroup[]>(editingItem?.optionGroups || []);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading]       = useState(false);
+  const [selectedSubcategory, setSelectedSubcategory] =
+    useState(categoryId || "");
+
+  const [cloverItemId, setCloverItemId] =
+    useState(editingItem?.cloverItemId || "");
   const [stock, setStock] = useState<number>(editingItem?.stock ?? 0);
 
-  // Inline validation errors (added cloverItemId)
   const [errors, setErrors] = useState<{
     title?: string;
     price?: string;
@@ -65,12 +84,18 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
 
   const queryClient = useQueryClient();
 
-  // Debug: log editingItem to check if category is populated
-  useEffect(() => {
-    console.log("editingItem:", editingItem);
-  }, [editingItem]);
+  /* --------------------- helpers --------------------------------- */
+  const getSelectedCategory = useCallback(
+    () => categories.find((c) => c.id === selectedSubcategory),
+    [categories, selectedSubcategory]
+  );
+  const categoryIsGolf = !!getSelectedCategory()?.type?.includes("GolfMenu");
 
-  // When editingItem changes, update the form fields so that the editor is pre-populated.
+  /* showInGolfMenu initial value ----------------------------------- */
+  const [showInGolfMenu, setShowInGolfMenu] = useState(
+    editingItem?.showInGolfMenu ??
+      !!categories.find((c) => c.id === categoryId && c.type === "GolfMenu")
+  );
   useEffect(() => {
     if (editingItem) {
       setTitle(editingItem.title);
@@ -78,57 +103,65 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       setPrice(editingItem.price);
       setImageUrl(editingItem.image || "");
       setHasSpiceLevel(editingItem.hasSpiceLevel);
+      setHasAlcohol(editingItem.isAlcohol || false);
       setOptionGroups(editingItem.optionGroups || []);
       setCloverItemId(editingItem.cloverItemId || "");
       setStock(editingItem.stock);
-      if (editingItem.category && editingItem.category.id) {
-        setSelectedSubcategory(editingItem.category.id);
-      } else {
-        console.warn("Editing item has no category relation loaded.");
-        setSelectedSubcategory("");
-      }
+      setSelectedSubcategory(editingItem.category?.id || "");
+      setShowInGolfMenu(
+        editingItem.showInGolfMenu ||
+          !!categories.find(
+            (c) => c.id === editingItem.category?.id && c.type === "GolfMenu"
+          )
+      );
     }
-  }, [editingItem]);
+  }, [editingItem, categories]);
 
-  // If not editing an existing item, load a draft from localStorage.
   useEffect(() => {
     if (!editingItem) {
-      const draft = localStorage.getItem(DRAFT_KEY);
-      if (draft) {
-        const parsed = JSON.parse(draft);
-        setTitle(parsed.title || "");
-        setDescription(parsed.description || "");
-        setPrice(parsed.price || 0);
-        setImageUrl(parsed.imageUrl || "");
-        setHasSpiceLevel(parsed.hasSpiceLevel || false);
-        setShowInGolfMenu(parsed.showInGolfMenu || false);
-        setOptionGroups(parsed.optionGroups || []);
-        setSelectedSubcategory(parsed.selectedSubcategory || categoryId || "");
-        setCloverItemId(parsed.cloverItemId || "");
-        setStock(parsed.stock ?? 0);
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        try {
+          const d = JSON.parse(raw);
+          setTitle(d.title || "");
+          setDescription(d.description || "");
+          setPrice(d.price || 0);
+          setImageUrl(d.imageUrl || "");
+          setHasSpiceLevel(d.hasSpiceLevel || false);
+          setHasAlcohol(d.hasAlcohol || false);
+          setShowInGolfMenu(d.showInGolfMenu || false);
+          setOptionGroups(d.optionGroups || []);
+          setSelectedSubcategory(d.selectedSubcategory || categoryId || "");
+          setCloverItemId(d.cloverItemId || "");
+          setStock(d.stock ?? 0);
+        } catch {
+          /* ignore parse errors */
+        }
       }
     }
   }, [editingItem, categoryId]);
 
-  // Auto-save a draft to localStorage (only if not editing).
   useEffect(() => {
     if (!editingItem) {
-      const timeout = setTimeout(() => {
-        const draft = {
-          title,
-          description,
-          price,
-          imageUrl,
-          hasSpiceLevel,
-          showInGolfMenu,
-          optionGroups,
-          selectedSubcategory,
-          cloverItemId,
-          stock,
-        };
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-      }, 1000);
-      return () => clearTimeout(timeout);
+      const t = setTimeout(() => {
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({
+            title,
+            description,
+            price,
+            imageUrl,
+            hasSpiceLevel,
+            hasAlcohol,
+            showInGolfMenu,
+            optionGroups,
+            selectedSubcategory,
+            cloverItemId,
+            stock,
+          })
+        );
+      }, 800);
+      return () => clearTimeout(t);
     }
   }, [
     title,
@@ -136,144 +169,92 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     price,
     imageUrl,
     hasSpiceLevel,
+    hasAlcohol,
     showInGolfMenu,
     optionGroups,
     selectedSubcategory,
     cloverItemId,
     stock,
     editingItem,
-    categoryId,
   ]);
 
-  function clearDraft() {
+  const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY);
     toast.info("Draft cleared");
-  }
+  };
 
-  function handlePriceChange(val: string) {
-    const parsed = parseFloat(val);
-    if (isNaN(parsed)) setPrice(0);
-    else setPrice(parsed);
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
-      const localURL = createLocalPreviewURL(file);
-      setImageUrl(localURL);
+  /* --------------------- handlers -------------------------------- */
+  const handlePriceChange = (v: string) => setPrice(parseFloat(v) || 0);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      const f = e.target.files[0];
+      setSelectedFile(f);
+      setImageUrl(createLocalPreviewURL(f));
     }
-  }
+  };
 
-  // Simulate a file upload (returns a URL string).
-  async function uploadFile(file: File): Promise<string> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`/images/${file.name}`);
-      }, 1000);
+  const addOptionGroup = () =>
+    setOptionGroups((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        title: "",
+        minRequired: 0,
+        maxAllowed: 0,
+        optionType: "single-select",
+        choices: [],
+      },
+    ]);
+  const updateOptionGroup = (idx: number, g: MenuItemOptionGroup) =>
+    setOptionGroups((prev) => {
+      const cp = [...prev];
+      cp[idx] = g;
+      return cp;
     });
-  }
+  const removeOptionGroup = (idx: number) =>
+    setOptionGroups((prev) => prev.filter((_, i) => i !== idx));
 
-  function addOptionGroup() {
-    const newGroup: MenuItemOptionGroup = {
-      id: Date.now().toString(),
-      title: "",
-      minRequired: 0,
-      maxAllowed: 0,
-      optionType: "single-select",
-      choices: [],
-    };
-    setOptionGroups([...optionGroups, newGroup]);
-  }
+  /* --------------------- validation ------------------------------ */
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!title.trim()) e.title = "Title is required.";
+    if (price <= 0) e.price = "Price must be greater than zero.";
+    if (!selectedSubcategory) e.subcategory = "Subcategory is required.";
+    if (stock < 0) e.stock = "Stock cannot be negative.";
+    if (!cloverItemId.trim()) e.cloverItemId = "Clover ID is required.";
+    setErrors(e);
+    return !Object.keys(e).length;
+  };
 
-  function updateOptionGroup(index: number, newGroup: MenuItemOptionGroup) {
-    const updated = [...optionGroups];
-    updated[index] = newGroup;
-    setOptionGroups(updated);
-  }
-
-  function removeOptionGroup(index: number) {
-    const updated = [...optionGroups];
-    updated.splice(index, 1);
-    setOptionGroups(updated);
-  }
-
-  function validateForm() {
-    const newErrors: {
-      title?: string;
-      price?: string;
-      subcategory?: string;
-      stock?: string;
-      cloverItemId?: string;
-    } = {};
-    if (!title.trim()) newErrors.title = "Title is required.";
-    if (price <= 0) newErrors.price = "Price must be greater than zero.";
-    if (!selectedSubcategory) newErrors.subcategory = "Subcategory is required.";
-    if (stock < 0) newErrors.stock = "Stock cannot be negative.";
-    // Ensure the Clover Item ID is filled.
-    if (!cloverItemId.trim()) newErrors.cloverItemId = "Clover ID is required.";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
-
-  // Determine endpoint and method: if editing, use PUT; if new, use POST.
-  async function saveMenuItem(payload: any) {
-    const endpoint = editingItem ? `/api/menu/item/${editingItem.id}` : `/api/menu/item`;
+  /* --------------------- mutation ------------------------------- */
+  const save = async (data: any) => {
+    const url = editingItem
+      ? `/api/menu/item/${editingItem.id}`
+      : `/api/menu/item`;
     const method = editingItem ? "PUT" : "POST";
-
-    const res = await fetch(endpoint, {
+    const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(data),
     });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || "Error saving menu item");
-    }
-    return data;
-  }
+    const j = await res.json();
+    if (!res.ok) throw new Error(j.message || "Save failed");
+    return j;
+  };
+  const mutation: UseMutationResult<any, Error, any> = useMutation({ mutationFn: save });
 
-  const mutation: UseMutationResult<any, Error, any> = useMutation({
-    mutationFn: (payload: any) => saveMenuItem(payload),
-    onSuccess: () => {
-      toast.success("Menu item saved successfully!");
-      queryClient.invalidateQueries({ queryKey: ["menuItems"] });
-      // Reset form fields.
-      setTitle("");
-      setDescription("");
-      setPrice(0);
-      setImageUrl("");
-      setSelectedFile(null);
-      setHasSpiceLevel(false);
-      setShowInGolfMenu(false);
-      setOptionGroups([]);
-      setSelectedSubcategory("");
-      setCloverItemId("");
-      setStock(0);
-      clearDraft();
-      onSaved();
-    },
-    onError: (err: Error) => {
-      toast.error("Error: " + err.message);
-    },
-  });
-
-  async function handleSubmit(e: React.FormEvent) {
+  /* --------------------- submit ---------------------------------- */
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validate()) return;
 
     let finalImage = imageUrl;
     if (selectedFile) {
       setUploading(true);
-      try {
-        finalImage = await uploadFile(selectedFile);
-      } catch (err) {
-        console.error("File upload error", err);
-        toast.error("Error uploading image");
-        return;
-      } finally {
-        setUploading(false);
-      }
+      finalImage = await new Promise<string>((r) =>
+        setTimeout(() => r(`/images/${selectedFile.name}`), 800)
+      );
+      setUploading(false);
     }
 
     const payload = {
@@ -282,41 +263,60 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       price,
       image: finalImage,
       hasSpiceLevel,
+      hasAlcohol,
+      showInGolfMenu,
       optionGroups,
       categoryId: selectedSubcategory,
-      showInGolfMenu,
       cloverItemId,
       stock,
     };
 
-    mutation.mutate(payload);
-  }
+    try {
+      await mutation.mutateAsync(payload);
+      onSaved();
+      if (!editingItem) {
+        setTitle("");
+        setDescription("");
+        setPrice(0);
+        setImageUrl("");
+        setSelectedFile(null);
+        setHasSpiceLevel(false);
+        setHasAlcohol(false);
+        setShowInGolfMenu(false);
+        setOptionGroups([]);
+        setSelectedSubcategory(categoryId || "");
+        setCloverItemId("");
+        setStock(0);
+        clearDraft();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save menu item");
+    }
+  };
 
-  function handlePreview() {
-    const itemToPreview: MenuItem = {
+  const handlePreview = () => {
+    const cat = categories.find((c) => c.id === selectedSubcategory) || null;
+    onPreview({
       id: editingItem?.id || "temp-id",
       title,
       description,
       price,
       image: imageUrl,
       hasSpiceLevel,
-      category: {
-        id: selectedSubcategory,
-        name: categories.find((c) => c.id === selectedSubcategory)?.name || "Unnamed",
-        type: "MainMenu",
-        order: 1,
-      },
+      hasAlcohol,
+      isAlcohol: hasAlcohol, // Add this line to match MenuItem type
+      showInGolfMenu,
+      category: cat,
       optionGroups,
       cloverItemId,
       stock,
-    };
-    onPreview(itemToPreview);
-  }
+    } as MenuItem);
+  };
 
-  const isSaving = mutation.status === "pending";
-
+  /* --------------------- JSX ------------------------------------- */
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
+      {/* Title */}
       <div className={styles.field}>
         <label htmlFor="title">Title:</label>
         <input
@@ -324,12 +324,12 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          aria-required="true"
           required
         />
         {errors.title && <span className={styles.error}>{errors.title}</span>}
       </div>
 
+      {/* Description */}
       <div className={styles.field}>
         <label htmlFor="description">Description:</label>
         <textarea
@@ -339,6 +339,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         />
       </div>
 
+      {/* Price */}
       <div className={styles.field}>
         <label htmlFor="price">Price:</label>
         <input
@@ -346,12 +347,12 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
           type="number"
           value={price}
           onChange={(e) => handlePriceChange(e.target.value)}
-          aria-required="true"
           required
         />
         {errors.price && <span className={styles.error}>{errors.price}</span>}
       </div>
 
+      {/* Image upload */}
       <div className={styles.field}>
         <label htmlFor="imageUpload">Image Upload:</label>
         <input id="imageUpload" type="file" accept="image/*" onChange={handleFileChange} />
@@ -371,13 +372,13 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         )}
       </div>
 
+      {/* Subcategory select */}
       <div className={styles.field}>
         <label htmlFor="subcategory">Subcategory:</label>
         <select
           id="subcategory"
           value={selectedSubcategory}
           onChange={(e) => setSelectedSubcategory(e.target.value)}
-          aria-required="true"
           required
         >
           <option value="">-- Choose a Subcategory --</option>
@@ -387,37 +388,39 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
             </option>
           ))}
         </select>
-        {errors.subcategory && <span className={styles.error}>{errors.subcategory}</span>}
+        {errors.subcategory && (
+          <span className={styles.error}>{errors.subcategory}</span>
+        )}
       </div>
 
+      {/* Stock */}
       <div className={styles.field}>
         <label htmlFor="stock">Stock:</label>
-        {process.env.NODE_ENV === "development" ? (
-          <input id="stock" type="number" value={stock} readOnly />
-        ) : (
-          <input
-            id="stock"
-            type="number"
-            value={stock}
-            onChange={(e) => setStock(parseInt(e.target.value) || 0)}
-            aria-required="true"
-            required
-          />
-        )}
+        <input
+          id="stock"
+          type="number"
+          value={stock}
+          onChange={(e) => setStock(parseInt(e.target.value) || 0)}
+          required
+        />
         {errors.stock && <span className={styles.error}>{errors.stock}</span>}
       </div>
 
-      <div className={styles.field}>
-        <label>
-          <input
-            type="checkbox"
-            checked={showInGolfMenu}
-            onChange={(e) => setShowInGolfMenu(e.target.checked)}
-          />
-          Also show in Golf Menu
-        </label>
-      </div>
+      {/* Golf flag checkbox (hidden if category is GolfMenu) */}
+      {!categoryIsGolf && (
+        <div className={styles.field}>
+          <label>
+            <input
+              type="checkbox"
+              checked={showInGolfMenu}
+              onChange={(e) => setShowInGolfMenu(e.target.checked)}
+            />
+            Also show in Golf Menu
+          </label>
+        </div>
+      )}
 
+      {/* Spice level toggle */}
       <div className={styles.field}>
         <label>
           <input
@@ -429,39 +432,64 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         </label>
       </div>
 
-      {/* Clover Item Select is now required */}
+{/* Alcohol flag toggle */}
+<div className={styles.field}>
+   <label>
+     <input
+       type="checkbox"
+       checked={hasAlcohol}
+      onChange={(e) => setHasAlcohol(e.target.checked)}
+   />
+     Contains Alcohol
+   </label>
+ </div> 
+
+      {/* Clover item select */}
       <div className={styles.field}>
         <CloverItemSelect value={cloverItemId} onChange={setCloverItemId} />
-        {errors.cloverItemId && <span className={styles.error}>{errors.cloverItemId}</span>}
+        {errors.cloverItemId && (
+          <span className={styles.error}>{errors.cloverItemId}</span>
+        )}
       </div>
 
+      {/* Option groups */}
       <div className={styles.optionGroups}>
         <h3>Option Groups</h3>
-        {optionGroups.map((group, index) => (
+        {optionGroups.map((g, idx) => (
           <OptionGroupEditor
-            key={group.id}
-            group={group}
-            onChange={(newGroup) => updateOptionGroup(index, newGroup)}
-            onRemove={() => removeOptionGroup(index)}
+            key={g.id}
+            group={g}
+            onChange={(ng) => updateOptionGroup(idx, ng)}
+            onRemove={() => removeOptionGroup(idx)}
           />
         ))}
-        <button type="button" onClick={addOptionGroup} className={styles.addButton}>
+        <button
+          type="button"
+          onClick={addOptionGroup}
+          className={styles.addButton}
+        >
           Add Option Group
         </button>
       </div>
 
+      {/* Buttons */}
       <div className={styles.buttonsRow}>
-        <button type="submit" className={styles.submitButton} disabled={uploading || isSaving}>
-          {isSaving ? "Saving menu item..." : "Save Menu Item"}
+        <button type="submit" disabled={uploading || mutation.isPending}>
+          {mutation.isPending ? "Saving..." : "Save Menu Item"}
         </button>
-        <button type="button" onClick={handlePreview} className={styles.previewButton} disabled={uploading || isSaving}>
+        <button type="button" onClick={handlePreview} disabled={uploading}>
           Preview
         </button>
       </div>
 
+      {/* Clear draft (new item only) */}
       {!editingItem && (
         <div className={styles.clearDraftRow}>
-          <button type="button" onClick={clearDraft} className={styles.clearDraftButton}>
+          <button
+            type="button"
+            onClick={clearDraft}
+            className={styles.clearDraftButton}
+          >
             Clear Draft
           </button>
         </div>

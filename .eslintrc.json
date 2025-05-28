@@ -1,6 +1,12 @@
 {
   "extends": ["next/core-web-vitals"],
   "rules": {
-    // Your custom rules
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.name='fetch'][arguments.0.value=/^\\/api\\/orders/]",
+        "message": "Direct fetch('/api/orders') is disallowed — use useCreateOrder or useOrder hook instead."
+      }
+    ]
   }
 }

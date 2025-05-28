@@ -2,27 +2,8 @@
 "use client";
 
 import React from "react";
-import UserCard from "@/components/dashboard/AdminDashboard/UserCard";
-import styles from "@/components/dashboard/AdminDashboard/UserCard.module.css";
+import UserManagement from "@/components/dashboard/AdminDashboard/UserManagement/UserManagement";
 
-
-const dummyUsers = [
-  { name: "Alice Johnson", role: "Staff" },
-  { name: "Bob Smith", role: "Driver" },
-  { name: "Charlie Davis", role: "Staff" },
-];
-
-const UserManagementPage = () => {
-  return (
-    <div className={styles.userManagementContainer}>
-      <h1>User Management</h1>
-      <div className={styles.userGrid}>
-        {dummyUsers.map((user, idx) => (
-          <UserCard key={idx} name={user.name} role={user.role} />
-        ))}
-      </div>
-    </div>
-  );
-};
+const UserManagementPage: React.FC = () => <UserManagement />;
 
 export default UserManagementPage;

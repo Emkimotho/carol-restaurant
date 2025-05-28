@@ -1,3 +1,4 @@
+// File: components/dashboard/AdminDashboard/MenuBuilder/MenuItemList.tsx
 "use client";
 
 import React from "react";
@@ -6,62 +7,59 @@ import { toast } from "react-toastify";
 import styles from "./MenuItemList.module.css";
 import type { MenuItem } from "@/utils/types";
 
-interface MenuItemsResponse {
-  menuItems: MenuItem[];
-}
-
-async function fetchMenuItems(): Promise<MenuItemsResponse> {
-  const res = await fetch("/api/menu/item");
-  if (!res.ok) {
-    throw new Error("Error fetching menu items");
-  }
-  return res.json();
-}
-
-interface MenuItemListProps {
+export interface MenuItemListProps {
+  filterCategory: string | null;               // ← newly added
   onEditItem: (item: MenuItem) => void;
   onDeleteItem: (item: MenuItem) => void;
 }
 
-const MenuItemList: React.FC<MenuItemListProps> = ({
+export default function MenuItemList({
+  filterCategory,
   onEditItem,
   onDeleteItem,
-}) => {
-  const { data, isLoading, isError, error } = useQuery<MenuItemsResponse>({
+}: MenuItemListProps) {
+  const { data, error, isLoading } = useQuery<MenuItem[]>({
     queryKey: ["menuItems"],
-    queryFn: fetchMenuItems,
-    staleTime: 10_000,
+    queryFn: async () => {
+      const res = await fetch("/api/menu/item");
+      if (!res.ok) throw new Error("Failed to fetch menu items");
+      const json = await res.json();
+      return json.menuItems as MenuItem[];
+    },
   });
 
-  if (isLoading) return <p>Loading menu items...</p>;
-
-  if (isError) {
-    const errMsg = (error as Error)?.message || "Error loading menu items";
-    toast.error(errMsg);
-    return <p>{errMsg}</p>;
+  if (isLoading) return <p>Loading items…</p>;
+  if (error) {
+    const msg = (error as Error).message;
+    toast.error(`Error loading items: ${msg}`);
+    return <p className={styles.error}>Error loading items.</p>;
   }
 
-  const items = data?.menuItems || [];
+  // Filter by the selected category (if any)
+  const items = (data ?? []).filter((item) => {
+    if (!filterCategory) return true;
+    return item.category?.id === filterCategory;
+  });
+
   if (items.length === 0) {
-    return <p>No saved menu items.</p>;
+    return <p>No items in this category.</p>;
   }
 
   return (
-    <div className={styles.menuItemList}>
-      <h3>Existing Menu Items</h3>
+    <div className={styles.list}>
       {items.map((item) => (
-        <div key={item.id} className={styles.menuItem}>
-          <span className={styles.itemTitle}>{item.title}</span>
+        <div key={item.id} className={styles.listItem}>
+          <span className={styles.title}>{item.title}</span>
           <div className={styles.actions}>
             <button
+              className={styles.editBtn}
               onClick={() => onEditItem(item)}
-              className={styles.editButton}
             >
               Edit
             </button>
             <button
+              className={styles.deleteBtn}
               onClick={() => onDeleteItem(item)}
-              className={styles.deleteButton}
             >
               Delete
             </button>
@@ -70,6 +68,4 @@ const MenuItemList: React.FC<MenuItemListProps> = ({
       ))}
     </div>
   );
-};
-
-export default MenuItemList;
+}

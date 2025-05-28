@@ -1,0 +1,122 @@
+/* File: components/dashboard/AdminDashboard/UserCard/UserCard.module.css */
+
+.card {
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--box-shadow-primary);
+  padding: 1rem 1rem 4.4rem; /* bottom padding for 2-row bar */
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 1rem;
+  position: relative;
+}
+
+.avatar,
+.avatarPlaceholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  background: var(--border-color);
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.name {
+  margin: 0;
+  font-weight: 700;
+  color: var(--dark-gray);
+}
+
+.detail {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gray);
+}
+
+.status {
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.statusACTIVE    { color: var(--primary-color); }
+.statusSUSPENDED { color: var(--secondary-color); }
+.statusBANNED    { color: #db4437; }
+
+/* Role toggles */
+.roleToggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.roleLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.roleLabel input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* Button bar */
+.buttonBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--light-gray);
+  border-radius: 0 0 12px 12px;
+  padding: 0.6rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.row button {
+  flex: 1 1 45%;
+  padding: 0.45rem 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--white);
+  cursor: pointer;
+  transition: background 0.25s;
+}
+
+.edit    { background: var(--primary-color); }
+.enable  { background: var(--primary-color); }
+.suspend { background: var(--secondary-color); }
+.delete, .ban { background: #db4437; }
+
+.edit:hover    { background: var(--primary-color-hover); }
+.enable:hover  { background: var(--primary-color-hover); }
+.suspend:hover { background: var(--secondary-color-hover); }
+.delete:hover,
+.ban:hover     { background: #b73128; }

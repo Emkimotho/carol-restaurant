@@ -1,14 +1,26 @@
 // File: components/checkout/OrderTypeStep.tsx
+// ───────────────────────────────────────────────────────────────────
+// Renders the “Pickup” vs. “Delivery” choice for main-menu orders,
+// updates both the local wizard state and the shared OrderContext,
+// and sets deliveryType accordingly.
+// ───────────────────────────────────────────────────────────────────
+
 "use client";
 
-import React, { useContext } from 'react';
-import styles from '@/components/checkout/OrderTypeStep.module.css';
-import { OrderContext } from '@/contexts/OrderContext';
+import React, { useContext, Dispatch, SetStateAction } from "react";
+import styles from "@/components/checkout/OrderTypeStep.module.css";
+import { OrderContext } from "@/contexts/OrderContext";
+
+export type OrderType = "" | "pickup" | "delivery";
 
 interface OrderTypeStepProps {
-  orderType: string;
-  onSelectOrderType: (orderType: string) => void; 
+  /** The currently selected order type */
+  orderType: OrderType;
+  /** Setter for the parent wizard’s orderType state */
+  onSelectOrderType: Dispatch<SetStateAction<OrderType>>;
+  /** Callback to advance the wizard */
   onNext: () => void;
+  /** Callback to go back in the wizard */
   onBack: () => void;
 }
 
@@ -18,44 +30,56 @@ const OrderTypeStep: React.FC<OrderTypeStepProps> = ({
   onNext,
   onBack,
 }) => {
-  // Optionally get the context if you want to store it directly here:
-  const { order, setOrder } = useContext(OrderContext)!;
+  const {
+    setOrder,
+    setDeliveryType,
+    setCartInfo,
+  } = useContext(OrderContext)!;
 
-  const handleSelect = (type: string) => {
-    // 1) Update local state in parent flow
+  const handleSelect = (type: OrderType) => {
+    // 1 — update wizard-level state
     onSelectOrderType(type);
 
-    // 2) Also set in OrderContext
-    setOrder({
-      ...order,
-      orderType: type, // i.e. "pickup" or "delivery"
-    });
+    // 2 — mirror into OrderContext
+    setOrder(prev => ({ ...prev, orderType: type }));
+
+    // 3 — set deliveryType for main-menu flow
+    if (type === "pickup") {
+      setDeliveryType("PICKUP_AT_CLUBHOUSE");
+    } else if (type === "delivery") {
+      setDeliveryType("DELIVERY");
+    }
+
+    // 4 — clear any golf-specific fields
+    setCartInfo(null, null);
   };
 
   return (
     <div className={styles.checkoutSection}>
       <h4>Select Order Type</h4>
+
       <div className={styles.orderTypeOptions}>
         <button
           className={`${styles.btn} ${
-            orderType === 'pickup' ? styles.btnPrimary : styles.btnOutlinePrimary
+            orderType === "pickup" ? styles.btnPrimary : styles.btnOutlinePrimary
           }`}
-          onClick={() => handleSelect('pickup')}
+          onClick={() => handleSelect("pickup")}
         >
           Pickup
         </button>
         <button
           className={`${styles.btn} ${
-            orderType === 'delivery' ? styles.btnPrimary : styles.btnOutlinePrimary
+            orderType === "delivery"
+              ? styles.btnPrimary
+              : styles.btnOutlinePrimary
           }`}
-          onClick={() => handleSelect('delivery')}
+          onClick={() => handleSelect("delivery")}
         >
           Delivery
         </button>
       </div>
 
-      {/* Show pickup location if chosen */}
-      {orderType === 'pickup' && (
+      {orderType === "pickup" && (
         <div className={`${styles.pickupDetails} mt-3`}>
           <h5>Pickup Location:</h5>
           <p>

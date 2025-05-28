@@ -1,80 +1,99 @@
 /* File: components/Menu/Menu.module.css */
 
-/* A unique wrapper so that these styles override Bootstrap where needed */
+/* ------------------------------------------------------------------ */
+/*  Wrapper to scope overrides                                        */
+/* ------------------------------------------------------------------ */
 .menuWrapper {
-    margin-top: 100px;
-    padding: 2rem 0;
-  }
-  
-  /* --- Tabs Styling --- */
-  
-  /* Outer Tabs Container: override border if needed */
-  .menuWrapper .nav-tabs {
-    border-bottom: 2px solid var(--border-color) !important;
-  }
-  
-  /* Default tab style: secondary background with black text */
-  .menuWrapper .nav-tabs .nav-link {
-    background-color: var(--secondary-color) !important;
-    color: var(--black) !important;
-    border: none !important;
-    border-radius: 4px;
-    margin-right: 0.5rem;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-  
-  /* Active tab style: primary background with white text */
-  .menuWrapper .nav-tabs .nav-link.active {
-    background-color: var(--primary-color) !important;
-    color: var(--white) !important;
-  }
-  
-  /* Hover effect for tabs: subtle brightness change */
-  .menuWrapper .nav-tabs .nav-link:hover {
-    filter: brightness(0.95);
-  }
-  
-  /* --- Start Order Button Styling --- */
-  
-  .startOrderButton {
-    background-color: var(--primary-color);
-    color: var(--white);
-    border: none;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 4px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: background-color 0.3s ease;
-  }
-  
-  /* On hover, animate background transition to secondary color and apply swaying */
-  .startOrderButton:hover {
-    background-color: var(--secondary-color);
-    animation: sway 0.6s ease-in-out infinite alternate;
-  }
-  
-  /* Sway animation keyframes */
-  @keyframes sway {
-    from {
-      transform: translateX(-5px);
-    }
-    to {
-      transform: translateX(5px);
-    }
-  }
-  
-  /* --- Additional Container Styles --- */
-  
-  .containerPadding {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-  
-  /* Utility class for extra bottom padding */
-  .pb-5 {
-    padding-bottom: 3rem;
-  }
-  
+  margin-top: 100px;
+  padding: 2rem 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tabs Styling (override Bootstrap defaults)                        */
+/* ------------------------------------------------------------------ */
+
+/* Outer nav‑tabs border */
+.menuWrapper :global(.nav-tabs) {
+  border-bottom: 2px solid var(--border-color) !important;
+}
+
+/* Default tab look */
+.menuWrapper :global(.nav-tabs) :global(.nav-link) {
+  background-color: var(--secondary-color) !important;
+  color: var(--black)                      !important;
+  border: none                             !important;
+  border-radius: 4px;
+  margin-right: 0.5rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Active tab */
+.menuWrapper :global(.nav-tabs) :global(.nav-link.active) {
+  background-color: var(--primary-color) !important;
+  color: var(--white)                    !important;
+}
+
+/* Hover */
+.menuWrapper :global(.nav-tabs) :global(.nav-link:hover) {
+  filter: brightness(0.95);
+}
+
+/* ------------------------------------------------------------------ */
+/*  “Start Order” button                                              */
+/* ------------------------------------------------------------------ */
+.startOrderButton {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+}
+
+.startOrderButton:hover {
+  background-color: var(--secondary-color);
+  animation: sway 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes sway {
+  from { transform: translateX(-5px); }
+  to   { transform: translateX(5px);  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Utility padding helpers                                           */
+/* ------------------------------------------------------------------ */
+.containerPadding {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.pb-5 {
+  padding-bottom: 3rem;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Fade‑in / slide‑up animation for category grid                    */
+/* ------------------------------------------------------------------ */
+@keyframes fadeInSlide {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.fadeInEnter {
+  animation: fadeInSlide 0.2s ease-out both;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Green flag icon for Golf Menu tab                                 */
+/* ------------------------------------------------------------------ */
+.golfFlag {
+  color: var(--primary-color);   /* same green as your theme */
+  margin-right: 0.25rem;
+  font-size: 1rem;
+}

@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { FaBriefcase, FaUtensils, FaShippingFast, FaStore, FaSpa, FaBuilding } from 'react-icons/fa';
 import styles from './page.module.css';

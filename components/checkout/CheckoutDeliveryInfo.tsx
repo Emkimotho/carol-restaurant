@@ -1,56 +1,37 @@
+// File: components/checkout/CheckoutDeliveryInfo.tsx
 "use client";
 
 import React from "react";
-import { calculateDeliveryFee, DeliveryCalculationParams } from "@/utils/calculateDeliveryFee";
+import {
+  calculateDeliveryFee,
+  DeliveryCalculationParams,
+} from "@/utils/calculateDeliveryFee";
 import styles from "./CheckoutDeliveryInfo.module.css";
 
-interface CheckoutDeliveryInfoProps {
-  distance: number;
-  travelTimeMinutes: number;
-  orderSubtotal: number; // Items-only cost
-  ratePerMile: number;
-  ratePerHour: number;
-  restaurantFeePercentage: number;
-  minimumCharge: number;
-  freeDeliveryThreshold: number;
+/* ------------------------------------------------------------------ */
+/*  Props                                                             */
+/* ------------------------------------------------------------------ */
+interface CheckoutDeliveryInfoProps extends DeliveryCalculationParams {
+  /** Pre‑computed fee passed from parent (so we don’t double‑calculate) */
+  customerFee: number;
 }
 
+/* ================================================================== */
+/*                    CheckoutDeliveryInfo                            */
+/* ================================================================== */
 const CheckoutDeliveryInfo: React.FC<CheckoutDeliveryInfoProps> = ({
-  distance,
-  travelTimeMinutes,
-  orderSubtotal,
-  ratePerMile,
-  ratePerHour,
-  restaurantFeePercentage,
-  minimumCharge,
-  freeDeliveryThreshold,
+  customerFee,              // from parent (after restaurant deduction)
+  ...feeParams              // distance / time / rates / thresholds
 }) => {
-  const feeParams: DeliveryCalculationParams = {
-    distance,
-    travelTimeMinutes,
-    ratePerMile,
-    ratePerHour,
-    restaurantFeePercentage,
-    orderSubtotal,
-    minimumCharge,
-    freeDeliveryThreshold,
-  };
-
-  console.log("[CheckoutDeliveryInfo] feeParams =>", feeParams);
-
-  const { customerFee, freeDelivery, additionalAmountForFree, discountSaved } =
-    calculateDeliveryFee(feeParams);
-
-  console.log("[CheckoutDeliveryInfo] feeResult =>", {
-    customerFee,
-    freeDelivery,
-    additionalAmountForFree,
-    discountSaved,
-  });
+  /* If parent passed the fee we trust it; call helper only to know
+     freeDelivery / additionalAmountForFree flags for the UI.         */
+  const { freeDelivery, additionalAmountForFree, discountSaved } =
+    calculateDeliveryFee({ ...feeParams });
 
   return (
     <div className={styles.container}>
       <h3 className={styles.title}>Delivery Fee Details</h3>
+
       {freeDelivery ? (
         <div>
           <p className={styles.text}>You qualify for free delivery!</p>
@@ -62,9 +43,12 @@ const CheckoutDeliveryInfo: React.FC<CheckoutDeliveryInfoProps> = ({
         </div>
       ) : (
         <div>
-          <p className={styles.text}>Your delivery fee: ${customerFee.toFixed(2)}</p>
           <p className={styles.text}>
-            Add ${additionalAmountForFree.toFixed(2)} more to qualify for free delivery.
+            Your delivery fee: ${customerFee.toFixed(2)}
+          </p>
+          <p className={styles.text}>
+            Add ${additionalAmountForFree.toFixed(2)} more to unlock free
+            delivery.
           </p>
         </div>
       )}

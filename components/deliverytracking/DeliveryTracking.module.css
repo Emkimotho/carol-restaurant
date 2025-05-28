@@ -1,162 +1,165 @@
 .container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - var(--navbar-height));
-    background: var(--light-gray);
-    padding: 20px;
-  }
-  
-  .trackingCard {
-    background: var(--white);
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: var(--box-shadow-primary);
-    text-align: center;
-    animation: fadeIn 0.8s ease-out;
-    max-width: 600px;
-    width: 100%;
-  }
-  
-  .title {
-    font-family: var(--font-heading);
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-    color: var(--primary-color);
-  }
-  
-  .orderId {
-    font-size: 1.1rem;
-    margin-bottom: 1.5rem;
-    color: var(--dark-gray);
-  }
-  
-  .progressBar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 2rem 0;
-  }
-  
-  .stepContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    position: relative;
-    min-height: 100px; /* Ensures consistent vertical spacing */
-    padding-bottom: 20px; /* Allows space for label */
-  }
-  
-  .circle {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: var(--gray);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--white);
-    font-weight: bold;
-    z-index: 2;
-    transition: background-color 0.3s ease;
-  }
-  
-  .circle.active {
-    background-color: var(--primary-color);
-  }
-  
-  /* Animate chef for "In Progress" (step index 1) */
-  .animateChef {
-    animation: flipBurgers 1s ease-in-out infinite alternate;
-  }
-  
-  @keyframes flipBurgers {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(15deg); }
-  }
-  
-  /* Animate driver for "Picked Up by Driver" (step index 3) */
-  .animateDriver {
-    animation: bounceDriver 1s ease-in-out infinite;
-  }
-  
-  @keyframes bounceDriver {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-  }
-  
-  .line {
-    position: absolute;
-    top: 25px; /* Centers line relative to circle's center */
-    left: 50%;
-    width: calc(100% + 10px);
-    height: 4px;
-    background-color: var(--gray);
-    z-index: 1;
-    transition: background-color 0.3s ease;
-  }
-  
-  .line.active {
-    background-color: var(--primary-color);
-  }
-  
-  /* Label container for uniform text sizing and wrapping */
-  .labelContainer {
-    max-width: 80px;
-    margin-top: 0.5rem;
-    padding: 0 5px;
-  }
-  
-  .stepLabel {
-    font-size: 0.9rem;
-    color: var(--dark-gray);
-    word-wrap: break-word;
-    text-align: center;
-  }
-  
-  .icon {
-    font-size: 1.8rem;
-    line-height: 1;
-  }
-  
-  .statusMessage {
-    font-size: 1.2rem;
-    color: var(--foreground);
-    margin-bottom: 1.5rem;
-  }
-  
-  .contact {
-    font-size: 1rem;
-    color: var(--gray);
-    margin-bottom: 1.5rem;
-  }
-  
-  .navigation {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-  }
-  
-  .navButton {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    border: none;
-    border-radius: 5px;
-    background-color: var(--secondary-color);
-    color: var(--white);
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-  }
-  
-  .navButton:hover {
-    background-color: var(--secondary-color-hover);
-    transform: translateY(-3px);
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--navbar-height));
+  background: var(--light-gray);
+  padding: 20px;
+}
+
+.trackingCard {
+  background: var(--white);
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: var(--box-shadow-primary);
+  text-align: center;
+  animation: fadeIn 0.8s ease-out;
+  max-width: 600px;
+  width: 100%;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+.orderId {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: var(--dark-gray);
+}
+
+.progressBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2rem 0;
+}
+
+.stepContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  position: relative;
+  min-height: 100px; /* Ensures consistent vertical spacing */
+  padding-bottom: 20px; /* Allows space for label */
+}
+
+.circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: var(--gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-weight: bold;
+  z-index: 2;
+  transition: background-color 0.3s ease;
+}
+
+.circle.active {
+  background-color: var(--primary-color);
+}
+
+/* Animate chef for "In Progress" (step index 1) */
+.animateChef {
+  animation: flipBurgers 1s ease-in-out infinite alternate;
+}
+
+@keyframes flipBurgers {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(15deg); }
+}
+
+/* Animate driver for "Picked Up by Driver" (step index 3) */
+.animateDriver {
+  animation: bounceDriver 1s ease-in-out infinite;
+}
+
+@keyframes bounceDriver {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.line {
+  position: absolute;
+  top: 25px; /* Centers line relative to circle's center */
+  left: 50%;
+  width: calc(100% + 10px);
+  height: 4px;
+  background-color: var(--gray);
+  z-index: 1;
+  transition: background-color 0.3s ease;
+}
+
+.line.active {
+  background-color: var(--primary-color);
+}
+
+/* Label container for uniform text sizing and wrapping */
+.labelContainer {
+  max-width: 80px;
+  margin-top: 0.5rem;
+  padding: 0 5px;
+}
+
+.stepLabel {
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+  word-wrap: break-word;
+  text-align: center;
+}
+
+.icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.statusMessage {
+  font-size: 1.2rem;
+  color: var(--foreground);
+  margin-bottom: 1.5rem;
+}
+
+.contact {
+  font-size: 1rem;
+  color: var(--gray);
+  margin-bottom: 1.5rem;
+}
+
+.navigation {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center; /* Vertically centers buttons in the nav row */
+}
+
+.navButton {
+  display: inline-flex;           /* Ensures icon/text inside button align perfectly */
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 5px;
+  background-color: var(--secondary-color);
+  color: var(--white);
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.navButton:hover {
+  background-color: var(--secondary-color-hover);
+  transform: translateY(-3px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}

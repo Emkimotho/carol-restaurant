@@ -1,48 +1,76 @@
-'use client';
+"use client";
 
-import React, { createContext, useState, ReactNode, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+  useState,
+} from "react";
+import { useSession } from "next-auth/react";
 
 export interface User {
   id: number;
   name: string;
   email: string;
-  roles: string[]; // e.g., ["ADMIN", "CUSTOMER"]
-  isVerified: boolean; // Newly added property to check email verification status
-  // Additional properties as needed
+  roles: string[];
+  isVerified: boolean;
+  streetAddress?: string;     // <<< CHANGED
+  aptSuite?:     string;       // <<< CHANGED
+  city?:         string;       // <<< CHANGED
+  state?:        string;       // <<< CHANGED
+  zip?:          string;       // <<< CHANGED
+  country?:      string;       // <<< CHANGED
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (userData: User) => void;
+  login: (u: User) => void;
   logout: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const { data: session } = useSession();
   const [user, setUser] = useState<User | null>(null);
 
-  // Load user from localStorage on mount (optional)
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    if (session?.user) {
+      // CAST session.user to `any` so TS knows we have the extra address fields
+      const su = session.user as any;
+      const id = parseInt(su.id, 10);
+
+      setUser({
+        id,
+        name:         su.name         || "",
+        email:        su.email        || "",
+        roles:        su.roles        || [],
+        isVerified:   su.isVerified   || false,
+        streetAddress: su.streetAddress || "",    // <<< CHANGED
+        aptSuite:      su.aptSuite      || "",    // <<< CHANGED
+        city:          su.city          || "",    // <<< CHANGED
+        state:         su.state         || "",    // <<< CHANGED
+        zip:           su.zip           || "",    // <<< CHANGED
+        country:       su.country       || "",    // <<< CHANGED
+      });
+    } else {
+      setUser(null);
     }
-  }, []);
+  }, [session]);
 
-  const login = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-  };
+  const login  = (u: User) => setUser(u);
+  const logout = () => setUser(null);
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+}

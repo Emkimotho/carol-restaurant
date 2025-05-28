@@ -1,8 +1,8 @@
+// File: app/login/page.tsx
+
 import React from "react";
-import Login from "@/components/Auth/Login";
+import Login from "@/app/components/Auth/Login";
 
-const LoginPage: React.FC = () => {
+export default function LoginPage() {
   return <Login />;
-};
-
-export default LoginPage;
+}

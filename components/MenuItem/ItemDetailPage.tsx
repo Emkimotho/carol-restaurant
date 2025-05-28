@@ -1,15 +1,22 @@
-// File: components/ItemDetailPage.tsx
-
 "use client";
 
-import React, { useState, useEffect, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  ChangeEvent,
+} from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { CartContext } from "@/contexts/CartContext";
+import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import { toast } from "react-toastify";
-import styles from "./ItemDetailPage.module.css";
 
-// Types
+import { CartContext }  from "@/contexts/CartContext";
+import { OrderContext } from "@/contexts/OrderContext";
+import styles           from "./ItemDetailPage.module.css";
+
 import {
   MenuItem as MenuItemType,
   MenuItemOptionGroup,
@@ -22,7 +29,7 @@ interface ItemDetailPageProps {
   desserts?: MenuItemType[];
   snacks?: MenuItemType[];
   softDrinks?: MenuItemType[];
-  isPreview?: boolean; // If true, disable cart functionality
+  isPreview?: boolean;
 }
 
 export default function ItemDetailPage({
@@ -33,38 +40,37 @@ export default function ItemDetailPage({
   softDrinks = [],
   isPreview = false,
 }: ItemDetailPageProps) {
-  const router = useRouter();
-  const { addToCart } = useContext(CartContext)!;
+  const router               = useRouter();
+  const searchParams         = useSearchParams();
+  const { addToCart }        = useContext(CartContext)!;
+  const { order, setOrder }  = useContext(OrderContext)!;
 
-  // States
-  const [quantity, setQuantity] = useState<number>(1);
-  const [spiceLevel, setSpiceLevel] = useState<string>("No Spice");
+  const [quantity, setQuantity]                       = useState<number>(1);
+  const [spiceLevel, setSpiceLevel]                   = useState<string>("No Spice");
   const [specialInstructions, setSpecialInstructions] = useState<string>("");
+
   const [selectedOptions, setSelectedOptions] = useState<{
     [groupId: string]: {
       selectedChoiceIds: string[];
-      nestedSelections: { [choiceId: string]: string[] };
+      nestedSelections:  { [choiceId: string]: string[] };
     };
   }>({});
 
-  // On item change, reset states
+  // Reset selections when item changes
   useEffect(() => {
     setQuantity(1);
     setSpiceLevel("No Spice");
     setSpecialInstructions("");
 
-    if (item.optionGroups) {
+    if (item.optionGroups?.length) {
       const init: {
         [groupId: string]: {
           selectedChoiceIds: string[];
-          nestedSelections: { [choiceId: string]: string[] };
+          nestedSelections:  { [choiceId: string]: string[] };
         };
       } = {};
-      item.optionGroups.forEach((group: MenuItemOptionGroup) => {
-        init[group.id] = {
-          selectedChoiceIds: [],
-          nestedSelections: {},
-        };
+      item.optionGroups.forEach((group) => {
+        init[group.id] = { selectedChoiceIds: [], nestedSelections: {} };
       });
       setSelectedOptions(init);
     } else {
@@ -72,206 +78,206 @@ export default function ItemDetailPage({
     }
   }, [item]);
 
-  // ---------- HANDLERS ----------
-
-  // For top-level option groups
+  // Handle choice selection
   function handleOptionChange(
     group: MenuItemOptionGroup,
     choice: MenuOptionChoice,
     checked: boolean
   ) {
     setSelectedOptions((prev) => {
-      const groupState = prev[group.id] || {
+      const gState = prev[group.id] || {
         selectedChoiceIds: [],
-        nestedSelections: {},
+        nestedSelections : {},
       };
-      let newSelections = [...groupState.selectedChoiceIds];
+      let nextSel = [...gState.selectedChoiceIds];
 
       if (group.optionType === "single-select" || group.optionType === "dropdown") {
-        newSelections = checked ? [choice.id] : [];
+        nextSel = checked ? [choice.id] : [];
       } else {
-        // multi-select: allow multiple selections if within max limit.
         if (checked) {
-          if (newSelections.length < (group.maxAllowed || Infinity)) {
-            newSelections.push(choice.id);
-          } else {
+          if (nextSel.length >= (group.maxAllowed ?? Infinity)) {
             toast.error(`You can select up to ${group.maxAllowed} item(s).`);
             return prev;
           }
+          nextSel.push(choice.id);
         } else {
-          newSelections = newSelections.filter((id) => id !== choice.id);
+          nextSel = nextSel.filter((id) => id !== choice.id);
         }
       }
 
       return {
         ...prev,
-        [group.id]: { ...groupState, selectedChoiceIds: newSelections },
+        [group.id]: { ...gState, selectedChoiceIds: nextSel },
       };
     });
   }
 
-  // For nested options within a group.
+  // Handle nested option selection
   function handleNestedOptionChange(
     groupId: string,
     parentChoiceId: string,
-    nestedOptionId: string,
+    nestedId: string,
     checked: boolean,
-    nestedMaxAllowed?: number
+    nestedMax?: number
   ) {
     setSelectedOptions((prev) => {
-      const groupState = prev[groupId] || {
+      const gState = prev[groupId] || {
         selectedChoiceIds: [],
-        nestedSelections: {},
+        nestedSelections : {},
       };
-      const currentNested = groupState.nestedSelections[parentChoiceId] || [];
-      let newNested = [...currentNested];
+      const current = gState.nestedSelections[parentChoiceId] || [];
+      let next = [...current];
 
       if (checked) {
-        if (newNested.length < (nestedMaxAllowed || Infinity)) {
-          newNested.push(nestedOptionId);
-        } else {
-          toast.error(`You can select up to ${nestedMaxAllowed} nested options.`);
+        if (next.length >= (nestedMax ?? Infinity)) {
+          toast.error(`You can select up to ${nestedMax} nested options.`);
           return prev;
         }
+        next.push(nestedId);
       } else {
-        newNested = newNested.filter((id) => id !== nestedOptionId);
+        next = next.filter((id) => id !== nestedId);
       }
 
       return {
         ...prev,
         [groupId]: {
-          ...groupState,
+          ...gState,
           nestedSelections: {
-            ...groupState.nestedSelections,
-            [parentChoiceId]: newNested,
+            ...gState.nestedSelections,
+            [parentChoiceId]: next,
           },
         },
       };
     });
   }
 
-  /**
-   * Calculates the total price for the item, including any price adjustments from options.
-   */
+  // Compute total price
   function calculateTotalPrice(): string {
     let total = item.price;
+
     if (item.optionGroups && selectedOptions) {
-      item.optionGroups.forEach((group: MenuItemOptionGroup) => {
+      item.optionGroups.forEach((group) => {
         const gState = selectedOptions[group.id];
-        if (gState && gState.selectedChoiceIds.length) {
-          group.choices.forEach((choice: MenuOptionChoice) => {
-            if (gState.selectedChoiceIds.includes(choice.id)) {
-              // If a nested group exists, add nested choice adjustments
-              if (choice.nestedOptionGroup) {
-                const nestedSelected = gState.nestedSelections[choice.id] || [];
-                choice.nestedOptionGroup.choices.forEach((nested) => {
-                  if (nestedSelected.includes(nested.id) && nested.priceAdjustment) {
-                    total += nested.priceAdjustment;
-                  }
-                });
-              } else {
-                if (choice.priceAdjustment) {
-                  total += choice.priceAdjustment;
-                }
+        if (!gState) return;
+
+        group.choices.forEach((choice) => {
+          if (!gState.selectedChoiceIds.includes(choice.id)) return;
+
+          if (choice.nestedOptionGroup) {
+            const nestedChosen = gState.nestedSelections[choice.id] || [];
+            choice.nestedOptionGroup.choices.forEach((nested) => {
+              if (nestedChosen.includes(nested.id)) {
+                total += nested.priceAdjustment ?? 0;
               }
-            }
-          });
-        }
+            });
+          } else {
+            total += choice.priceAdjustment ?? 0;
+          }
+        });
       });
     }
+
     return (total * quantity).toFixed(2);
   }
 
-  // Validate that minimum selections are met.
-  function canAddToCart() {
-    if (!item.optionGroups) return true;
+  // Validate selections before adding
+  function canAddToCart(): boolean {
+    if (!item.optionGroups?.length) return true;
+
     for (const group of item.optionGroups) {
       const gState = selectedOptions[group.id];
-      const selectedCount = gState ? gState.selectedChoiceIds.length : 0;
-      if (selectedCount < group.minRequired) {
-        toast.error(`Please select at least ${group.minRequired} option(s) for ${group.title}.`);
+      const selCnt = gState?.selectedChoiceIds.length ?? 0;
+
+      if (selCnt < group.minRequired) {
+        toast.error(
+          `Please select at least ${group.minRequired} option(s) for ${group.title}.`
+        );
         return false;
       }
-      if (group.choices) {
-        for (const choice of group.choices) {
-          if (choice.nestedOptionGroup && gState?.selectedChoiceIds.includes(choice.id)) {
-            const nestedSelected = gState.nestedSelections[choice.id] || [];
-            if (nestedSelected.length < choice.nestedOptionGroup.minRequired) {
-              toast.error(`Please select at least ${choice.nestedOptionGroup.minRequired} option(s) for ${choice.label}.`);
-              return false;
-            }
+
+      for (const ch of group.choices) {
+        if (
+          ch.nestedOptionGroup &&
+          gState?.selectedChoiceIds.includes(ch.id)
+        ) {
+          const nestCnt = gState.nestedSelections[ch.id]?.length ?? 0;
+          if (nestCnt < ch.nestedOptionGroup.minRequired) {
+            toast.error(
+              `Please select at least ${ch.nestedOptionGroup.minRequired} option(s) for ${ch.label}.`
+            );
+            return false;
           }
         }
       }
     }
+
     return true;
   }
 
-  // Handle adding the item to the cart.
+  // Add item to cart
   function handleAddToCart() {
     if (isPreview) {
-      toast.info("Preview mode: Add to cart is disabled.");
-      return;
+      return toast.info("Preview mode: Add to cart is disabled.");
     }
-    if (!canAddToCart()) {
-      return;
-    }
+    if (!canAddToCart()) return;
 
-    // Build main cart item including the clover item id and stock.
-    const mainCartItem = {
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      price: item.price,
-      image: item.image,
-      hasSpiceLevel: item.hasSpiceLevel,
-      optionGroups: item.optionGroups || [],
+    const provenance = (searchParams.get("from") || "").toLowerCase();
+    const sourceMenu =
+      provenance === "golf"
+        ? "GOLF"
+        : provenance === "main"
+        ? "MAIN"
+        : undefined;
+
+    const cartBase = {
+      id:             item.id,
+      title:          item.title,
+      description:    item.description,
+      price:          item.price,
+      image:          item.image,
+      hasSpiceLevel:  item.hasSpiceLevel,
+      optionGroups:   item.optionGroups || [],
       showInGolfMenu: item.showInGolfMenu,
-      category: item.category,
+      category:       item.category,
       specialInstructions,
-      cloverItemId: item.cloverItemId || null, // Ensure this is set (if available)
-      stock: item.stock || 0,                 // Include stock (defaults to 0 if not set)
+      cloverItemId:   item.cloverItemId ?? undefined,
+      stock:          item.stock,
+      isAlcohol:      item.isAlcohol,
     };
 
-    // Call addToCart from the CartContext.
     addToCart(
-      mainCartItem,
+      cartBase,
       quantity,
       specialInstructions,
       item.hasSpiceLevel ? spiceLevel : undefined,
-      selectedOptions
+      selectedOptions,
+      sourceMenu
     );
+
+    if (item.isAlcohol) {
+      setOrder(prev => ({ ...prev, containsAlcohol: true }));
+    }
 
     toast.success("Item added to cart!");
   }
 
-  // Basic quantity adjustments.
-  function handleQuantityIncrease() {
-    setQuantity((prev) => prev + 1);
-  }
-  function handleQuantityDecrease() {
-    setQuantity((prev) => Math.max(1, prev - 1));
-  }
+  const handleQuantityIncrease = () => setQuantity(q => q + 1);
+  const handleQuantityDecrease = () => setQuantity(q => (q > 1 ? q - 1 : 1));
 
-  // Return to the menu.
-  function handleBackToMenu() {
-    if (isPreview) {
-      toast.info("Preview mode: 'Back to Menu' is disabled.");
-      return;
-    }
-    router.push("/menu");
-  }
+  const handleBackToMenu = () => {
+    if (isPreview) return toast.info("Preview mode: 'Back' disabled.");
+    router.back();
+  };
 
-  // Filter out recommendations
-  const filteredDrinks = recommendedDrinks?.filter((rec) => rec.id !== item.id) || [];
-  const filteredDesserts = desserts?.filter((rec) => rec.id !== item.id) || [];
-  const filteredSnacks = snacks?.filter((rec) => rec.id !== item.id) || [];
-  const filteredSoftDrinks = softDrinks?.filter((rec) => rec.id !== item.id) || [];
+  const provenance      = (searchParams.get("from") || "").toLowerCase();
+  const filteredDrinks  = recommendedDrinks.filter(d => d.id !== item.id);
+  const filteredDessert = desserts.filter(d => d.id !== item.id);
+  const filteredSnacks  = snacks.filter(d => d.id !== item.id);
+  const filteredSoft    = softDrinks.filter(d => d.id !== item.id);
 
   return (
     <div className={styles.detailPageContainer}>
       <div className={styles.mainContent}>
-        {/* Image Section */}
         <div className={styles.imageContainer}>
           {item.image && (
             <Image
@@ -285,59 +291,70 @@ export default function ItemDetailPage({
           )}
         </div>
 
-        {/* Information Section */}
         <div className={styles.infoContainer}>
           <h1 className={styles.itemTitle}>{item.title}</h1>
-          {item.description && <p className={styles.itemDescription}>{item.description}</p>}
+          {item.description && (
+            <p className={styles.itemDescription}>{item.description}</p>
+          )}
           <p className={styles.price}>Price: ${item.price.toFixed(2)}</p>
 
-          {/* Option Groups */}
-          {item.optionGroups?.map((group: MenuItemOptionGroup) => {
+          {/* OPTION GROUPS */}
+          {item.optionGroups?.map((group) => {
             const gState = selectedOptions[group.id] || {
               selectedChoiceIds: [],
-              nestedSelections: {},
+              nestedSelections : {},
             };
+
             return (
               <div key={group.id} className={styles.optionGroup}>
                 <h4 className={styles.groupTitle}>
                   {group.title} (Select {group.minRequired}
                   {group.maxAllowed ? ` - ${group.maxAllowed}` : ""})
                 </h4>
+
                 {group.optionType === "dropdown" ? (
                   <select
                     className={styles.dropdownSelect}
                     value={gState.selectedChoiceIds[0] || ""}
                     onChange={(e) => {
-                      const choiceId = e.target.value;
-                      const choice = group.choices.find((c) => c.id === choiceId);
-                      if (choice) handleOptionChange(group, choice, true);
+                      const cid = e.target.value;
+                      const ch  = group.choices.find(c => c.id === cid);
+                      if (ch) handleOptionChange(group, ch, true);
                     }}
                   >
                     <option value="">-- Select --</option>
-                    {group.choices.map((choice: MenuOptionChoice) => (
-                      <option key={choice.id} value={choice.id}>
-                        {choice.label}
-                        {choice.nestedOptionGroup
+                    {group.choices.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                        {c.nestedOptionGroup
                           ? ""
-                          : choice.priceAdjustment
-                          ? ` (+$${choice.priceAdjustment.toFixed(2)})`
+                          : c.priceAdjustment
+                          ? ` (+$${c.priceAdjustment.toFixed(2)})`
                           : ""}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <div className={styles.optionList}>
-                    {group.choices.map((choice: MenuOptionChoice) => {
-                      const isSelected = gState.selectedChoiceIds.includes(choice.id);
+                    {group.choices.map(choice => {
+                      const isSel = gState.selectedChoiceIds.includes(choice.id);
                       return (
                         <div key={choice.id} className={styles.optionItem}>
                           <label>
                             <input
-                              type={group.optionType === "single-select" ? "radio" : "checkbox"}
+                              type={
+                                group.optionType === "single-select"
+                                  ? "radio"
+                                  : "checkbox"
+                              }
                               name={group.id}
-                              checked={isSelected}
-                              onChange={(e) =>
-                                handleOptionChange(group, choice, e.target.checked)
+                              checked={isSel}
+                              onChange={e =>
+                                handleOptionChange(
+                                  group,
+                                  choice,
+                                  e.target.checked
+                                )
                               }
                             />
                             {choice.label}
@@ -348,27 +365,31 @@ export default function ItemDetailPage({
                               : ""}
                           </label>
 
-                          {/* Nested Options */}
-                          {choice.nestedOptionGroup && isSelected && (
+                          {choice.nestedOptionGroup && isSel && (
                             <div className={styles.nestedOptionGroup}>
                               <h5 className={styles.nestedGroupTitle}>
                                 {choice.nestedOptionGroup.title} (Select{" "}
                                 {choice.nestedOptionGroup.minRequired}
                                 {choice.nestedOptionGroup.maxAllowed
                                   ? ` - ${choice.nestedOptionGroup.maxAllowed}`
-                                  : ""})
+                                  : ""}
+                                )
                               </h5>
-                              {choice.nestedOptionGroup.choices.map((nested) => {
-                                const nestedSelected =
+                              {choice.nestedOptionGroup.choices.map(nested => {
+                                const nestSel =
                                   gState.nestedSelections[choice.id] || [];
-                                const isNestedSelected = nestedSelected.includes(nested.id);
+                                const nestChecked = nestSel.includes(nested.id);
+
                                 return (
-                                  <div key={nested.id} className={styles.nestedOptionItem}>
+                                  <div
+                                    key={nested.id}
+                                    className={styles.nestedOptionItem}
+                                  >
                                     <label>
                                       <input
                                         type="checkbox"
-                                        checked={isNestedSelected}
-                                        onChange={(e) =>
+                                        checked={nestChecked}
+                                        onChange={e =>
                                           handleNestedOptionChange(
                                             group.id,
                                             choice.id,
@@ -397,59 +418,70 @@ export default function ItemDetailPage({
             );
           })}
 
-          {/* Spice Level */}
+          {/* SPICE LEVEL */}
           {item.hasSpiceLevel && (
             <div className={styles.spiceLevelContainer}>
               <label className={styles.spiceLabel}>Choose Spice Level:</label>
               <div className={styles.spiceOptions}>
-                {["No Spice", "Mild", "Medium", "Hot"].map((level) => (
+                {["No Spice", "Mild", "Medium", "Hot"].map(lvl => (
                   <button
-                    key={level}
-                    onClick={() => setSpiceLevel(level)}
+                    key={lvl}
+                    onClick={() => setSpiceLevel(lvl)}
                     className={
-                      spiceLevel === level ? styles.btnSelected : styles.btnOutline
+                      spiceLevel === lvl ? styles.btnSelected : styles.btnOutline
                     }
                   >
-                    {level}
+                    {lvl}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Quantity */}
+          {/* QUANTITY */}
           <div className={styles.quantityContainer}>
             <label className={styles.quantityLabel}>Quantity:</label>
             <div className={styles.quantityControls}>
-              <button onClick={handleQuantityDecrease} className={styles.btnCircle}>
-                -
+              <button
+                onClick={handleQuantityDecrease}
+                className={styles.btnCircle}
+              >
+                −
               </button>
               <span className={styles.quantityDisplay}>{quantity}</span>
-              <button onClick={handleQuantityIncrease} className={styles.btnCircle}>
+              <button
+                onClick={handleQuantityIncrease}
+                className={styles.btnCircle}
+              >
                 +
               </button>
             </div>
           </div>
 
-          {/* Special Instructions */}
+          {/* SPECIAL INSTRUCTIONS */}
           <div className={styles.specialInstructionsContainer}>
-            <label htmlFor="specialInstructions" className={styles.instructionsLabel}>
+            <label
+              htmlFor="specialInstructions"
+              className={styles.instructionsLabel}
+            >
               Special Instructions:
             </label>
             <textarea
               id="specialInstructions"
               maxLength={500}
               value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
+              onChange={e => setSpecialInstructions(e.target.value)}
               placeholder="Extra sauce, no onions, etc."
               className={styles.instructionsInput}
             />
           </div>
 
-          {/* Footer Buttons */}
+          {/* FOOTER BUTTONS */}
           <div className={styles.buttonsRow}>
             <div className={styles.cartActions}>
-              <div className={styles.totalPrice}>Total Price: ${calculateTotalPrice()}</div>
+              <div className={styles.totalPrice}>
+                Total Price: ${calculateTotalPrice()}
+              </div>
               <button
                 id="addToCartBtn"
                 className={styles.btnAddToCart}
@@ -459,37 +491,141 @@ export default function ItemDetailPage({
                 {isPreview ? "Preview Mode" : "Add to Cart"}
               </button>
             </div>
-            <button type="button" className={styles.btnBackToMenu} onClick={handleBackToMenu}>
-              {isPreview ? "Close Preview" : "Back to Menu"}
+            <button
+              type="button"
+              className={styles.btnBackToMenu}
+              onClick={handleBackToMenu}
+            >
+              {isPreview ? "Close Preview" : "Back"}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Recommended Items */}
-      {recommendedDrinks?.length > 0 && (
+      {/* RECOMMENDATIONS: Drinks */}
+      {filteredDrinks.length > 0 && (
         <div className={styles.recommendations}>
-          <h3 className={styles.recommendationsTitle}>You might also like...</h3>
+          <h3 className={styles.recommendationsTitle}>
+            You might also like…
+          </h3>
           <div className={styles.drinkList}>
-            {recommendedDrinks
-              .filter((rec) => rec.id !== item.id)
-              .map((rec) => (
-                <div
-                  key={rec.id}
-                  className={styles.drinkItem}
-                  onClick={() => router.push(`/menuitem/${rec.id}?highlight=true`)}
-                >
-                  <Image
-                    src={rec.image || ""}
-                    alt={rec.title}
-                    width={100}
-                    height={100}
-                    unoptimized
-                    className={styles.drinkImage}
-                  />
-                  <p className={styles.drinkTitle}>{rec.title}</p>
-                </div>
-              ))}
+            {filteredDrinks.map(rec => (
+              <div
+                key={rec.id}
+                className={styles.drinkItem}
+                onClick={() =>
+                  router.push(
+                    `/menuitem/${rec.id}?highlight=true&from=${provenance}`
+                  )
+                }
+              >
+                <Image
+                  src={rec.image || ""}
+                  alt={rec.title}
+                  width={100}
+                  height={100}
+                  unoptimized
+                  className={styles.drinkImage}
+                />
+                <p className={styles.drinkTitle}>{rec.title}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* RECOMMENDATIONS: Desserts */}
+      {filteredDessert.length > 0 && (
+        <div className={styles.recommendations}>
+          <h3 className={styles.recommendationsTitle}>
+            Desserts you might enjoy…
+          </h3>
+          <div className={styles.drinkList}>
+            {filteredDessert.map(rec => (
+              <div
+                key={rec.id}
+                className={styles.drinkItem}
+                onClick={() =>
+                  router.push(
+                    `/menuitem/${rec.id}?highlight=true&from=${provenance}`
+                  )
+                }
+              >
+                <Image
+                  src={rec.image || ""}
+                  alt={rec.title}
+                  width={100}
+                  height={100}
+                  unoptimized
+                  className={styles.drinkImage}
+                />
+                <p className={styles.drinkTitle}>{rec.title}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* RECOMMENDATIONS: Snacks */}
+      {filteredSnacks.length > 0 && (
+        <div className={styles.recommendations}>
+          <h3 className={styles.recommendationsTitle}>
+            Snack picks for you…
+          </h3>
+          <div className={styles.drinkList}>
+            {filteredSnacks.map(rec => (
+              <div
+                key={rec.id}
+                className={styles.drinkItem}
+                onClick={() =>
+                  router.push(
+                    `/menuitem/${rec.id}?highlight=true&from=${provenance}`
+                  )
+                }
+              >
+                <Image
+                  src={rec.image || ""}
+                  alt={rec.title}
+                  width={100}
+                  height={100}
+                  unoptimized
+                  className={styles.drinkImage}
+                />
+                <p className={styles.drinkTitle}>{rec.title}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* RECOMMENDATIONS: Soft Drinks */}
+      {filteredSoft.length > 0 && (
+        <div className={styles.recommendations}>
+          <h3 className={styles.recommendationsTitle}>
+            Soft drinks you might like…
+          </h3>
+          <div className={styles.drinkList}>
+            {filteredSoft.map(rec => (
+              <div
+                key={rec.id}
+                className={styles.drinkItem}
+                onClick={() =>
+                  router.push(
+                    `/menuitem/${rec.id}?highlight=true&from=${provenance}`
+                  )
+                }
+              >
+                <Image
+                  src={rec.image || ""}
+                  alt={rec.title}
+                  width={100}
+                  height={100}
+                  unoptimized
+                  className={styles.drinkImage}
+                />
+                <p className={styles.drinkTitle}>{rec.title}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}

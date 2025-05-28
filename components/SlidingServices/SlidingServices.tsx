@@ -1,8 +1,15 @@
+// File: components/SlidingServices.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaBuilding, FaUtensils, FaShippingFast, FaStore, FaSpa } from "react-icons/fa";
+import {
+  FaBuilding,
+  FaUtensils,
+  FaShippingFast,
+  FaStore,
+  FaSpa,
+} from "react-icons/fa";
 import styles from "./SlidingServices.module.css";
 
 interface Service {
@@ -16,83 +23,106 @@ const services: Service[] = [
     icon: <FaBuilding className={styles.serviceIcon} />,
     title: "Exclusive Event & Corporate Venue",
     description:
-      "Host your corporate meetings, private events, or special gatherings in our serene venue, complete with a stunning lake view and premium amenities within a prestigious golf club environment."
+      "Host your corporate meetings, private events, or special gatherings in our serene venue, complete with a stunning lake view and premium amenities within a prestigious golf club environment.",
   },
   {
     icon: <FaUtensils className={styles.serviceIcon} />,
     title: "Event and Corporate Catering",
-    description: "Enjoy delicious and customizable catering options tailored to suit any occasion."
+    description:
+      "Enjoy delicious and customizable catering options tailored to suit any occasion.",
   },
   {
     icon: <FaShippingFast className={styles.serviceIcon} />,
     title: "Lunch Deliveries",
-    description: "Experience fresh and timely lunch deliveries straight to your office or home."
+    description:
+      "Experience fresh and timely lunch deliveries straight to your office or home.",
   },
   {
     icon: <FaStore className={styles.serviceIcon} />,
     title: "Dine-In or Carry Out",
-    description: "Savor our exquisite meals in a relaxing atmosphere or opt for a convenient carry-out."
+    description:
+      "Savor our exquisite meals in a relaxing atmosphere or opt for a convenient carry-out.",
   },
   {
     icon: <FaSpa className={styles.serviceIcon} />,
     title: "Relaxing Atmosphere",
-    description: "Immerse yourself in a calming environment perfect for unwinding and enjoying quality time."
+    description:
+      "Immerse yourself in a calming environment perfect for unwinding and enjoying quality time.",
   },
   {
     icon: <FaUtensils className={styles.serviceIcon} />,
     title: "Online Ordering",
-    description: "Conveniently place your orders online with options for both pickup and delivery."
-  }
+    description:
+      "Conveniently place your orders online with options for both pickup and delivery.",
+  },
 ];
 
-// Framer Motion variants for sliding animation
+// Framer Motion variants for simple left–right sliding
 const slidingVariants = {
-  initial: (direction: number) => ({
-    x: direction > 0 ? 300 : -300,
-    opacity: 0
+  initial: (dir: number) => ({
+    x: dir > 0 ? 300 : -300,
+    opacity: 0,
   }),
   animate: {
     x: 0,
     opacity: 1,
-    transition: { duration: 0.8, ease: "easeInOut" }
+    transition: { duration: 0.8, ease: "easeInOut" },
   },
-  exit: (direction: number) => ({
-    x: direction > 0 ? -300 : 300,
+  exit: (dir: number) => ({
+    x: dir > 0 ? -300 : 300,
     opacity: 0,
-    transition: { duration: 0.8, ease: "easeInOut" }
-  })
+    transition: { duration: 0.8, ease: "easeInOut" },
+  }),
 };
 
 const SlidingServices: React.FC = () => {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
 
-  // Determine auto-advance delay: longer for long text slides.
+  // longer delay on the first (long) slide
   const getDelay = () =>
-    services[current].title === "Exclusive Event & Corporate Venue" ? 10000 : 5000;
+    services[current].title ===
+    "Exclusive Event & Corporate Venue"
+      ? 10000
+      : 5000;
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      handleNext();
+    const timer = setTimeout(() => {
+      setDirection(1);
+      setCurrent((idx) => (idx + 1) % services.length);
     }, getDelay());
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(timer);
   }, [current]);
-
-  const handleNext = () => {
-    setDirection(1);
-    setCurrent((prev) => (prev + 1) % services.length);
-  };
 
   const handlePrev = () => {
     setDirection(-1);
-    setCurrent((prev) => (prev - 1 + services.length) % services.length);
+    setCurrent((idx) =>
+      idx === 0 ? services.length - 1 : idx - 1
+    );
+  };
+
+  const handleNext = () => {
+    setDirection(1);
+    setCurrent((idx) => (idx + 1) % services.length);
   };
 
   return (
     <div className={styles.slidingServices}>
       <h2>Our Services</h2>
-      <div className={styles.sliderContainer}>
-        <AnimatePresence custom={direction} initial={false}>
+
+      {/* container fixed to prevent vertical shifts */}
+      <div
+        className={styles.sliderContainer}
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          minHeight: "220px",
+        }}
+      >
+        <AnimatePresence
+          custom={direction}
+          initial={false}
+        >
           <motion.div
             key={current}
             custom={direction}
@@ -100,6 +130,12 @@ const SlidingServices: React.FC = () => {
             initial="initial"
             animate="animate"
             exit="exit"
+            style={{
+              position: "absolute",
+              width: "100%",
+              top: 0,
+              left: 0,
+            }}
             className={styles.serviceItem}
           >
             {services[current].icon}
@@ -108,11 +144,18 @@ const SlidingServices: React.FC = () => {
           </motion.div>
         </AnimatePresence>
       </div>
+
       <div className={styles.controls}>
-        <button onClick={handlePrev} className={styles.controlButton}>
+        <button
+          onClick={handlePrev}
+          className={styles.controlButton}
+        >
           Prev
         </button>
-        <button onClick={handleNext} className={styles.controlButton}>
+        <button
+          onClick={handleNext}
+          className={styles.controlButton}
+        >
           Next
         </button>
       </div>

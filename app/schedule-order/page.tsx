@@ -27,11 +27,10 @@ const parseTime12Hour = (timeStr: string): { hour: number; minute: number } => {
 const ScheduleOrderPage: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // Get returnUrl from the query parameter; if none provided, default to "/menu".
-  // IMPORTANT: If your checkout is a parent route with query params, it should be like "/checkout?step=orderSummary"
   let returnUrl = searchParams.get("returnUrl") || "/menu";
-  
+
   // If the returnUrl mistakenly points to a sub-route that doesn't exist, correct it.
   if (returnUrl === "/checkout/summary") {
     returnUrl = "/checkout?step=orderSummary";
@@ -52,7 +51,7 @@ const ScheduleOrderPage: React.FC = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   // currentStep: 1 => Choose Day; 2 => Choose Time
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string>("");
 
   // Generate an array of the next 7 days based on opening hours.
   const daysToShow = Array.from({ length: 7 })
@@ -139,7 +138,8 @@ const ScheduleOrderPage: React.FC = () => {
         toast.error("Please select a valid time slot.");
         return;
       }
-      const scheduledDate = new Date(selectedDay);
+      // TS-safe assertion: we know selectedDay is non-null by this step
+      const scheduledDate = new Date(selectedDay!);
       const { hour, minute } = parseTime12Hour(selectedTime);
       scheduledDate.setHours(hour, minute, 0, 0);
 
@@ -148,7 +148,10 @@ const ScheduleOrderPage: React.FC = () => {
         toast.error("Please choose a future time slot.");
         return;
       }
-      console.log("[ScheduleOrderPage] Confirming schedule at", scheduledDate.toISOString());
+      console.log(
+        "[ScheduleOrderPage] Confirming schedule at",
+        scheduledDate.toISOString()
+      );
       // Save the scheduled time in OrderContext.
       setSchedule(scheduledDate.toISOString(), "scheduled_pickup");
 
@@ -170,7 +173,9 @@ const ScheduleOrderPage: React.FC = () => {
       return (
         <div className={styles.dayGrid}>
           {daysToShow.length === 0 && (
-            <p style={{ textAlign: "center" }}>No open days available in the next 7 days.</p>
+            <p style={{ textAlign: "center" }}>
+              No open days available in the next 7 days.
+            </p>
           )}
           {daysToShow.map((day) => {
             const isSelected =
@@ -178,7 +183,9 @@ const ScheduleOrderPage: React.FC = () => {
             return (
               <div
                 key={day.toDateString()}
-                className={`${styles.dayCard} ${isSelected ? styles.dayCardSelected : ""}`}
+                className={`${styles.dayCard} ${
+                  isSelected ? styles.dayCardSelected : ""
+                }`}
                 onClick={() => handleSelectDay(day)}
               >
                 {day.toLocaleDateString(undefined, {
@@ -197,7 +204,7 @@ const ScheduleOrderPage: React.FC = () => {
       return (
         <div className={styles.timeGrid}>
           {slots.map((slot) => {
-            const potentialDate = new Date(selectedDay);
+            const potentialDate = new Date(selectedDay!);
             const { hour, minute } = parseTime12Hour(slot);
             potentialDate.setHours(hour, minute, 0, 0);
             const isPast = potentialDate < new Date();
@@ -205,7 +212,9 @@ const ScheduleOrderPage: React.FC = () => {
             return (
               <div
                 key={slot}
-                className={`${styles.timeSlot} ${isPast ? styles.timeSlotClosed : ""} ${
+                className={`${styles.timeSlot} ${
+                  isPast ? styles.timeSlotClosed : ""
+                } ${
                   isSelected ? styles.timeSlotSelected : ""
                 }`}
                 onClick={() => {
@@ -224,11 +233,19 @@ const ScheduleOrderPage: React.FC = () => {
   return (
     <div className={styles.scheduleContainer}>
       <div className={styles.stepIndicator}>
-        <div className={`${styles.stepItem} ${currentStep === 1 ? styles.stepItemActive : ""}`}>
+        <div
+          className={`${styles.stepItem} ${
+            currentStep === 1 ? styles.stepItemActive : ""
+          }`}
+        >
           1
         </div>
         <div className={styles.stepLabel}>Choose Day</div>
-        <div className={`${styles.stepItem} ${currentStep === 2 ? styles.stepItemActive : ""}`}>
+        <div
+          className={`${styles.stepItem} ${
+            currentStep === 2 ? styles.stepItemActive : ""
+          }`}
+        >
           2
         </div>
         <div className={styles.stepLabel}>Choose Time</div>
@@ -236,7 +253,8 @@ const ScheduleOrderPage: React.FC = () => {
 
       <h2 className={styles.scheduleHeading}>Schedule Your Order</h2>
       <p className={styles.scheduleIntro}>
-        Select a future day and time—even if we are open now. Plan ahead for your convenience!
+        Select a future day and time—even if we are open now. Plan ahead for
+        your convenience!
       </p>
 
       {errorMsg && <div className={styles.errorMessage}>{errorMsg}</div>}

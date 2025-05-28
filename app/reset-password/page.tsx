@@ -1,90 +1,96 @@
-// File: 19thhole/app/reset-password/page.tsx
+// File: app/reset-password/page.tsx
+'use client';
 
-"use client";
+import React, { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import styles from './ResetPassword.module.css';
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import styles from "./ResetPassword.module.css";
-
-const ResetPasswordPage: React.FC = () => {
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+export default function ResetPasswordPage() {
+  const params = useSearchParams();
+  const token = params.get('token') ?? '';
+  const email = params.get('email') ?? '';
   const router = useRouter();
 
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  if (!token || !email) {
+    return (
+      <div className={styles.container}>
+        <p className={styles.error}>Invalid or expired reset link.</p>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setMessage("");
-
-    if (!token) {
-      setError("Reset token is missing.");
+    if (!newPassword || !confirmPassword) {
+      toast.error('Both password fields are required.');
       return;
     }
-
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+      toast.error('Passwords do not match.');
       return;
     }
 
+    setLoading(true);
     try {
-      const response = await fetch("/api/auth/updated-password", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword }),
+      const res = await fetch('/api/auth/updated-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, email, newPassword }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Reset failed.');
 
-      const data = await response.json();
-      if (response.ok) {
-        setMessage(data.message || "Password updated successfully.");
-        setTimeout(() => {
-          router.push("/login");
-        }, 3000);
-      } else {
-        setError(data.message || "Failed to update password.");
-      }
-    } catch (err) {
-      console.error("Reset password error:", err);
-      setError("Network error. Please try again later.");
+      toast.success('Password updated! Redirecting to login…');
+      setTimeout(() => router.push('/login'), 2000);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>Reset Your Password</h2>
-      {error && <p className={styles.error}>{error}</p>}
-      {message && <p className={styles.success}>{message}</p>}
       <form onSubmit={handleSubmit} className={styles.form}>
+        <h2 className={styles.heading}>Reset Your Password</h2>
+
         <div className={styles.formGroup}>
-          <label htmlFor="new-password">New Password</label>
+          <label htmlFor="newPassword">New Password</label>
           <input
+            id="newPassword"
             type="password"
-            id="new-password"
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={e => setNewPassword(e.target.value)}
             required
+            minLength={6}
           />
         </div>
+
         <div className={styles.formGroup}>
-          <label htmlFor="confirm-password">Confirm New Password</label>
+          <label htmlFor="confirmPassword">Confirm New Password</label>
           <input
+            id="confirmPassword"
             type="password"
-            id="confirm-password"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={e => setConfirmPassword(e.target.value)}
             required
+            minLength={6}
           />
         </div>
-        <button type="submit" className={styles.submitButton}>
-          Reset Password
+
+        <button
+          type="submit"
+          className={styles.submitButton}
+          disabled={loading}
+        >
+          {loading ? 'Resetting…' : 'Reset Password'}
         </button>
       </form>
     </div>
   );
-};
-
-export default ResetPasswordPage;
+}

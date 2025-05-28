@@ -1,11 +1,29 @@
-// File: contexts/CartContext.tsx
+/* =================================================================== */
+/*  File: contexts/CartContext.tsx                                     */
+/* ------------------------------------------------------------------- */
+/*  • Tracks cart state, saved‑for‑later items, schedule & menu‑type.  */
+/*  • NEW getTotalPrice():                                             */
+/*      – Adds parent priceAdjustment only when that parent has        */
+/*        NO nestedOptionGroup.                                        */
+/*      – Always adds the priceAdjustments for any selected nested     */
+/*        choices.                                                     */
+/* =================================================================== */
+
 "use client";
 
-import React, { createContext, useState, ReactNode, useEffect } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { v4 as uuidv4 } from "uuid";
-import { CartItem } from "@/utils/types";
+import { CartItem }     from "@/utils/types";
 
-// -- Type for selected options on a cart item.
+/* ------------------------------------------------------------------ */
+/*  Helper types                                                      */
+/* ------------------------------------------------------------------ */
 interface SelectedOptions {
   [groupId: string]: {
     selectedChoiceIds: string[];
@@ -13,239 +31,295 @@ interface SelectedOptions {
   };
 }
 
-// -- Order status types.
 export type OrderStatus = "none" | "asap" | "scheduled";
+export type MenuType    = "MAIN" | "GOLF" | "MIXED" | null;
 
-// -- Cart context type including state and functions.
+/* ------------------------------------------------------------------ */
 export interface CartContextType {
-  cartItems: CartItem[];
-  savedItems: CartItem[];
-  isSidebarCartOpen: boolean;
-  orderStatus: OrderStatus;
-  scheduledTime: string | null; // ISO timestamp
+  /* state */
+  cartItems:           CartItem[];
+  savedItems:          CartItem[];
+
+  orderStatus:         OrderStatus;
+  scheduledTime:       string | null;
+  setOrderStatus:      (s: OrderStatus)   => void;
+  setScheduledTime:    (t: string|null)   => void;
+
+  /* menu flags */
+  menuType:            MenuType;
+  isGolfOrder:         boolean;
+
+  /* cart operations */
   addToCart: (
     item: Omit<CartItem, "cartItemId" | "quantity" | "selectedOptions">,
     quantity: number,
     specialInstructions: string,
     spiceLevel?: string,
-    selectedOptions?: SelectedOptions
+    selectedOptions?: SelectedOptions,
+    sourceMenu?: "MAIN" | "GOLF"
   ) => void;
-  removeFromCart: (cartItemId: string) => void;
-  increaseQuantity: (cartItemId: string) => void;
-  decreaseQuantity: (cartItemId: string) => void;
-  updateCartItem: (updatedItem: CartItem) => void;
-  getTotalPrice: () => number;
-  openSidebarCart: () => void;
-  closeSidebarCart: () => void;
-  clearCart: () => void;
-  moveToSaved: (cartItemId: string) => void;
-  moveBackToCart: (cartItemId: string) => void;
-  removeFromSaved: (cartItemId: string) => void;
-  setOrderStatus: (status: OrderStatus) => void;
-  setScheduledTime: (time: string | null) => void;
+  removeFromCart:      (id: string)   => void;
+  increaseQuantity:    (id: string)   => void;
+  decreaseQuantity:    (id: string)   => void;
+  updateCartItem:      (it: CartItem) => void;
+  clearCart:           ()             => void;
+
+  /* saved‑for‑later */
+  moveToSaved:         (id: string)   => void;
+  moveBackToCart:      (id: string)   => void;
+  removeFromSaved:     (id: string)   => void;
+
+  /* utils */
+  getTotalPrice:       () => number;
 }
 
-// -- Create the CartContext.
-export const CartContext = createContext<CartContextType | undefined>(undefined);
+export const CartContext =
+  createContext<CartContextType | undefined>(undefined);
 
-// -- Local Storage Keys.
-const LOCAL_STORAGE_CART_KEY = "cartItems";
-const LOCAL_STORAGE_ORDER_STATUS_KEY = "orderStatus";
-const LOCAL_STORAGE_SCHEDULED_TIME_KEY = "scheduledTime";
+/* ------------------------------------------------------------------ */
+/*           local‑storage keys                                        */
+/* ------------------------------------------------------------------ */
+const LS_CART   = "cartItems";
+const LS_STATUS = "orderStatus";
+const LS_TIME   = "scheduledTime";
+const LS_MENU   = "menuType";
 
-// -- CartProvider Props.
-interface CartProviderProps {
-  children: ReactNode;
-}
+interface CartProviderProps { children: ReactNode; }
 
-export function CartProvider({ children }: CartProviderProps) {
-  // -- Lazy initializer for cart items.
-  const getInitialCart = (): CartItem[] => {
-    if (typeof window !== "undefined") {
-      const storedCart = localStorage.getItem(LOCAL_STORAGE_CART_KEY);
-      if (storedCart) {
-        try {
-          return JSON.parse(storedCart);
-        } catch (error) {
-          console.error("Error parsing cart from localStorage", error);
-        }
-      }
+export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
+  /* ------------ hydrate cart (client only) ------------- */
+  const initCart = (): CartItem[] => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem(LS_CART);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
     }
-    return [];
   };
 
-  // -- State variables.
-  const [cartItems, setCartItems] = useState<CartItem[]>(getInitialCart());
-  const [savedItems, setSavedItems] = useState<CartItem[]>([]);
-  const [isSidebarCartOpen, setIsSidebarCartOpen] = useState<boolean>(false);
-  const [orderStatus, setOrderStatus] = useState<OrderStatus>("none");
-  const [scheduledTime, setScheduledTime] = useState<string | null>(null);
-  const [hasMounted, setHasMounted] = useState(false);
+  /* ------------ infer / restore menu‑type --------------- */
+  const initMenuType = (): MenuType => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = localStorage.getItem(LS_MENU) as MenuType | null;
+      if (stored) return stored;
+      const path = window.location.pathname.toLowerCase();
+      return path.includes("/golf") ? "GOLF" : "MAIN";
+    } catch {
+      return null;
+    }
+  };
 
-  // -- On mount, rehydrate orderStatus and scheduledTime from localStorage.
+  /* ----------------------- state ----------------------- */
+  const [cartItems, setCartItems]         = useState<CartItem[]>(initCart);
+  const [savedItems, setSavedItems]       = useState<CartItem[]>([]);
+
+  const [orderStatus, setOrderStatus]     = useState<OrderStatus>("none");
+  const [scheduledTime, setScheduledTime] = useState<string|null>(null);
+
+  const [menuType, setMenuType]           = useState<MenuType>(initMenuType);
+  const [isGolfOrder, setIsGolfOrder]     = useState(
+    initMenuType() === "GOLF" || initMenuType() === "MIXED"
+  );
+
+  /* --------------- load status / time ------------------ */
   useEffect(() => {
-    setHasMounted(true);
     if (typeof window !== "undefined") {
-      const savedStatus = localStorage.getItem(LOCAL_STORAGE_ORDER_STATUS_KEY);
-      const savedTime = localStorage.getItem(LOCAL_STORAGE_SCHEDULED_TIME_KEY);
-      if (savedStatus) setOrderStatus(savedStatus as OrderStatus);
-      if (savedTime) setScheduledTime(savedTime);
+      const st = localStorage.getItem(LS_STATUS);
+      const tm = localStorage.getItem(LS_TIME);
+      if (st) setOrderStatus(st as OrderStatus);
+      if (tm) setScheduledTime(tm);
     }
   }, []);
 
-  // -- Persist cartItems to localStorage.
+  /* -------------- persist cart array ------------------- */
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(LOCAL_STORAGE_CART_KEY, JSON.stringify(cartItems));
-    }
+    localStorage.setItem(LS_CART, JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // -- Persist orderStatus and scheduledTime to localStorage.
+  /* -------------- persist status/time ------------------ */
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(LOCAL_STORAGE_ORDER_STATUS_KEY, orderStatus);
-      if (scheduledTime) {
-        localStorage.setItem(LOCAL_STORAGE_SCHEDULED_TIME_KEY, scheduledTime);
-      } else {
-        localStorage.removeItem(LOCAL_STORAGE_SCHEDULED_TIME_KEY);
-      }
+    localStorage.setItem(LS_STATUS, orderStatus);
+    if (scheduledTime) {
+      localStorage.setItem(LS_TIME, scheduledTime);
+    } else {
+      localStorage.removeItem(LS_TIME);
     }
   }, [orderStatus, scheduledTime]);
 
-  // -- Check every minute if the scheduled time has expired (15 minutes threshold).
+  /* -------------- persist + flag menu‑type ------------- */
   useEffect(() => {
-    const timer = setInterval(() => {
+    localStorage.setItem(LS_MENU, menuType || "");
+    setIsGolfOrder(menuType === "GOLF" || menuType === "MIXED");
+  }, [menuType]);
+
+  /* ---------- 15‑minute stale‑guard on schedule -------- */
+  useEffect(() => {
+    const id = setInterval(() => {
       if (orderStatus === "scheduled" && scheduledTime) {
-        const scheduledDate = new Date(scheduledTime);
-        const now = new Date();
-        if (now.getTime() - scheduledDate.getTime() > 15 * 60 * 1000) {
+        const diff = Date.now() - new Date(scheduledTime).getTime();
+        if (diff > 15 * 60_000) {
           setOrderStatus("none");
           setScheduledTime(null);
         }
       }
-    }, 60000);
-    return () => clearInterval(timer);
+    }, 60_000);
+    return () => clearInterval(id);
   }, [orderStatus, scheduledTime]);
 
-  // -- Cart functions.
+  /* ---------------- addToCart (core) ------------------- */
   const addToCart = (
     item: Omit<CartItem, "cartItemId" | "quantity" | "selectedOptions">,
     quantity: number,
     specialInstructions: string,
-    spiceLevel?: string,
-    selectedOptions?: SelectedOptions
+    spiceLevel: string = "",
+    selectedOptions: SelectedOptions = {},
+    sourceMenu?: "MAIN" | "GOLF"
   ) => {
-    // When adding an item to the cart, include all properties from the item.
-    // This will include `cloverItemId` if present.
-    const cartItemId = uuidv4();
-    const newItem: CartItem = {
-      cartItemId,
+    const intrinsic: MenuType =
+      // @ts‑ignore – category may be undefined
+      item.category?.type === "GolfMenu" ? "GOLF" : "MAIN";
+
+    let inferredFromPath: MenuType | undefined;
+    if (!sourceMenu && typeof window !== "undefined") {
+      const path = window.location.pathname.toLowerCase();
+      inferredFromPath = path.includes("/golf") ? "GOLF" : "MAIN";
+    }
+
+    const incoming: MenuType =
+      sourceMenu ?? inferredFromPath ?? intrinsic;
+
+    let newMode: MenuType = incoming;
+    if (menuType && menuType !== incoming) newMode = "MIXED";
+
+    const cartItem: CartItem = {
+      cartItemId: uuidv4(),
       ...item,
       quantity,
       specialInstructions,
-      spiceLevel: spiceLevel || "",
-      selectedOptions: selectedOptions || {},
+      spiceLevel,
+      selectedOptions,
     };
-    setCartItems((prev) => [...prev, newItem]);
+
+    setCartItems(prev => [...prev, cartItem]);
+    setMenuType(newMode);
   };
 
-  const removeFromCart = (cartItemId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
-  };
+  /* ---------------- item mutators ---------------------- */
+  const removeFromCart = (id: string) =>
+    setCartItems(prev => prev.filter(i => i.cartItemId !== id));
 
-  const increaseQuantity = (cartItemId: string) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
+  const increaseQuantity = (id: string) =>
+    setCartItems(prev =>
+      prev.map(i =>
+        i.cartItemId === id ? { ...i, quantity: i.quantity + 1 } : i
       )
     );
-  };
 
-  const decreaseQuantity = (cartItemId: string) => {
-    setCartItems((prev) =>
-      prev.map((item) => {
-        if (item.cartItemId === cartItemId && item.quantity > 1) {
-          return { ...item, quantity: item.quantity - 1 };
-        }
-        return item;
-      })
-    );
-  };
-
-  const updateCartItem = (updatedItem: CartItem) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.cartItemId === updatedItem.cartItemId ? updatedItem : item
+  const decreaseQuantity = (id: string) =>
+    setCartItems(prev =>
+      prev.map(i =>
+        i.cartItemId === id && i.quantity > 1
+          ? { ...i, quantity: i.quantity - 1 }
+          : i
       )
     );
-  };
 
-  const getTotalPrice = (): number => {
-    return cartItems.reduce((total, item) => {
-      let optionsCost = 0;
-      if (item.selectedOptions) {
-        // Implement your own cost calculation logic based on item.selectedOptions here.
-        // For example, if each selected option adds a specific cost, sum them up.
+  const updateCartItem = (u: CartItem) =>
+    setCartItems(prev =>
+      prev.map(i => (i.cartItemId === u.cartItemId ? u : i))
+    );
+
+  /* ---------------- stable clearCart ------------------ */
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+    setSavedItems([]);
+    setMenuType(null);
+    setIsGolfOrder(false);
+    localStorage.removeItem(LS_MENU);
+  }, []);
+
+  /* -------------- saved‑for‑later ---------------------- */
+  const moveToSaved = (id: string) =>
+    setCartItems(prev => {
+      const found = prev.find(i => i.cartItemId === id);
+      if (!found) return prev;
+      setSavedItems(s => [...s, found]);
+      return prev.filter(i => i.cartItemId !== id);
+    });
+
+  const moveBackToCart = (id: string) =>
+    setSavedItems(prev => {
+      const found = prev.find(i => i.cartItemId === id);
+      if (!found) return prev;
+      setCartItems(c => [...c, found]);
+      return prev.filter(i => i.cartItemId !== id);
+    });
+
+  const removeFromSaved = (id: string) =>
+    setSavedItems(prev => prev.filter(i => i.cartItemId !== id));
+
+  /* ------------------- totals -------------------------- */
+  const getTotalPrice = (): number =>
+    cartItems.reduce((sum, it) => {
+      let extras = 0;
+
+      if (it.optionGroups && it.selectedOptions) {
+        it.optionGroups.forEach(group => {
+          const sel = it.selectedOptions?.[group.id];
+          if (!sel) return;
+
+          group.choices.forEach(choice => {
+            if (!sel.selectedChoiceIds.includes(choice.id)) return;
+
+            /* Parent priceAdjustment is charged *only* when there is no nested group */
+            if (!choice.nestedOptionGroup) {
+              extras += choice.priceAdjustment ?? 0;
+            }
+
+            /* Nested selections – always charge their priceAdjustment */
+            if (choice.nestedOptionGroup) {
+              const nestedSel = sel.nestedSelections?.[choice.id] ?? [];
+              choice.nestedOptionGroup.choices.forEach(n => {
+                if (nestedSel.includes(n.id)) extras += n.priceAdjustment ?? 0;
+              });
+            }
+          });
+        });
       }
-      return total + (item.price + optionsCost) * item.quantity;
+
+      return sum + (it.price + extras) * it.quantity;
     }, 0);
-  };
 
-  const openSidebarCart = () => setIsSidebarCartOpen(true);
-  const closeSidebarCart = () => setIsSidebarCartOpen(false);
-  const clearCart = () => setCartItems([]);
-
-  const moveToSaved = (cartItemId: string) => {
-    setCartItems((prevCart) => {
-      const itemToSave = prevCart.find((i) => i.cartItemId === cartItemId);
-      if (!itemToSave) return prevCart;
-      setSavedItems((prevSaved) => [...prevSaved, itemToSave]);
-      return prevCart.filter((i) => i.cartItemId !== cartItemId);
-    });
-  };
-
-  const moveBackToCart = (cartItemId: string) => {
-    setSavedItems((prevSaved) => {
-      const itemToRestore = prevSaved.find((i) => i.cartItemId === cartItemId);
-      if (!itemToRestore) return prevSaved;
-      setCartItems((prevCart) => [...prevCart, itemToRestore]);
-      return prevSaved.filter((i) => i.cartItemId !== cartItemId);
-    });
-  };
-
-  const removeFromSaved = (cartItemId: string) => {
-    setSavedItems((prevSaved) =>
-      prevSaved.filter((item) => item.cartItemId !== cartItemId)
-    );
-  };
-
-  if (!hasMounted) return null;
-
+  /* ---------------- provider --------------------------- */
   return (
     <CartContext.Provider
       value={{
         cartItems,
         savedItems,
-        isSidebarCartOpen,
         orderStatus,
         scheduledTime,
+        setOrderStatus,
+        setScheduledTime,
+        menuType,
+        isGolfOrder,
+
         addToCart,
         removeFromCart,
         increaseQuantity,
         decreaseQuantity,
         updateCartItem,
-        getTotalPrice,
-        openSidebarCart,
-        closeSidebarCart,
         clearCart,
+
         moveToSaved,
         moveBackToCart,
         removeFromSaved,
-        setOrderStatus,
-        setScheduledTime,
+
+        getTotalPrice,
       }}
     >
       {children}
     </CartContext.Provider>
   );
-}
+};

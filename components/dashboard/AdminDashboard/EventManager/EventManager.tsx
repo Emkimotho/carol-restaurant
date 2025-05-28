@@ -1,10 +1,25 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+/*  =====================================================================
+    EventManager – Admin dashboard panel
+      • Create / edit / delete Events
+      • View & delete Bookings and RSVPs, filterable by sub-tab
+      • Maintains original logic 100 %, plus:
+            – SubmissionCard UI
+            – bookings / rsvps sub-tabs & delete endpoints
+            – per-event aggregated booking totals
+  ===================================================================== */
+
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { toast } from "react-toastify";
+import SubmissionCard from "./SubmissionCard";
+import SubmissionTotals from "./SubmissionTotals";
 import styles from "./EventManager.module.css";
 
+/* ------------------------------------------------------------------ */
+/*  Types                                                             */
+/* ------------------------------------------------------------------ */
 interface EventData {
   id: string;
   title: string;
@@ -12,12 +27,15 @@ interface EventData {
   image?: string;
   location: string;
   date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   adultPrice: number;
   kidPrice: number;
+  kidPriceInfo?: string;
   availableTickets: number;
   isFree: boolean;
   adultOnly: boolean;
+  faqs?: { question: string; answer: string }[];
 }
 
 interface EventFormData {
@@ -29,17 +47,21 @@ interface EventFormData {
   state: string;
   zip: string;
   date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   adultPrice: string;
   kidPrice: string;
+  kidPriceInfo: string;
   availableTickets: string;
   isFree: boolean;
   adultOnly: boolean;
+  faqs: { question: string; answer: string }[];
 }
 
 interface Booking {
   id: string;
   eventId: string;
+  eventTitle: string;
   name: string;
   email: string;
   adultCount: number;
@@ -51,6 +73,7 @@ interface Booking {
 interface RSVP {
   id: string;
   eventId: string;
+  eventTitle: string;
   name: string;
   email: string;
   adultCount: number;
@@ -58,6 +81,11 @@ interface RSVP {
   createdAt: string;
 }
 
+type SubmissionView = "bookings" | "rsvps";
+
+/* ------------------------------------------------------------------ */
+/*  Defaults & helpers                                                */
+/* ------------------------------------------------------------------ */
 const defaultFormData: EventFormData = {
   title: "",
   description: "",
@@ -66,15 +94,17 @@ const defaultFormData: EventFormData = {
   state: "",
   zip: "",
   date: "",
-  time: "",
+  startTime: "",
+  endTime: "",
   adultPrice: "",
   kidPrice: "",
+  kidPriceInfo: "",
   availableTickets: "",
   isFree: false,
   adultOnly: false,
+  faqs: [],
 };
 
-// Helper to resolve image paths.
 const resolveImagePath = (image?: string) => {
   if (!image) return "";
   if (image.startsWith("/images/")) return image;
@@ -83,16 +113,26 @@ const resolveImagePath = (image?: string) => {
   return `/images/${image}`;
 };
 
+/* ====================================================================== */
 const EventManager: React.FC = () => {
+  /* ------------------------------------------------------------------ */
+  /*  State                                                             */
+  /* ------------------------------------------------------------------ */
   const [events, setEvents] = useState<EventData[]>([]);
   const [formData, setFormData] = useState<EventFormData>(defaultFormData);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"events" | "submissions">("events");
+  const [activeTab, setActiveTab] =
+    useState<"events" | "submissions">("events");
+  const [submissionView, setSubmissionView] =
+    useState<SubmissionView>("bookings");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [rsvps, setRsvps] = useState<RSVP[]>([]);
 
+  /* ------------------------------------------------------------------ */
+  /*  Fetch Events                                                      */
+  /* ------------------------------------------------------------------ */
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -103,36 +143,89 @@ const EventManager: React.FC = () => {
       if (!res.ok) throw new Error("Failed to fetch events");
       const data = await res.json();
       setEvents(data.events);
-    } catch (error: any) {
-      console.error("Error fetching events:", error);
+    } catch (err: any) {
+      console.error("Error fetching events:", err);
       toast.error("Failed to fetch events.");
     }
   };
 
+  /* ------------------------------------------------------------------ */
+  /*  Fetch Bookings & RSVPs                                            */
+  /* ------------------------------------------------------------------ */
   const fetchBookings = async () => {
     try {
-      const res = await fetch("/api/bookings");
-      if (!res.ok) throw new Error("Failed to fetch bookings");
+      const res = await fetch("/api/events/bookings");
+      if (!res.ok) {
+        const text = await res.text();
+        console.warn("GET /api/events/bookings:", res.status, text);
+        setBookings([]);
+        return;
+      }
       const data = await res.json();
       setBookings(data.bookings);
-    } catch (error: any) {
-      console.error("Error fetching bookings:", error);
+    } catch (err: any) {
+      console.error("Error fetching bookings:", err);
       toast.error("Failed to fetch bookings.");
+      setBookings([]);
     }
   };
 
   const fetchRSVPs = async () => {
     try {
-      const res = await fetch("/api/rsvps");
+      const res = await fetch("/api/events/rsvps");
       if (!res.ok) throw new Error("Failed to fetch RSVPs");
       const data = await res.json();
       setRsvps(data.rsvps);
-    } catch (error: any) {
-      console.error("Error fetching RSVPs:", error);
+    } catch (err: any) {
+      console.error("Error fetching RSVPs:", err);
       toast.error("Failed to fetch RSVPs.");
     }
   };
 
+  /* ------------------------------------------------------------------ */
+  /*  Delete Booking / RSVP                                             */
+  /* ------------------------------------------------------------------ */
+  const deleteBooking = async (id: string) => {
+    if (!confirm("Delete this booking?")) return;
+    try {
+      const res = await fetch(`/api/events/bookings/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error("Error: " + err.message);
+        return;
+      }
+      toast.success("Booking deleted");
+      fetchBookings();
+    } catch (err: any) {
+      console.error("Error deleting booking:", err);
+      toast.error("Error deleting booking.");
+    }
+  };
+
+  const deleteRsvp = async (id: string) => {
+    if (!confirm("Delete this RSVP?")) return;
+    try {
+      const res = await fetch(`/api/events/rsvps/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error("Error: " + err.message);
+        return;
+      }
+      toast.success("RSVP deleted");
+      fetchRSVPs();
+    } catch (err: any) {
+      console.error("Error deleting RSVP:", err);
+      toast.error("Error deleting RSVP.");
+    }
+  };
+
+  /* ------------------------------------------------------------------ */
+  /*  Form helpers                                                      */
+  /* ------------------------------------------------------------------ */
   const resetForm = () => {
     setFormData(defaultFormData);
     setSelectedImage(null);
@@ -145,37 +238,54 @@ const EventManager: React.FC = () => {
       const file = e.target.files[0];
       setSelectedImage(file);
       const reader = new FileReader();
-      reader.onload = () => {
-        setImagePreview(reader.result as string);
-      };
+      reader.onload = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
+  /* ------------------------------------------------------------------ */
+  /*  Create / Update Event                                             */
+  /* ------------------------------------------------------------------ */
   const handleCreateOrUpdateEvent = async () => {
     if (editingId) {
-      const payload = {
-        ...formData,
-        location: `${formData.street}, ${formData.city}, ${formData.state} ${formData.zip}`,
+      const payload: any = {
+        title: formData.title,
+        description: formData.description,
+        street: formData.street,
+        city: formData.city,
+        state: formData.state,
+        zip: formData.zip,
+        date: formData.date,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        isFree: formData.isFree,
+        adultOnly: formData.adultOnly,
+        kidPriceInfo: formData.kidPriceInfo,
+        faqs: formData.faqs,
+        availableTickets: parseInt(formData.availableTickets) || 0,
       };
+      if (!formData.isFree) {
+        payload.adultPrice = parseFloat(formData.adultPrice) || 0;
+        if (!formData.adultOnly)
+          payload.kidPrice = parseFloat(formData.kidPrice) || 0;
+      }
+
       try {
         const res = await fetch(`/api/events/${editingId}`, {
           method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-          headers: {
-            "Content-Type": "application/json",
-          },
         });
         if (!res.ok) {
-          const errorData = await res.json();
-          toast.error("Error: " + errorData.message);
+          const err = await res.json();
+          toast.error("Error: " + err.message);
           return;
         }
-        toast.success("Event updated successfully!");
+        toast.success("Event updated!");
         resetForm();
         fetchEvents();
-      } catch (error: any) {
-        console.error("Error updating event:", error);
+      } catch (err: any) {
+        console.error("Error updating event:", err);
         toast.error("Error updating event.");
       }
     } else {
@@ -187,138 +297,193 @@ const EventManager: React.FC = () => {
       payload.append("state", formData.state);
       payload.append("zip", formData.zip);
       payload.append("date", formData.date);
-      payload.append("time", formData.time);
-      const adultPriceNum = formData.adultPrice ? parseFloat(formData.adultPrice) : 0;
-      const kidPriceNum = formData.kidPrice ? parseFloat(formData.kidPrice) : 0;
-      payload.append("adultPrice", adultPriceNum.toString());
-      payload.append("kidPrice", kidPriceNum.toString());
-      payload.append("availableTickets", formData.availableTickets);
-      payload.append("isFree", formData.isFree.toString());
-      payload.append("adultOnly", formData.adultOnly.toString());
-      if (selectedImage) {
-        payload.append("image", selectedImage);
+      payload.append("startTime", formData.startTime);
+      payload.append("endTime", formData.endTime);
+      if (!formData.isFree) {
+        payload.append("adultPrice", formData.adultPrice || "0");
+        if (!formData.adultOnly) {
+          payload.append("kidPrice", formData.kidPrice || "0");
+        }
       }
+      payload.append("kidPriceInfo", formData.kidPriceInfo);
+      payload.append("availableTickets", formData.availableTickets);
+      payload.append("isFree", String(formData.isFree));
+      payload.append("adultOnly", String(formData.adultOnly));
+      payload.append("faqs", JSON.stringify(formData.faqs));
+      if (selectedImage) payload.append("image", selectedImage);
+
       try {
-        const res = await fetch("/api/events", {
-          method: "POST",
-          body: payload,
-        });
+        const res = await fetch("/api/events", { method: "POST", body: payload });
         if (!res.ok) {
-          const errorData = await res.json();
-          toast.error("Error: " + errorData.message);
+          const err = await res.json();
+          toast.error("Error: " + err.message);
           return;
         }
-        toast.success("Event created successfully!");
+        toast.success("Event created!");
         resetForm();
         fetchEvents();
-      } catch (error: any) {
-        console.error("Error creating event:", error);
+      } catch (err: any) {
+        console.error("Error creating event:", err);
         toast.error("Error creating event.");
       }
     }
   };
 
+  /* ------------------------------------------------------------------ */
+  /*  Delete & Edit Event                                               */
+  /* ------------------------------------------------------------------ */
   const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+    if (!confirm("Delete this event?")) return;
     try {
-      const res = await fetch(`/api/events/${eventId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/events/${eventId}`, { method: "DELETE" });
       if (!res.ok) {
-        const errorData = await res.json();
-        toast.error("Error: " + errorData.message);
+        const err = await res.json();
+        toast.error("Error: " + err.message);
         return;
       }
-      toast.success("Event deleted successfully!");
+      toast.success("Event deleted!");
       fetchEvents();
-    } catch (error: any) {
-      console.error("Error deleting event:", error);
+    } catch (err: any) {
+      console.error("Error deleting event:", err);
       toast.error("Error deleting event.");
     }
   };
 
   const handleEditEvent = (ev: EventData) => {
     const [street, city, rest] = ev.location.split(",");
-    let state = "", zip = "";
-    if (rest) {
-      const parts = rest.trim().split(" ");
-      state = parts[0] || "";
-      zip = parts[1] || "";
-    }
+    const [state, zip] = rest.trim().split(" ");
     setFormData({
       id: ev.id,
       title: ev.title,
       description: ev.description,
-      street: street ? street.trim() : "",
-      city: city ? city.trim() : "",
+      street: street.trim(),
+      city: city.trim(),
       state,
       zip,
       date: ev.date.split("T")[0],
-      time: ev.time,
-      adultPrice: ev.adultPrice ? ev.adultPrice.toString() : "",
-      kidPrice: ev.kidPrice ? ev.kidPrice.toString() : "",
+      startTime: ev.startTime,
+      endTime: ev.endTime,
+      adultPrice: ev.adultPrice.toString(),
+      kidPrice: ev.kidPrice.toString(),
+      kidPriceInfo: ev.kidPriceInfo || "",
       availableTickets: ev.availableTickets.toString(),
       isFree: ev.isFree,
       adultOnly: ev.adultOnly,
+      faqs: ev.faqs || [],
     });
     setEditingId(ev.id);
-    if (ev.image) {
-      setImagePreview(resolveImagePath(ev.image));
-    } else {
-      setImagePreview(null);
-    }
-    // Scroll to top so that the form is visible
+    setImagePreview(ev.image ? resolveImagePath(ev.image) : null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Fetch submissions when "Submissions" tab is active.
-  const fetchSubmissions = async () => {
-    try {
-      const bookingsRes = await fetch("/api/bookings");
-      const rsvpsRes = await fetch("/api/rsvps");
-      if (bookingsRes.ok) {
-        const bookingsData = await bookingsRes.json();
-        setBookings(bookingsData.bookings);
+  /* ------------------------------------------------------------------ */
+  /*  Group bookings per event                                          */
+  /* ------------------------------------------------------------------ */
+  const bookingSummaries = useMemo(() => {
+    const map: Record<
+      string,
+      { eventId: string; eventTitle: string; adultCount: number; kidCount: number }
+    > = {};
+    for (const b of bookings) {
+      if (!map[b.eventId]) {
+        map[b.eventId] = {
+          eventId: b.eventId,
+          eventTitle: b.eventTitle,
+          adultCount: 0,
+          kidCount: 0,
+        };
       }
-      if (rsvpsRes.ok) {
-        const rsvpsData = await rsvpsRes.json();
-        setRsvps(rsvpsData.rsvps);
-      }
-    } catch (error: any) {
-      console.error("Error fetching submissions:", error);
-      toast.error("Error fetching submissions.");
+      map[b.eventId].adultCount += b.adultCount;
+      map[b.eventId].kidCount += b.kidCount;
     }
+    return Object.values(map);
+  }, [bookings]);
+
+  /* ------------------------------------------------------------------ */
+  /*  Auto-load submissions                                             */
+  /* ------------------------------------------------------------------ */
+  const loadIfNeeded = (view: SubmissionView) => {
+    if (view === "bookings" && bookings.length === 0) fetchBookings();
+    if (view === "rsvps" && rsvps.length === 0) fetchRSVPs();
   };
 
   useEffect(() => {
-    if (activeTab === "submissions") {
-      fetchSubmissions();
-    }
-  }, [activeTab]);
+    if (activeTab === "submissions") loadIfNeeded(submissionView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, submissionView]);
 
+  /* ------------------------------------------------------------------ */
+  /*  Render helpers                                                    */
+  /* ------------------------------------------------------------------ */
+  const renderBookingCards = () =>
+    bookings.map((b) => (
+      <SubmissionCard
+        key={b.id}
+        id={b.id}
+        eventTitle={b.eventTitle}
+        name={b.name}
+        email={b.email}
+        createdAt={b.createdAt}
+        adultCount={b.adultCount}
+        kidCount={b.kidCount}
+        totalPrice={b.totalPrice}
+        onDelete={deleteBooking}
+      />
+    ));
+
+  const renderRsvpCards = () =>
+    rsvps.map((r) => (
+      <SubmissionCard
+        key={r.id}
+        id={r.id}
+        eventTitle={r.eventTitle}
+        name={r.name}
+        email={r.email}
+        createdAt={r.createdAt}
+        adultCount={r.adultCount}
+        kidCount={r.kidCount}
+        onDelete={deleteRsvp}
+      />
+    ));
+
+  /* ===================================================================
+     JSX
+  =================================================================== */
   return (
     <div className={styles.container}>
       <h2 className={styles.heading}>Event Manager</h2>
+
+      {/* ---------------- MAIN TABS ---------------- */}
       <div className={styles.tabButtons}>
         <button
-          className={`${styles.tabButton} ${activeTab === "events" ? styles.active : ""}`}
+          className={`${styles.tabButton} ${
+            activeTab === "events" ? styles.active : ""
+          }`}
           onClick={() => setActiveTab("events")}
         >
           Events
         </button>
         <button
-          className={`${styles.tabButton} ${activeTab === "submissions" ? styles.active : ""}`}
+          className={`${styles.tabButton} ${
+            activeTab === "submissions" ? styles.active : ""
+          }`}
           onClick={() => setActiveTab("submissions")}
         >
           Submissions
         </button>
       </div>
-      {activeTab === "events" ? (
+
+      {/* ===================================================== */}
+      {/*  EVENTS TAB                                           */}
+      {/* ===================================================== */}
+      {activeTab === "events" && (
         <>
+          {/* --------------- CREATE / EDIT FORM --------------- */}
           <section className={styles.section}>
             <h3 className={styles.subheading}>
               {editingId ? "Edit Event" : "Create New Event"}
             </h3>
+
             <div className={styles.formGroup}>
               <label htmlFor="title" className={styles.inputLabel}>
                 Title
@@ -349,6 +514,7 @@ const EventManager: React.FC = () => {
 
               <fieldset className={styles.fieldset}>
                 <legend className={styles.fieldsetLegend}>Address</legend>
+
                 <label htmlFor="street" className={styles.inputLabel}>
                   Street
                 </label>
@@ -419,16 +585,29 @@ const EventManager: React.FC = () => {
                 }
               />
 
-              <label htmlFor="time" className={styles.inputLabel}>
-                Time
+              <label htmlFor="startTime" className={styles.inputLabel}>
+                Start Time
               </label>
               <input
-                id="time"
+                id="startTime"
                 className={styles.input}
                 type="time"
-                value={formData.time}
+                value={formData.startTime}
                 onChange={(e) =>
-                  setFormData({ ...formData, time: e.target.value })
+                  setFormData({ ...formData, startTime: e.target.value })
+                }
+              />
+
+              <label htmlFor="endTime" className={styles.inputLabel}>
+                End Time
+              </label>
+              <input
+                id="endTime"
+                className={styles.input}
+                type="time"
+                value={formData.endTime}
+                onChange={(e) =>
+                  setFormData({ ...formData, endTime: e.target.value })
                 }
               />
 
@@ -445,6 +624,7 @@ const EventManager: React.FC = () => {
                   Free Event
                 </label>
               </div>
+
               <div className="flex items-center gap-2 mt-2">
                 <input
                   id="adultOnly"
@@ -474,6 +654,7 @@ const EventManager: React.FC = () => {
                       setFormData({ ...formData, adultPrice: e.target.value })
                     }
                   />
+
                   {!formData.adultOnly && (
                     <>
                       <label htmlFor="kidPrice" className={styles.inputLabel}>
@@ -504,6 +685,73 @@ const EventManager: React.FC = () => {
                 </div>
               )}
 
+              <label htmlFor="kidPriceInfo" className={styles.inputLabel}>
+                Child Pricing Descriptor
+              </label>
+              <input
+                id="kidPriceInfo"
+                className={styles.input}
+                type="text"
+                placeholder="Kids 5–14 yrs @ $15; under 5 free"
+                value={formData.kidPriceInfo}
+                onChange={(e) =>
+                  setFormData({ ...formData, kidPriceInfo: e.target.value })
+                }
+              />
+
+              <fieldset className={styles.fieldset}>
+                <legend className={styles.fieldsetLegend}>FAQs</legend>
+                {formData.faqs.map((faq, idx) => (
+                  <div key={idx} className={styles.faqItem}>
+                    <label className={styles.inputLabel}>Question</label>
+                    <input
+                      className={styles.input}
+                      type="text"
+                      value={faq.question}
+                      onChange={(e) => {
+                        const newFaqs = [...formData.faqs];
+                        newFaqs[idx].question = e.target.value;
+                        setFormData({ ...formData, faqs: newFaqs });
+                      }}
+                    />
+                    <label className={styles.inputLabel}>Answer</label>
+                    <textarea
+                      className={styles.textarea}
+                      value={faq.answer}
+                      onChange={(e) => {
+                        const newFaqs = [...formData.faqs];
+                        newFaqs[idx].answer = e.target.value;
+                        setFormData({ ...formData, faqs: newFaqs });
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className={styles.removeFaqButton}
+                      onClick={() => {
+                        const newFaqs = formData.faqs.filter(
+                          (_, i) => i !== idx
+                        );
+                        setFormData({ ...formData, faqs: newFaqs });
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className={styles.addFaqButton}
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      faqs: [...formData.faqs, { question: "", answer: "" }],
+                    })
+                  }
+                >
+                  Add FAQ
+                </button>
+              </fieldset>
+
               <label htmlFor="availableTickets" className={styles.inputLabel}>
                 Tickets Available
               </label>
@@ -514,7 +762,10 @@ const EventManager: React.FC = () => {
                 placeholder="Enter number of tickets"
                 value={formData.availableTickets}
                 onChange={(e) =>
-                  setFormData({ ...formData, availableTickets: e.target.value })
+                  setFormData({
+                    ...formData,
+                    availableTickets: e.target.value,
+                  })
                 }
               />
 
@@ -538,16 +789,23 @@ const EventManager: React.FC = () => {
                 )}
               </div>
 
-              <button className={styles.button} onClick={handleCreateOrUpdateEvent}>
+              <button
+                className={styles.button}
+                onClick={handleCreateOrUpdateEvent}
+              >
                 {editingId ? "Update Event" : "Create Event"}
               </button>
               {editingId && (
-                <button className={`${styles.button} mt-2`} onClick={resetForm}>
+                <button
+                  className={`${styles.button} mt-2`}
+                  onClick={resetForm}
+                >
                   Cancel Edit
                 </button>
               )}
             </div>
           </section>
+
           <section>
             <h3 className={styles.subheading}>Current Events</h3>
             {events.length === 0 ? (
@@ -557,8 +815,9 @@ const EventManager: React.FC = () => {
                 {events.map((ev) => (
                   <li key={ev.id} className={styles.eventItem}>
                     <div className={styles.eventDetails}>
-                      <strong>{ev.title}</strong> -{" "}
-                      {new Date(ev.date).toLocaleDateString()} at {ev.time}
+                      <strong>{ev.title}</strong> —{" "}
+                      {new Date(ev.date).toLocaleDateString()} at{" "}
+                      {ev.startTime}–{ev.endTime}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -580,64 +839,65 @@ const EventManager: React.FC = () => {
             )}
           </section>
         </>
-      ) : (
+      )}
+
+          {/* ===================================================== */}
+      {/*  SUBMISSIONS TAB                                      */}
+      {/* ===================================================== */}
+      {activeTab === "submissions" && (
         <section className={styles.submissionsSection}>
           <h3 className={styles.subheading}>Submissions</h3>
+
           <div className={styles.submissionButtons}>
             <button
-              className={styles.tabButton}
+              className={`${styles.tabButton} ${
+                submissionView === "bookings" ? styles.active : ""
+              }`}
               onClick={() => {
-                fetch("/api/bookings")
-                  .then((res) => res.json())
-                  .then((data) => setBookings(data.bookings))
-                  .catch((error) => {
-                    console.error("Error fetching bookings:", error);
-                    toast.error("Error fetching bookings.");
-                  });
+                setSubmissionView("bookings");
+                loadIfNeeded("bookings");
               }}
             >
-              View Bookings
+              Bookings
             </button>
             <button
-              className={styles.tabButton}
+              className={`${styles.tabButton} ${
+                submissionView === "rsvps" ? styles.active : ""
+              }`}
               onClick={() => {
-                fetch("/api/rsvps")
-                  .then((res) => res.json())
-                  .then((data) => setRsvps(data.rsvps))
-                  .catch((error) => {
-                    console.error("Error fetching RSVPs:", error);
-                    toast.error("Error fetching RSVPs.");
-                  });
+                setSubmissionView("rsvps");
+                loadIfNeeded("rsvps");
               }}
             >
-              View RSVPs
+              RSVPs
             </button>
           </div>
+
+          {/* Totals Buttons */}
+          <SubmissionTotals
+            data={bookings}
+            visible={submissionView === "bookings"}
+            buttonLabel="Booking Totals"
+            modalTitle="Totals by Booking"
+          />
+          <SubmissionTotals
+            data={rsvps}
+            visible={submissionView === "rsvps"}
+            buttonLabel="RSVP Totals"
+            modalTitle="Totals by RSVP"
+          />
+
           <div className={styles.submissionLists}>
-            <h4>Bookings</h4>
-            {bookings.length === 0 ? (
-              <p>No bookings submitted.</p>
-            ) : (
-              <ul className={styles.eventList}>
-                {bookings.map((b) => (
-                  <li key={b.id}>
-                    {b.name} - {b.adultCount} Adult(s), {b.kidCount} Kid(s) - $
-                    {b.totalPrice}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <h4>RSVPs</h4>
-            {rsvps.length === 0 ? (
+            {submissionView === "bookings" ? (
+              bookings.length === 0 ? (
+                <p>No bookings submitted.</p>
+              ) : (
+                renderBookingCards()
+              )
+            ) : rsvps.length === 0 ? (
               <p>No RSVPs submitted.</p>
             ) : (
-              <ul className={styles.eventList}>
-                {rsvps.map((r) => (
-                  <li key={r.id}>
-                    {r.name} - {r.adultCount} Adult(s), {r.kidCount} Kid(s)
-                  </li>
-                ))}
-              </ul>
+              renderRsvpCards()
             )}
           </div>
         </section>

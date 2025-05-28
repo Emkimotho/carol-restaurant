@@ -1,102 +1,128 @@
 // File: utils/types.ts
 
 /**
+ * Represents which menu section an item belongs to.
+ */
+export type MenuCategoryType = "MainMenu" | "GolfMenu";
+
+/**
  * Represents a menu category (main sections or subcategories).
  */
 export interface MenuCategory {
-  id: string;       // e.g., "cat_123"
-  name: string;     // e.g., "Desserts", "Soft Drinks", "Lunch/Dinner"
-  type: string;     // e.g., "MainMenu", "GolfMenu"
-  order: number;    // For ordering categories in the menu
+  id:     string;             // e.g., "cat_123"
+  name:   string;             // e.g., "Desserts", "Soft Drinks"
+  type:   MenuCategoryType;   // "MainMenu" or "GolfMenu"
+  order:  number;             // Ordering index
+  hidden: boolean;            // if true, not shown publicly
 }
 
 /**
- * Represents a single nested option choice.
+ * A single nested option choice (e.g., "Mayo", "Ketchup").
  */
 export interface NestedOptionChoice {
-  id: string;
-  label: string;          // e.g., "Ketchup", "Mayo"
-  priceAdjustment?: number; // Optional extra cost for this nested choice
+  id:               string;
+  label:            string;    // Display label
+  priceAdjustment?: number;    // Extra cost if selected
 }
 
 /**
- * Represents a nested option group for a menu option choice.
+ * A nested group under another choice (e.g., "Choose Sauce").
  */
 export interface NestedOptionGroup {
-  id: string;
-  title: string;       // e.g., "Choose Sauce"
-  minRequired: number;
-  maxAllowed?: number;
-  choices: NestedOptionChoice[];
+  id:          string;
+  title:       string;               // Group title
+  minRequired: number;               // Minimum selections
+  maxAllowed?: number;               // Optional maximum
+  choices:     NestedOptionChoice[]; // The nested choices
 }
 
 /**
- * Represents a choice within an option group.
+ * A single option within an option-group (e.g., "Beef", "Chicken").
  */
 export interface MenuOptionChoice {
-  id: string;
-  label: string;         // e.g., "Beef", "Chicken"
-  priceAdjustment?: number;  // Optional extra cost for the choice
-  nestedOptionGroup?: NestedOptionGroup;
+  id:                 string;
+  label:              string;            // Choice label
+  priceAdjustment?:   number;            // Extra cost
+  nestedOptionGroup?: NestedOptionGroup; // If this choice unlocks another group
 }
 
 /**
- * Represents an option group for a menu item (e.g., "Choose Protein", "Add Sides").
+ * An option group for a menu item (e.g., "Choose Protein").
  */
 export interface MenuItemOptionGroup {
-  id: string;
-  title: string;   // e.g., "Choose Protein", "Add Sides"
-  minRequired: number;
-  maxAllowed?: number;
-  optionType: "single-select" | "multi-select" | "dropdown";
-  choices: MenuOptionChoice[];
+  id:          string;
+  title:       string;                       // Group title
+  minRequired: number;                       // Min selections
+  maxAllowed?: number;                       // Optional max
+  optionType:  "single-select" | "multi-select" | "dropdown";
+  choices:     MenuOptionChoice[];
 }
 
 /**
- * Represents a menu item available for order.
+ * A menu item available for ordering.
  */
 export interface MenuItem {
-  id: string;
-  title: string;
-  description?: string;
-  price: number;
-  image?: string;
-  hasSpiceLevel: boolean;
+  id:             string;
+  title:          string;
+  description?:   string;
+  price:          number;
+  image?:         string;
+  hasSpiceLevel:  boolean;
+  /** Matches Prisma's `isAlcohol` field */
+  isAlcohol:      boolean;
   showInGolfMenu?: boolean;
-  // Each menu item now includes a category.
-  category: MenuCategory;
-  // Option groups allow for further customization.
-  optionGroups?: MenuItemOptionGroup[];
-  // NEW: Optional Clover Item ID for integrating with Clover inventory and payments.
-  cloverItemId?: string;
-  // NEW: Stock field to track inventory.
-  stock: number;
+  category:       MenuCategory;
+  optionGroups?:  MenuItemOptionGroup[];
+  cloverItemId:   string;  // Clover inventory ID
+  stock:          number;
 }
 
 /**
- * Represents an item added to the cart.
- * This extends MenuItem with additional properties for cart management.
+ * User's selections for each option group, including nested picks.
  */
-export interface CartItem extends MenuItem {
-  cartItemId: string;
-  quantity: number;
-  specialInstructions: string;
-  spiceLevel?: string | null;
-  // Stores the user's selections for each option group.
-  selectedOptions?: {
-    [groupId: string]: {
-      selectedChoiceIds: string[];
-      nestedSelections?: { [choiceId: string]: string[] };
-    };
+export interface SelectedOptions {
+  [groupId: string]: {
+    selectedChoiceIds: string[];
+    nestedSelections?: { [choiceId: string]: string[] };
   };
 }
 
 /**
- * Represents a user of the system.
+ * An item in the cart, extends the menu item.
+ */
+export interface CartItem extends MenuItem {
+  cartItemId:          string;              // Unique cart entry ID
+  quantity:            number;
+  specialInstructions: string;
+  spiceLevel?:         string;              // If `hasSpiceLevel` is true
+  selectedOptions?:    SelectedOptions;
+}
+
+/**
+ * Props for the unified Order Summary step component.
+ */
+export interface OrderSummaryStepProps {
+  cartItems:         CartItem[];
+  getTotalPrice:     () => number;
+  orderType:         string;   // "" for golf flow
+  tip:               string;
+  customTip:         string;
+  onTipChange:       (value: string) => void;
+  onCustomTipChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onNext:            () => void;
+  onBack:            () => void;
+  taxRate?:          number;
+  /** Whether we're in the golf-flow summary */
+  isGolf:            boolean;
+  /** Computed from `cartItems.some(i => i.isAlcohol)` */
+  containsAlcohol:   boolean;
+}
+
+/**
+ * Represents a logged-in user.
  */
 export interface User {
-  id: number;
-  name: string;
+  id:    number;
+  name:  string;
   email: string;
-  // Additional properties as needed.
 }

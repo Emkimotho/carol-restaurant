@@ -1,3 +1,5 @@
+// File: components/CartPage.tsx
+/* eslint-disable react/jsx-key */
 "use client";
 
 import React, { useContext, useEffect, useRef, useState } from "react";
@@ -9,518 +11,483 @@ import type {
   CartItem,
   MenuItemOptionGroup,
   MenuOptionChoice,
+  SelectedOptions,
 } from "@/utils/types";
 import styles from "./CartPage.module.css";
 
-/** Constants **/
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+/* ------------------------------------------------------------------
+ * CONSTANTS
+ * ------------------------------------------------------------------ */
+const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+const MAX_RECS           = 6;              // max unique recs shown
 
+/* ------------------------------------------------------------------
+ * HELPERS
+ * ------------------------------------------------------------------ */
+const shuffle = <T,>(arr: T[]) => [...arr].sort(() => 0.5 - Math.random());
+
+const uniqBy = <T, K>(array: T[], keyFn: (t: T) => K): T[] =>
+  [...new Map(array.map((item) => [keyFn(item), item])).values()];
+
+/** Deep‑safe scaffold for selectedOptions[groupId] */
+function ensureGroupState(
+  prev: SelectedOptions | undefined,
+  groupId: string
+): SelectedOptions {
+  const next: SelectedOptions = prev ? { ...prev } : {};
+  if (next[groupId]) {
+    const g = next[groupId];
+    next[groupId] = {
+      selectedChoiceIds: [...g.selectedChoiceIds],
+      nestedSelections: { ...g.nestedSelections },
+    };
+  } else {
+    next[groupId] = { selectedChoiceIds: [], nestedSelections: {} };
+  }
+  return next;
+}
+
+function cartSection(items: CartItem[]) {
+  if (!items.length) return "Unknown";
+  const allMain = items.every(
+    (c) => (c.category?.type ?? "MainMenu") === "MainMenu" && !c.showInGolfMenu
+  );
+  if (allMain) return "MainMenu";
+  const allGolf = items.every(
+    (c) => c.category?.type === "GolfMenu" || c.showInGolfMenu
+  );
+  if (allGolf) return "GolfMenu";
+  return "Mixed";
+}
+
+/* ------------------------------------------------------------------
+ * COMPONENT
+ * ------------------------------------------------------------------ */
 export default function CartPage() {
   const {
     cartItems,
     savedItems,
     removeFromCart,
     updateCartItem,
-    clearCart,
-    getTotalPrice,
     moveToSaved,
     moveBackToCart,
     removeFromSaved,
+    clearCart,
   } = useContext(CartContext)!;
 
-  const router = useRouter();
+  const router                       = useRouter();
+  const inactivityTimer              = useRef<NodeJS.Timeout | null>(null);
+  const [recs, setRecs]              = useState<CartItem[]>([]);
+  const [cleared, setCleared]        = useState(false);
 
-  // State
-  const [cartClearedDueToInactivity, setCartClearedDueToInactivity] = useState(false);
-  const [recommendedItems, setRecommendedItems] = useState<CartItem[]>([]);
+  /* -------- price helper -------- */
+  const priceOf = (item: CartItem) => {
+    let total = item.price;
+    (item.optionGroups ?? []).forEach((g) => {
+      const s = item.selectedOptions?.[g.id];
+      if (!s) return;
+      g.choices.forEach((c) => {
+        if (!s.selectedChoiceIds.includes(c.id)) return;
+        if (c.nestedOptionGroup) {
+          const nestSel = s.nestedSelections?.[c.id] ?? [];
+          c.nestedOptionGroup.choices.forEach(
+            (n) => nestSel.includes(n.id) && n.priceAdjustment && (total += n.priceAdjustment)
+          );
+        } else if (c.priceAdjustment) total += c.priceAdjustment;
+      });
+    });
+    return total * (item.quantity || 1);
+  };
 
-  // Refs
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const cartTotal = parseFloat(
+    cartItems.reduce((sum, it) => sum + priceOf(it), 0).toFixed(2)
+  );
 
-  // Calculate total price
-  const totalPrice = parseFloat(getTotalPrice().toFixed(2));
-
-  // ---------------------- RECOMMENDATIONS ----------------------
+  /* -------- recommendations fetch -------- */
   useEffect(() => {
-    async function fetchRecommendations() {
+    (async () => {
       try {
-        let url = "/api/recommendations";
-        // If there's a categoryId on the first cart item, pass it
-        if (cartItems.length > 0 && (cartItems[0] as any).categoryId) {
-          const categoryId = (cartItems[0] as any).categoryId;
-          url += `?category=${encodeURIComponent(categoryId)}`;
-        }
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch recommendations");
+        const r  = await fetch("/api/recommendations");
+        if (!r.ok) throw new Error("fetch fail");
+        const all: CartItem[] = await r.json();
 
-        const data: CartItem[] = await res.json();
-        // Filter out items already in the cart
-        const filtered = data.filter(
-          (rec) => !cartItems.some((ci) => ci.id === rec.id)
-        );
-        setRecommendedItems(filtered);
-      } catch (error) {
-        console.error("Error fetching recommendations:", error);
+        const section      = cartSection(cartItems);
+        const idsInCartSet = new Set(cartItems.map((c) => c.id));
+
+        const eligible = all.filter((rec) => {
+          if (idsInCartSet.has(rec.id)) return false;
+          if (section === "MainMenu")
+            return rec.category?.type === "MainMenu" && !rec.showInGolfMenu;
+          if (section === "GolfMenu")
+            return rec.category?.type === "GolfMenu" || rec.showInGolfMenu;
+          return true; // Mixed / Unknown
+        });
+
+        /* diversity: round‑robin by sub‑category */
+        const buckets = new Map<string, CartItem[]>();
+        eligible.forEach((rec) => {
+          if (!rec.category?.id) return;
+          (buckets.get(rec.category.id) ?? buckets.set(rec.category.id, []).get(rec.category.id)!).push(rec);
+        });
+
+        const order = shuffle([...buckets.keys()]);
+        const picks: CartItem[] = [];
+        while (picks.length < MAX_RECS && order.length) {
+          for (let i = 0; i < order.length && picks.length < MAX_RECS; i++) {
+            const id   = order[i];
+            const pile = buckets.get(id)!;
+            if (!pile.length) { order.splice(i, 1); i--; continue; }
+            picks.push(pile.shift()!);
+          }
+        }
+
+        setRecs(picks);
+      } catch (err) {
+        console.error("rec error:", err);
       }
-    }
-    fetchRecommendations();
+    })();
   }, [cartItems]);
 
-  // Only take 3 recommended items, then duplicate for a continuous marquee
-  const displayedRecs = recommendedItems.slice(0, 3);
-  const marqueeRecs = [...displayedRecs, ...displayedRecs];
-
-  // ---------------------- INACTIVITY TIMER ----------------------
-  const resetInactivityTimer = () => {
-    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    inactivityTimerRef.current = setTimeout(() => {
+  /* -------- inactivity timer -------- */
+  const resetTimer = () => {
+    if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    inactivityTimer.current = setTimeout(() => {
       clearCart();
-      setCartClearedDueToInactivity(true);
-      toast.info("Your cart has been cleared due to inactivity.");
+      setCleared(true);
+      toast.info("Cart cleared after 15 min of inactivity.");
     }, INACTIVITY_TIMEOUT);
   };
 
   useEffect(() => {
-    resetInactivityTimer();
-    const events = ["click", "keydown", "mousemove", "touchstart"];
-    events.forEach((eventName) =>
-      window.addEventListener(eventName, resetInactivityTimer)
+    resetTimer();
+    ["click", "keydown", "mousemove", "touchstart"].forEach((ev) =>
+      window.addEventListener(ev, resetTimer)
     );
     return () => {
-      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-      events.forEach((eventName) =>
-        window.removeEventListener(eventName, resetInactivityTimer)
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      ["click", "keydown", "mousemove", "touchstart"].forEach((ev) =>
+        window.removeEventListener(ev, resetTimer)
       );
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---------------------- CART OPERATIONS ----------------------
-  const handleCheckout = () => {
-    router.push("/checkout");
-  };
+  /* -------- cart item helper actions -------- */
+  const changeQty  = (ci: CartItem, q: number) => q > 0 && updateCartItem({ ...ci, quantity: q });
+  const changeNote = (ci: CartItem, v: string) => updateCartItem({ ...ci, specialInstructions: v });
+  const changeLvl  = (ci: CartItem, v: string) => updateCartItem({ ...ci, spiceLevel: v });
 
-  const handleGoToMenu = () => {
-    router.push("/menu");
-  };
-
-  // Helper for quantity changes
-  const handleQuantityChange = (item: CartItem, newQty: number) => {
-    if (newQty < 1) return;
-    updateCartItem({ ...item, quantity: newQty });
-  };
-
-  // Special instructions/spice changes
-  const handleInstructionsChange = (item: CartItem, instructions: string) => {
-    updateCartItem({ ...item, specialInstructions: instructions });
-  };
-
-  const handleSpiceChange = (item: CartItem, spice: string) => {
-    updateCartItem({ ...item, spiceLevel: spice });
-  };
-
-  // Handle option changes for item (4 arguments: cartItem, group, choice, checked)
-  function handleOptionChange(
-    cartItem: CartItem,
-    group: MenuItemOptionGroup,
-    choice: MenuOptionChoice,
+  const updateChoice = (
+    ci: CartItem,
+    g: MenuItemOptionGroup,
+    c: MenuOptionChoice,
     checked: boolean
-  ) {
-    const prevSelection = cartItem.selectedOptions?.[group.id] || {
-      selectedChoiceIds: [],
-      nestedSelections: {},
-    };
-    let newSelected = [...prevSelection.selectedChoiceIds];
-
-    if (group.optionType === "single-select" || group.optionType === "dropdown") {
-      newSelected = checked ? [choice.id] : [];
+  ) => {
+    const sel = ensureGroupState(ci.selectedOptions, g.id);
+    const pg  = sel[g.id];
+    let ids   = [...pg.selectedChoiceIds];
+    if (g.optionType === "single-select" || g.optionType === "dropdown") {
+      ids = checked ? [c.id] : [];
     } else {
-      // multi-select
-      if (checked) {
-        if (newSelected.length < (group.maxAllowed || Infinity)) {
-          newSelected.push(choice.id);
-        } else {
-          toast.error(`You can select up to ${group.maxAllowed} item(s).`);
-        }
-      } else {
-        newSelected = newSelected.filter((id) => id !== choice.id);
-      }
+      ids = checked ? [...new Set([...ids, c.id])] : ids.filter((x) => x !== c.id);
     }
+    updateCartItem({ ...ci, selectedOptions: { ...sel, [g.id]: { ...pg, selectedChoiceIds: ids } } });
+  };
 
-    updateCartItem({
-      ...cartItem,
-      selectedOptions: {
-        ...cartItem.selectedOptions,
-        [group.id]: {
-          ...prevSelection,
-          selectedChoiceIds: newSelected,
-        },
-      },
-    });
-  }
-
-  // Handle nested option changes
-  function handleNestedOptionChange(
-    cartItem: CartItem,
-    group: MenuItemOptionGroup,
-    parentChoiceId: string,
-    nestedChoiceId: string,
+  const updateNested = (
+    ci: CartItem,
+    g: MenuItemOptionGroup,
+    parentId: string,
+    nId: string,
     checked: boolean,
-    nestedMaxAllowed?: number
-  ) {
-    const prevSelection = cartItem.selectedOptions?.[group.id] || {
-      selectedChoiceIds: [],
-      nestedSelections: {},
-    };
-    const currentNested = prevSelection.nestedSelections[parentChoiceId] || [];
-    let newNested = [...currentNested];
-
-    if (checked) {
-      if (newNested.length < (nestedMaxAllowed || Infinity)) {
-        newNested.push(nestedChoiceId);
-      } else {
-        toast.error(`You can select up to ${nestedMaxAllowed} nested options.`);
-      }
-    } else {
-      newNested = newNested.filter((id) => id !== nestedChoiceId);
+    max?: number
+  ) => {
+    const sel   = ensureGroupState(ci.selectedOptions, g.id);
+    const pg    = sel[g.id];
+    const curr  = (pg.nestedSelections ?? {})[parentId] ?? [];
+    let nextArr = checked ? [...new Set([...curr, nId])] : curr.filter((x) => x !== nId);
+    if (checked && max && nextArr.length > max) {
+      toast.error(`Only ${max} allowed`);
+      return;
     }
-
     updateCartItem({
-      ...cartItem,
+      ...ci,
       selectedOptions: {
-        ...cartItem.selectedOptions,
-        [group.id]: {
-          ...prevSelection,
-          nestedSelections: {
-            ...prevSelection.nestedSelections,
-            [parentChoiceId]: newNested,
-          },
+        ...sel,
+        [g.id]: {
+          ...pg,
+          nestedSelections: { ...pg.nestedSelections, [parentId]: nextArr },
         },
       },
     });
-  }
+  };
 
-  // Calculate price for a single cart item, accounting for selected options
-  function calculateItemPrice(item: CartItem): number {
-    let total = item.price;
-    if (item.optionGroups && item.selectedOptions) {
-      for (const group of item.optionGroups) {
-        const groupState = item.selectedOptions[group.id];
-        if (groupState) {
-          for (const choice of group.choices) {
-            if (groupState.selectedChoiceIds.includes(choice.id)) {
-              if (choice.nestedOptionGroup) {
-                const nestedSelected = groupState.nestedSelections?.[choice.id] || [];
-                for (const nested of choice.nestedOptionGroup.choices) {
-                  if (
-                    nestedSelected.includes(nested.id) &&
-                    nested.priceAdjustment
-                  ) {
-                    total += nested.priceAdjustment;
-                  }
-                }
-              } else {
-                if (choice.priceAdjustment) {
-                  total += choice.priceAdjustment;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    return total * (item.quantity || 1);
-  }
+  /* -------- dedup lists to avoid double‑render bug -------- */
+  const uniqCart  = uniqBy(cartItems,  (c) => c.cartItemId);
+  const uniqSaved = uniqBy(savedItems, (s) => s.cartItemId);
 
-  // ---------------------- RENDER ----------------------
-  // If cart is empty
-  if (cartItems.length === 0 && savedItems.length === 0) {
+  /* -------- empty view -------- */
+  if (!uniqCart.length && !uniqSaved.length)
     return (
       <div className={styles.cartContainer}>
-        {cartClearedDueToInactivity && (
+        {cleared && (
           <p className={styles.inactiveWarning}>
-            Your cart has been cleared due to 15 minutes of inactivity.
+            Your cart was cleared after inactivity.
           </p>
         )}
         <div className={styles.emptyCart}>
-          {/* Icon uses a masked SVG or an emoji, whichever you prefer */}
-          <span className={styles.emptyIcon} aria-label="Empty Cart Icon" />
+          <span className={styles.emptyIcon} />
           <h2 className={styles.emptyTitle}>Your cart is empty</h2>
           <p className={styles.emptySubtitle}>
-            Looks like you haven&apos;t added anything yet.
+            Looks like you haven’t added anything yet.
           </p>
-          <button className={styles.menuBtn} onClick={handleGoToMenu}>
+          <button onClick={() => router.push("/menu")} className={styles.menuBtn}>
             Back to Menu
           </button>
         </div>
       </div>
     );
-  }
 
+  /* ----------------------------------------------------------------
+   *  MAIN RENDER
+   * ---------------------------------------------------------------- */
   return (
     <div className={styles.cartContainer}>
-      {/* ---------------------- Cart Header ---------------------- */}
+      {/* ========= Header ========= */}
       <div className={styles.cartHeader}>
-        <span className={styles.cartHeaderIcon} aria-label="Cart Icon" />
+        <span className={styles.cartHeaderIcon} aria-label="Cart" />
         <h1 className={styles.pageTitle}>Your Cart</h1>
         <p className={styles.cartSubtitle}>
           Review your selections below, then proceed to checkout.
         </p>
       </div>
 
-      {/* ---------------------- Cart Items ---------------------- */}
-      {cartItems.length > 0 && (
+      {/* ========= Cart Items ========= */}
+      {uniqCart.length > 0 && (
         <div className={styles.cartItemsContainer}>
-          {cartItems.map((item, index) => (
-            <div
-              key={`${item.cartItemId}-${index}`}
-              className={`${styles.cartItem} fade-in`}
-            >
-              {/* Item Header */}
-              <div className={styles.itemHeader}>
-                <div className={styles.itemNumber}>{index + 1}.</div>
-                {item.image && (
-                  <div className={styles.thumbnail}>
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      width={150}
-                      height={150}
-                      unoptimized
-                      className={styles.itemThumbnail}
-                    />
+          {uniqCart.map((item, idx) => {
+            const groups = item.optionGroups ?? [];
+            const alreadySaved = uniqSaved.some((s) => s.cartItemId === item.cartItemId);
+            return (
+              <div key={item.cartItemId} className={`${styles.cartItem} fade-in`}>
+                {/* --- header row --- */}
+                <div className={styles.itemHeader}>
+                  <div className={styles.itemNumber}>{idx + 1}.</div>
+                  {item.image && (
+                    <div className={styles.thumbnail}>
+                      <Image
+                        src={item.image}
+                        alt={item.title}
+                        width={150}
+                        height={150}
+                        unoptimized
+                        className={styles.itemThumbnail}
+                      />
+                    </div>
+                  )}
+                  <div className={styles.itemInfo}>
+                    <h3 className={styles.itemTitle}>{item.title}</h3>
+                    {item.description && (
+                      <p className={styles.itemDesc}>{item.description}</p>
+                    )}
+                  </div>
+                  <div className={styles.actionButtons}>
+                    <button
+                      onClick={() => removeFromCart(item.cartItemId)}
+                      className={styles.removeBtn}
+                    >
+                      Remove
+                    </button>
+                    <button
+                      onClick={() => !alreadySaved && moveToSaved(item.cartItemId)}
+                      className={styles.saveLaterBtn}
+                      disabled={alreadySaved}
+                      title={alreadySaved ? "Already saved" : "Save for later"}
+                    >
+                      {alreadySaved ? "Saved" : "Save for Later"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* --- quantity --- */}
+                <div className={styles.quantityRow}>
+                  <label>Quantity:</label>
+                  <button
+                    className={styles.stepBtn}
+                    onClick={() => changeQty(item, item.quantity - 1)}
+                  >
+                    –
+                  </button>
+                  <span className={styles.quantityValue}>{item.quantity}</span>
+                  <button
+                    className={styles.stepBtn}
+                    onClick={() => changeQty(item, item.quantity + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* --- spice level --- */}
+                {item.hasSpiceLevel && (
+                  <div className={styles.spiceLevelRow}>
+                    <label>Spice Level:</label>
+                    <div className={styles.spiceButtons}>
+                      {["No Spice", "Mild", "Medium", "Hot"].map((lvl) => (
+                        <button
+                          key={lvl}
+                          className={
+                            item.spiceLevel === lvl
+                              ? `${styles.spiceBtn} ${styles.activeSpiceBtn}`
+                              : styles.spiceBtn
+                          }
+                          onClick={() => changeLvl(item, lvl)}
+                        >
+                          {lvl}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-                <div className={styles.itemInfo}>
-                  <h3 className={styles.itemTitle}>{item.title}</h3>
-                  {item.description && (
-                    <p className={styles.itemDesc}>{item.description}</p>
-                  )}
-                </div>
-                <div className={styles.actionButtons}>
-                  <button
-                    className={styles.removeBtn}
-                    onClick={() => removeFromCart(item.cartItemId)}
-                  >
-                    Remove
-                  </button>
-                  <button
-                    className={styles.saveLaterBtn}
-                    onClick={() => moveToSaved(item.cartItemId)}
-                  >
-                    Save for Later
-                  </button>
-                </div>
-              </div>
 
-              {/* Quantity Row */}
-              <div className={styles.quantityRow}>
-                <label>Quantity:</label>
-                <button
-                  className={styles.stepBtn}
-                  onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                >
-                  -
-                </button>
-                <span className={styles.quantityValue}>{item.quantity}</span>
-                <button
-                  className={styles.stepBtn}
-                  onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                >
-                  +
-                </button>
-              </div>
+                {/* --- option groups --- */}
+                {groups.length > 0 && (
+                  <div className={styles.optionGroupsContainer}>
+                    {groups.map((g) => {
+                      const state =
+                        item.selectedOptions?.[g.id] ?? {
+                          selectedChoiceIds: [],
+                          nestedSelections: {},
+                        };
+                      return (
+                        <div key={g.id} className={styles.optionGroup}>
+                          <h4 className={styles.optionGroupTitle}>
+                            {g.title} (Select {g.minRequired}
+                            {g.maxAllowed ? ` - ${g.maxAllowed}` : ""})
+                          </h4>
+                          {g.optionType === "dropdown" ? (
+                            <select
+                              className={styles.dropdownSelect}
+                              value={state.selectedChoiceIds[0] || ""}
+                              onChange={(e) => {
+                                const ch = g.choices.find(
+                                  (x) => x.id === e.target.value
+                                );
+                                ch && updateChoice(item, g, ch, true);
+                              }}
+                            >
+                              <option value="">-- Select --</option>
+                              {g.choices.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.label}
+                                  {!c.nestedOptionGroup && c.priceAdjustment
+                                    ? ` (+$${c.priceAdjustment.toFixed(2)})`
+                                    : ""}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <div className={styles.optionList}>
+                              {g.choices.map((c) => {
+                                const checked = state.selectedChoiceIds.includes(c.id);
+                                return (
+                                  <div key={c.id} className={styles.choiceRow}>
+                                    <label>
+                                      <input
+                                        type={g.optionType === "single-select" ? "radio" : "checkbox"}
+                                        checked={checked}
+                                        name={`g-${g.id}`}
+                                        onChange={(e) =>
+                                          updateChoice(item, g, c, e.target.checked)
+                                        }
+                                      />
+                                      {c.label}
+                                      {!c.nestedOptionGroup && c.priceAdjustment
+                                        ? ` (+$${c.priceAdjustment.toFixed(2)})`
+                                        : ""}
+                                    </label>
 
-              {/* Spice Level Row */}
-              {item.hasSpiceLevel && (
-                <div className={styles.spiceLevelRow}>
-                  <label>Spice Level:</label>
-                  <div className={styles.spiceButtons}>
-                    {["No Spice", "Mild", "Medium", "Hot"].map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => handleSpiceChange(item, level)}
-                        className={
-                          item.spiceLevel === level
-                            ? `${styles.spiceBtn} ${styles.activeSpiceBtn}`
-                            : styles.spiceBtn
-                        }
-                      >
-                        {level}
-                      </button>
-                    ))}
+                                    {c.nestedOptionGroup && checked && (
+                                      <div className={styles.nestedOptions}>
+                                        <h5 className={styles.nestedGroupTitle}>
+                                          {c.nestedOptionGroup.title} (Select{" "}
+                                          {c.nestedOptionGroup.minRequired}
+                                          {c.nestedOptionGroup.maxAllowed
+                                            ? ` - ${c.nestedOptionGroup.maxAllowed}`
+                                            : ""}
+                                          )
+                                        </h5>
+                                        {c.nestedOptionGroup.choices.map((n) => {
+                                          const nSel =
+                                            state.nestedSelections?.[c.id] ?? [];
+                                          const nChecked = nSel.includes(n.id);
+                                          return (
+                                            <div
+                                              key={n.id}
+                                              className={styles.nestedChoiceRow}
+                                            >
+                                              <label>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={nChecked}
+                                                  onChange={(e) =>
+                                                    updateNested(
+                                                      item,
+                                                      g,
+                                                      c.id,
+                                                      n.id,
+                                                      e.target.checked,
+                                                      c.nestedOptionGroup?.maxAllowed
+                                                    )
+                                                  }
+                                                />
+                                                {n.label}
+                                                {n.priceAdjustment
+                                                  ? ` (+$${n.priceAdjustment.toFixed(2)})`
+                                                  : ""}
+                                              </label>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
+                )}
+
+                {/* --- instructions --- */}
+                <div className={styles.instructionsRow}>
+                  <label>Special Instructions:</label>
+                  <textarea
+                    className={styles.instructionsInput}
+                    rows={2}
+                    value={item.specialInstructions || ""}
+                    onChange={(e) => changeNote(item, e.target.value)}
+                  />
                 </div>
-              )}
 
-              {/* Option Groups & Nested */}
-              {item.optionGroups && item.optionGroups.length > 0 && (
-                <div className={styles.optionGroupsContainer}>
-                  {item.optionGroups.map((group) => {
-                    const gState =
-                      item.selectedOptions?.[group.id] || {
-                        selectedChoiceIds: [],
-                        nestedSelections: {},
-                      };
-                    return (
-                      <div key={group.id} className={styles.optionGroup}>
-                        <h4 className={styles.optionGroupTitle}>
-                          {group.title} (Select {group.minRequired}
-                          {group.maxAllowed ? ` - ${group.maxAllowed}` : ""})
-                        </h4>
-
-                        {group.optionType === "dropdown" ? (
-                          <select
-                            className={styles.dropdownSelect}
-                            value={gState.selectedChoiceIds[0] || ""}
-                            onChange={(e) => {
-                              const choiceId = e.target.value;
-                              const choice = group.choices.find(
-                                (c) => c.id === choiceId
-                              );
-                              if (choice) {
-                                handleOptionChange(item, group, choice, true);
-                              }
-                            }}
-                          >
-                            <option value="">-- Select --</option>
-                            {group.choices.map((choice) => (
-                              <option key={choice.id} value={choice.id}>
-                                {choice.label}
-                                {choice.nestedOptionGroup
-                                  ? ""
-                                  : choice.priceAdjustment
-                                  ? ` (+$${choice.priceAdjustment.toFixed(2)})`
-                                  : ""}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <div className={styles.optionList}>
-                            {group.choices.map((choice) => {
-                              const isSelected = gState.selectedChoiceIds.includes(
-                                choice.id
-                              );
-                              return (
-                                <div key={choice.id} className={styles.choiceRow}>
-                                  <label>
-                                    <input
-                                      type={
-                                        group.optionType === "single-select"
-                                          ? "radio"
-                                          : "checkbox"
-                                      }
-                                      name={`group-${group.id}`}
-                                      checked={isSelected}
-                                      onChange={(e) =>
-                                        handleOptionChange(
-                                          item,
-                                          group,
-                                          choice,
-                                          e.target.checked
-                                        )
-                                      }
-                                    />
-                                    {choice.label}
-                                    {choice.nestedOptionGroup
-                                      ? ""
-                                      : choice.priceAdjustment
-                                      ? ` (+$${choice.priceAdjustment.toFixed(2)})`
-                                      : ""}
-                                  </label>
-
-                                  {/* Nested Options */}
-                                  {choice.nestedOptionGroup && isSelected && (
-                                    <div className={styles.nestedOptions}>
-                                      <h5 className={styles.nestedGroupTitle}>
-                                        {choice.nestedOptionGroup.title} (Select{" "}
-                                        {choice.nestedOptionGroup.minRequired}
-                                        {choice.nestedOptionGroup.maxAllowed
-                                          ? ` - ${choice.nestedOptionGroup.maxAllowed}`
-                                          : ""}
-                                        )
-                                      </h5>
-                                      {choice.nestedOptionGroup.choices.map((nested) => {
-                                        const nestedSelected =
-                                          gState.nestedSelections?.[choice.id] || [];
-                                        const isNestedSelected = nestedSelected.includes(
-                                          nested.id
-                                        );
-                                        return (
-                                          <div
-                                            key={nested.id}
-                                            className={styles.nestedChoiceRow}
-                                          >
-                                            <label>
-                                              <input
-                                                type="checkbox"
-                                                checked={isNestedSelected}
-                                                onChange={(e) =>
-                                                  handleNestedOptionChange(
-                                                    item,
-                                                    group,
-                                                    choice.id,
-                                                    nested.id,
-                                                    e.target.checked,
-                                                    choice.nestedOptionGroup?.maxAllowed
-                                                  )
-                                                }
-                                              />
-                                              {nested.label}
-                                              {nested.priceAdjustment
-                                                ? ` (+$${nested.priceAdjustment.toFixed(
-                                                    2
-                                                  )})`
-                                                : ""}
-                                            </label>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Special Instructions */}
-              <div className={styles.instructionsRow}>
-                <label>Special Instructions:</label>
-                <textarea
-                  rows={2}
-                  className={styles.instructionsInput}
-                  value={item.specialInstructions || ""}
-                  onChange={(e) =>
-                    handleInstructionsChange(item, e.target.value)
-                  }
-                />
+                {/* --- price --- */}
+                <p className={styles.itemPrice}>
+                  Item&nbsp;Price:&nbsp;${priceOf(item).toFixed(2)}
+                </p>
               </div>
-
-              {/* Price Display */}
-              <p className={styles.itemPrice}>
-                Item Price: ${calculateItemPrice(item).toFixed(2)}
-              </p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* ---------------------- Saved for Later Section ---------------------- */}
-      {savedItems.length > 0 && (
+      {/* ========= Saved for later ========= */}
+      {uniqSaved.length > 0 && (
         <div className={styles.savedContainer}>
           <h2 className={styles.savedTitle}>Saved for Later</h2>
           <div className={styles.savedItemsWrapper}>
-            {savedItems.map((item, index) => (
-              <div
-                key={`${item.cartItemId}-${index}`}
-                className={`${styles.savedItem} fade-in`}
-              >
+            {uniqSaved.map((item) => (
+              <div key={item.cartItemId} className={styles.savedItem}>
                 {item.image && (
                   <Image
                     src={item.image}
@@ -557,36 +524,31 @@ export default function CartPage() {
         </div>
       )}
 
-      {/* ---------------------- Recommended Items (Marquee) ---------------------- */}
+      {/* ========= Recommendations ========= */}
       <div className={styles.recommendationsContainer}>
-        <h2 className={styles.recommendTitle}>You may also like these items</h2>
-        {displayedRecs.length > 0 ? (
+        <h2 className={styles.recommendTitle}>You may also like</h2>
+        {recs.length ? (
           <div className={styles.marqueeWrapper}>
             <div className={styles.marqueeTrack}>
-              {marqueeRecs.map((rec, i) => (
+              {[...recs.slice(0, 3), ...recs.slice(0, 3)].map((rec, i) => (
                 <div
-                  key={`rec-${rec.id}-${i}`}
-                  className={`${styles.recommendItem} fade-in`}
-                  onClick={() =>
-                    router.push(`/menuitem/${rec.id}?highlight=true`)
-                  }
+                  key={rec.id + "-" + i}
+                  className={styles.recommendItem}
+                  onClick={() => router.push(`/menuitem/${rec.id}`)}
                 >
                   <div className={styles.recommendImageContainer}>
-                    {rec.image && (
-                      <Image
-                        src={rec.image}
-                        alt={rec.title}
-                        fill
-                        unoptimized
-                        className={styles.recommendThumbnail}
-                      />
-                    )}
+                    {/* fallback prevents layout shift if no img */}
+                    <Image
+                      src={rec.image || "/placeholder.png"}
+                      alt={rec.title}
+                      fill
+                      unoptimized
+                      className={styles.recommendThumbnail}
+                    />
                   </div>
-                  <button className={styles.addRecommendBtn}>
-                    View / Add
-                  </button>
+                  <button className={styles.addRecommendBtn}>View / Add</button>
                   <div className={styles.recommendInfo}>
-                    <h4 className={styles.recommendItemTitle}>{rec.title}</h4>
+                    <p className={styles.recommendItemTitle}>{rec.title}</p>
                     <p className={styles.recommendItemPrice}>
                       ${rec.price.toFixed(2)}
                     </p>
@@ -600,19 +562,22 @@ export default function CartPage() {
         )}
       </div>
 
-      {/* ---------------------- Footer ---------------------- */}
-      {cartItems.length > 0 && (
+      {/* ========= Footer ========= */}
+      {uniqCart.length > 0 && (
         <div className={styles.cartFooter}>
-          <h2 className={styles.cartTotal}>Total: ${totalPrice}</h2>
+          <h2 className={styles.cartTotal}>Total: ${cartTotal.toFixed(2)}</h2>
           <div className={styles.footerButtons}>
-            <button onClick={handleCheckout} className={styles.checkoutBtn}>
+            <button
+              onClick={() => router.push("/checkout")}
+              className={styles.checkoutBtn}
+            >
               Proceed to Checkout
             </button>
             <button onClick={clearCart} className={styles.clearBtn}>
               Clear Cart
             </button>
-            <button onClick={handleGoToMenu} className={styles.menuBtn}>
-              Back To Menu
+            <button onClick={() => router.push("/menu")} className={styles.menuBtn}>
+              Back to Menu
             </button>
           </div>
         </div>

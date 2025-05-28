@@ -1,20 +1,27 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+/* ------------------------------------------------------------------ */
+/*  File: app/api/menu/item/[itemId]/route.ts                         */
+/* ------------------------------------------------------------------ */
+/*  • GET    /api/menu/item/:itemId                                   */
+/*  • PUT    /api/menu/item/:itemId                                   */
+/*  • DELETE /api/menu/item/:itemId                                   */
+/* ------------------------------------------------------------------ */
 
-/**
- * GET /api/menu/item/[itemId]
- * Fetch a single menu item with its category and nested option groups.
- */
+import { NextResponse } from "next/server";
+import { prisma }       from "@/lib/prisma";
+
+/* ================================================================== */
+/*  GET  /api/menu/item/:itemId                                       */
+/* ================================================================== */
 export async function GET(
-  request: Request,
-  context: { params: { itemId: string } }
+  _req: Request,
+  ctx: { params: Promise<{ itemId: string }> },
 ) {
+  const { itemId } = await ctx.params;
   try {
-    const { itemId } = context.params;
     const menuItem = await prisma.menuItem.findUnique({
       where: { id: itemId },
       include: {
-        category: true, // Include the category so that its id is available on the client
+        category: true,
         optionGroups: {
           include: {
             choices: {
@@ -26,178 +33,196 @@ export async function GET(
         },
       },
     });
+
     if (!menuItem) {
       return NextResponse.json({ message: "Menu item not found" }, { status: 404 });
     }
-    return NextResponse.json({ item: menuItem }, { status: 200 });
+    return NextResponse.json({ menuItem }, { status: 200 });
   } catch (error) {
     console.error("Error fetching menu item:", error);
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
-/**
- * PUT /api/menu/item/[itemId]
- * Update an existing menu item along with its nested option groups.
- */
+/* ================================================================== */
+/*  PUT  /api/menu/item/:itemId                                       */
+/* ================================================================== */
 export async function PUT(
-  request: Request,
-  context: { params: Promise<{ itemId: string }> }
+  req: Request,
+  ctx: { params: Promise<{ itemId: string }> },
 ) {
+  const { itemId } = await ctx.params;
   try {
-    const { itemId } = await context.params;
-    const payload = await request.json();
+    const body = await req.json();
 
-    // Destructure payload:
-    // - optionGroups: nested option groups data.
-    // - categoryId: the ID for the category (for relational update)
-    // - menuItemData: remaining top-level fields.
-    const { optionGroups, categoryId, ...menuItemData } = payload;
+    /* -------- scalar field patch ---------------------------------- */
+    const updateData: Record<string, any> = {};
+    if (body.title          !== undefined) updateData.title          = String(body.title).trim();
+    if (body.description    !== undefined) updateData.description    = String(body.description);
+    if (body.price          !== undefined) updateData.price          = Number(body.price);
+    if (body.image          !== undefined) updateData.image          = String(body.image);
+    if (body.hasSpiceLevel  !== undefined) updateData.hasSpiceLevel  = Boolean(body.hasSpiceLevel);
+    if (body.showInGolfMenu !== undefined) updateData.showInGolfMenu = Boolean(body.showInGolfMenu);
+    if (body.categoryId     !== undefined) updateData.categoryId     = String(body.categoryId);
+    if (body.cloverItemId   !== undefined) updateData.cloverItemId   = String(body.cloverItemId);
+    if (body.stock          !== undefined) updateData.stock          = Number(body.stock);
+    if (body.hasAlcohol     !== undefined) updateData.isAlcohol      = Boolean(body.hasAlcohol);
 
-    // STEP 1: Remove all existing nested records for a clean update.
-    const existingOptionGroups = await prisma.menuItemOptionGroup.findMany({
-      where: { menuItemId: itemId },
-      select: { id: true },
-    });
-    const optionGroupIds = existingOptionGroups.map((group) => group.id);
+    /* -------- build optionGroups create --------------------------- */
+    const buildOptionGroupsCreate = (optionGroups: any[]) =>
+      Array.isArray(optionGroups)
+        ? {
+            create: optionGroups.map((group: any) => ({
+              title:       group.title,
+              minRequired: group.minRequired,
+              maxAllowed:  group.maxAllowed,
+              optionType:  group.optionType,
+              choices: Array.isArray(group.choices)
+                ? {
+                    create: group.choices.map((choice: any) => ({
+                      label:           choice.label,
+                      priceAdjustment: choice.priceAdjustment,
+                      nestedOptionGroup: choice.nestedOptionGroup
+                        ? {
+                            create: {
+                              title:       choice.nestedOptionGroup.title,
+                              minRequired: choice.nestedOptionGroup.minRequired,
+                              maxAllowed:  choice.nestedOptionGroup.maxAllowed,
+                              choices: Array.isArray(choice.nestedOptionGroup.choices)
+                                ? {
+                                    create: choice.nestedOptionGroup.choices.map(
+                                      (nc: any) => ({
+                                        label:           nc.label,
+                                        priceAdjustment: nc.priceAdjustment,
+                                      }),
+                                    ),
+                                  }
+                                : undefined,
+                            },
+                          }
+                        : undefined,
+                    })),
+                  }
+                : undefined,
+            })),
+          }
+        : undefined;
 
-    if (optionGroupIds.length) {
-      // a. Delete nested option choices for choices with nested option groups.
-      const optionChoicesWithNested = await prisma.menuOptionChoice.findMany({
-        where: {
-          optionGroup: { menuItemId: itemId },
-          nestedOptionGroup: { isNot: null },
-        },
-        select: {
-          nestedOptionGroup: { select: { id: true } },
-        },
-      });
-      const nestedGroupIds = optionChoicesWithNested
-        .map((choice) => choice.nestedOptionGroup?.id)
-        .filter((id): id is string => Boolean(id));
-      if (nestedGroupIds.length > 0) {
-        await prisma.nestedOptionChoice.deleteMany({
-          where: { nestedGroupId: { in: nestedGroupIds } },
+    const optionGroupsCreate = buildOptionGroupsCreate(body.optionGroups);
+
+    /* -------- transaction: wipe + recreate groups ----------------- */
+    const updated = await prisma.$transaction(async (tx) => {
+      if (optionGroupsCreate) {
+        await tx.nestedOptionChoice.deleteMany({
+          where: {
+            nestedGroup: {
+              parentChoice: {
+                optionGroup: { menuItemId: itemId },
+              },
+            },
+          },
+        });
+        await tx.nestedOptionGroup.deleteMany({
+          where: {
+            parentChoice: {
+              optionGroup: { menuItemId: itemId },
+            },
+          },
+        });
+        await tx.menuOptionChoice.deleteMany({
+          where: { optionGroup: { menuItemId: itemId } },
+        });
+        await tx.menuItemOptionGroup.deleteMany({
+          where: { menuItemId: itemId },
         });
       }
 
-      // b. Delete nested option groups for this menu item.
-      await prisma.nestedOptionGroup.deleteMany({
-        where: { parentChoice: { optionGroup: { menuItemId: itemId } } },
-      });
-
-      // c. Delete menu option choices for this menu item.
-      await prisma.menuOptionChoice.deleteMany({
-        where: { optionGroupId: { in: optionGroupIds } },
-      });
-    }
-
-    // d. Delete the menu item’s option groups.
-    await prisma.menuItemOptionGroup.deleteMany({
-      where: { menuItemId: itemId },
-    });
-
-    // STEP 2: Build nested create input for new option groups.
-    const optionGroupsNested = {
-      create: optionGroups.map((group: any) => ({
-        title: group.title,
-        minRequired: group.minRequired,
-        maxAllowed: group.maxAllowed,
-        optionType: group.optionType,
-        choices: {
-          create: group.choices.map((choice: any) => ({
-            label: choice.label,
-            priceAdjustment: choice.priceAdjustment,
-            nestedOptionGroup: choice.nestedOptionGroup
-              ? {
-                  create: {
-                    title: choice.nestedOptionGroup.title,
-                    minRequired: choice.nestedOptionGroup.minRequired,
-                    maxAllowed: choice.nestedOptionGroup.maxAllowed,
-                    choices: {
-                      create: (choice.nestedOptionGroup.choices || []).map(
-                        (nChoice: any) => ({
-                          label: nChoice.label,
-                          priceAdjustment: nChoice.priceAdjustment,
-                        })
-                      ),
-                    },
-                  },
-                }
-              : undefined,
-          })),
+      return tx.menuItem.update({
+        where: { id: itemId },
+        data:  {
+          ...updateData,
+          ...(optionGroupsCreate ? { optionGroups: optionGroupsCreate } : {}),
         },
-      })),
-    };
-
-    // STEP 3: Update the menu item.
-    const updated = await prisma.menuItem.update({
-      where: { id: itemId },
-      data: {
-        ...menuItemData,
-        ...(categoryId && { category: { connect: { id: categoryId } } }),
-        optionGroups: optionGroupsNested,
-      },
+        include: {
+          category: true,
+          optionGroups: {
+            include: {
+              choices: {
+                include: {
+                  nestedOptionGroup: { include: { choices: true } },
+                },
+              },
+            },
+          },
+        },
+      });
     });
 
-    return NextResponse.json({ item: updated }, { status: 200 });
-  } catch (error) {
-    console.error("Error updating menu item:", error);
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ menuItem: updated }, { status: 200 });
+  } catch (error: any) {
+    console.error(`Error updating menu item ${itemId}:`, error);
+    if (error.code === "P2025") {
+      return NextResponse.json({ message: "Menu item not found" }, { status: 404 });
+    }
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
-/**
- * DELETE /api/menu/item/[itemId]
- * Delete a menu item and all its dependents.
- */
+/* ================================================================== */
+/*  DELETE /api/menu/item/:itemId                                     */
+/* ================================================================== */
 export async function DELETE(
-  request: Request,
-  context: { params: Promise<{ itemId: string }> }
+  _req: Request,
+  ctx: { params: Promise<{ itemId: string }> },
 ) {
+  const { itemId } = await ctx.params;
   try {
-    const { itemId } = await context.params;
+    await prisma.$transaction([
+      prisma.nestedOptionChoice.deleteMany({
+        where: {
+          nestedGroup: {
+            parentChoice: {
+              optionGroup: { menuItemId: itemId },
+            },
+          },
+        },
+      }),
+      prisma.nestedOptionGroup.deleteMany({
+        where: {
+          parentChoice: {
+            optionGroup: { menuItemId: itemId },
+          },
+        },
+      }),
+      prisma.menuOptionChoice.deleteMany({
+        where: { optionGroup: { menuItemId: itemId } },
+      }),
+      prisma.menuItemOptionGroup.deleteMany({
+        where: { menuItemId: itemId },
+      }),
+      prisma.menuItem.delete({
+        where: { id: itemId },
+      }),
+    ]);
 
-    // 1. Delete NestedOptionChoices from all NestedOptionGroups of MenuOptionChoices associated with this item.
-    const optionChoices = await prisma.menuOptionChoice.findMany({
-      where: {
-        optionGroup: { menuItemId: itemId },
-        nestedOptionGroup: { isNot: null },
-      },
-      select: { nestedOptionGroup: { select: { id: true } } },
-    });
-    const nestedGroupIds = optionChoices
-      .map((choice) => choice.nestedOptionGroup?.id)
-      .filter((id): id is string => Boolean(id));
-    if (nestedGroupIds.length > 0) {
-      await prisma.nestedOptionChoice.deleteMany({
-        where: { nestedGroupId: { in: nestedGroupIds } },
-      });
+    return NextResponse.json(
+      { message: "Menu item and related data deleted" },
+      { status: 200 },
+    );
+  } catch (error: any) {
+    console.error(`Error deleting menu item ${itemId}:`, error);
+    if (error.code === "P2025") {
+      return NextResponse.json({ message: "Menu item not found" }, { status: 404 });
     }
-
-    // 2. Delete NestedOptionGroups for MenuOptionChoices of this item.
-    await prisma.nestedOptionGroup.deleteMany({
-      where: { parentChoice: { optionGroup: { menuItemId: itemId } } },
-    });
-
-    // 3. Delete MenuOptionChoices for this item.
-    await prisma.menuOptionChoice.deleteMany({
-      where: { optionGroup: { menuItemId: itemId } },
-    });
-
-    // 4. Delete MenuItemOptionGroups for this item.
-    await prisma.menuItemOptionGroup.deleteMany({
-      where: { menuItemId: itemId },
-    });
-
-    // 5. Finally, delete the MenuItem.
-    await prisma.menuItem.delete({
-      where: { id: itemId },
-    });
-
-    return NextResponse.json({ message: "Menu item deleted" }, { status: 200 });
-  } catch (error) {
-    console.error("Error deleting menu item:", error);
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

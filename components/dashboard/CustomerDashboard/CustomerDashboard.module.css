@@ -1,69 +1,198 @@
 /* File: components/dashboard/CustomerDashboard/CustomerDashboard.module.css */
 
-.dashboardContainer {
-    display: flex;
-    min-height: 100vh;
-    background-color: var(--light-gray);
-    font-family: var(--font-body);
-  }
-  
-  /* Sidebar styles */
-  .sidebar {
-    width: 250px;
-    background: var(--primary-color);
-    color: var(--white);
-    padding: 2rem;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .sidebar nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .sidebar nav ul li {
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background 0.3s;
-  }
-  
-  .sidebar nav ul li:hover {
-    background: var(--secondary-color);
-  }
-  
-  .active {
-    background: var(--secondary-color);
-  }
-  
-  /* Main content styles */
-  .mainContent {
-    flex: 1;
-    padding: 2rem;
-  }
-  
-  .sectionContent {
-    background: var(--white);
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: var(--box-shadow-primary);
-    margin-bottom: 2rem;
-  }
-  
-  .orderList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .orderList li {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-  }
-  
-  .orderList li:last-child {
-    border-bottom: none;
-  }
-  
+/* Container */
+.container {
+  display: flex;
+  min-height: 100vh;
+  background: var(--light-gray);
+  font-family: var(--font-body);
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: var(--primary-color);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  box-shadow: var(--box-shadow);
+}
+
+/* Profile summary at top of sidebar */
+.profileSummary {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.avatar {
+  font-size: 3rem;
+}
+
+.name {
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Sidebar navigation */
+.nav {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--white);
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.25s;
+}
+
+.navBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.active {
+  background: var(--secondary-color);
+}
+
+/* Main content area */
+.main {
+  flex: 1;
+  padding: 2rem;
+  background: var(--light-gray);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* Section card wrapper */
+.sectionCard {
+  width: 100%;
+  max-width: 800px;
+  background: var(--white);
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: var(--box-shadow);
+  margin-bottom: 2rem;
+}
+
+/* Profile list inside section */
+.profileList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.profileList li {
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Order list styles */
+.orderList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.orderList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.orderList li:last-child {
+  border-bottom: none;
+}
+
+/* Order info grouping */
+.orderInfo {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.95rem;
+}
+
+/* Track button for pending orders */
+.trackBtn {
+  background: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: opacity 0.2s;
+}
+
+.trackBtn:hover {
+  opacity: 0.85;
+}
+
+/* Edit form inside section */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+}
+
+.formRow label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.formRow input {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+/* Save button in edit form */
+.saveBtn {
+  align-self: flex-start;
+  background: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: opacity 0.25s;
+}
+
+.saveBtn:hover {
+  opacity: 0.85;
+}
+
+/* Save message feedback */
+.saveMsg {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--secondary-color);
+}
+
+/* Placeholder text style */
+.placeholder {
+  color: #666;
+  font-style: italic;
+  line-height: 1.4;
+}

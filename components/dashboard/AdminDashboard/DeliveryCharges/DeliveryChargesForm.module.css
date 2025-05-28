@@ -1,56 +1,92 @@
-.delivery-charges-form-container {
+/* ======================================================================
+   Delivery‑Charges Form – Container
+   ====================================================================== */
+   .deliveryChargesContainer {
     padding: 2rem;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: var(--white);                /* global */
+    border-radius: 12px;
+    box-shadow: var(--box-shadow-primary);         /* global */
+    max-width: 580px;
+    margin: 0 auto;
   }
   
-  .delivery-charges-form {
+  /* ======================================================================
+     Form Layout
+     ====================================================================== */
+  .deliveryChargesForm {
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;                                   /* modern spacing */
   }
   
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .form-group label {
-    margin-bottom: 0.5rem;
+  /* ======================================================================
+     Form Group
+     ====================================================================== */
+  .formGroup label {
     display: block;
-    font-weight: bold;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--dark-gray);                       /* global */
   }
   
-  .form-group select {
+  .formGroup select {
     width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 0.8rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--light-gray);
+    color: var(--dark-gray);
+    font-size: 1rem;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
   }
   
-  .submission-status {
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    border-radius: 4px;
+  .formGroup select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(0, 191, 99, 0.15);
+    outline: none;
+  }
+  
+  /* ======================================================================
+     Submission Status Messages
+     ====================================================================== */
+  .submissionStatus {
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
     text-align: center;
+    font-weight: 600;
   }
   
   .success {
-    background-color: #e0ffe0;
-    color: green;
+    background-color: rgba(0, 191, 99, 0.1);       /* light green tint */
+    color: var(--primary-color);
   }
   
   .error {
-    background-color: #ffe0e0;
-    color: red;
+    background-color: rgba(255, 77, 77, 0.1);      /* light red tint */
+    color: var(--secondary-color);
   }
   
-  .submit-button {
-    padding: 0.5rem 1rem;
+  /* ======================================================================
+     Submit Button
+     ====================================================================== */
+  .submitButton {
+    background-color: var(--primary-color);
+    color: var(--white);
     border: none;
-    border-radius: 4px;
-    background-color: #0070f3;
-    color: #fff;
+    padding: 0.9rem 1.5rem;
     font-size: 1rem;
+    font-weight: 700;
+    border-radius: 8px;
     cursor: pointer;
+    transition: background-color 0.25s ease, transform 0.25s ease;
+  }
+  
+  .submitButton:hover {
+    background-color: var(--primary-color-hover);
+    transform: translateY(-2px);
+  }
+  
+  .submitButton:active {
+    transform: translateY(0);
   }
   

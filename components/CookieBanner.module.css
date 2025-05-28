@@ -1,0 +1,40 @@
+/* components/CookieBanner.module.css */
+
+/* 1) Banner container */
+.banner {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: var(--dark-gray);
+    color: var(--white);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  /* 2) Message text */
+  .message {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  
+  /* 3) “Accept” button */
+  .button {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+  }
+  
+  /* 4) Button hover state */
+  .button:hover {
+    background-color: var(--primary-color-hover);
+    transform: translateY(-2px);
+  }
+  

@@ -1,0 +1,308 @@
+/* File: components/dashboard/ordersdashboard/orders.module.css
+ *
+ * Sleek, kitchen-friendly orders screen using global CSS variables.
+ * Adds schedule badges (green ASAP, yellow Scheduled), golf, alcohol
+ * and (NEW) cash flags, plus tight card-header alignment.
+ */
+
+/* ────────────────────────────────────────────────────────── */
+/*  Container & Layout                                       */
+/* ────────────────────────────────────────────────────────── */
+.container {
+  background-color: var(--light-gray);
+  color: var(--dark-gray);
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* Header */
+.header {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Search Row */
+.searchRow {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+/* Search Input */
+.searchInput {
+  width: 50%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color-dark);
+  border-radius: 0.5rem;
+  font-family: var(--font-body);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.tabs button {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-body);
+  border: 1px solid var(--border-color-dark);
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+.tabs button:hover {
+  background-color: var(--secondary-color);
+  color: var(--white);
+}
+.tabs button.activeTab {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border-color: var(--primary-color);
+}
+
+/* Orders Grid */
+.ordersGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* Card */
+.card {
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow-primary);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Card Header */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.orderId {
+  font-family: var(--font-body);
+  font-weight: bold;
+  color: var(--dark-gray);
+}
+
+/* Schedule Badge */
+.scheduleBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.scheduleASAP {
+  background-color: var(--success-color, #28a745);
+  color: var(--white);
+}
+.scheduleScheduled {
+  background-color: var(--warning-color, #ffc107);
+  color: var(--black);
+}
+
+/* Golf Badge */
+.golfBadge {
+  background-color: var(--info-color, #e0f7fa);
+  color: var(--info-text-color, #006064);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Alcohol Badge */
+.alcoholBadge {
+  background-color: #ffe6e6;
+  color: #c62828;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  animation: beerPulse 1.5s ease-in-out infinite;
+}
+
+/* ───────────────── NEW ───────────────── */
+/* Cash Badge */
+.cashBadge {
+  background-color: #e8f5e9;  /* light green */
+  color: #2e7d32;             /* dark green text */
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+/* ─────────────────────────────────────── */
+
+/* Pulse animation for beer/alcohol badge */
+@keyframes beerPulse {
+  0%   { transform: scale(1);   }
+  50%  { transform: scale(1.05);}
+  100% { transform: scale(1);   }
+}
+
+/* Status Badge */
+.badge {
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--white);
+  pointer-events: none;
+}
+.badge.ORDER_RECEIVED      { background-color: var(--secondary-color);          color: var(--black); }
+.badge.IN_PROGRESS         { background-color: var(--primary-color);                                    }
+.badge.ORDER_READY         { background-color: var(--secondary-color-hover);   color: var(--black); }
+.badge.PICKED_UP_BY_DRIVER { background-color: var(--gray);                                             }
+.badge.ON_THE_WAY          { background-color: var(--gray-hover);                                       }
+.badge.DELIVERED           { background-color: var(--gray-hover);                                       }
+.badge.CANCELLED           { background-color: var(--secondary-color);                                  }
+
+/* Stepper */
+.stepper {
+  list-style: none;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+}
+.stepper li {
+  flex: 1;
+  text-align: center;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  background-color: var(--light-gray);
+  color: var(--gray);
+}
+.stepper .isDone   { background-color: var(--primary-color);   color: var(--white); }
+.stepper .isActive { background-color: var(--secondary-color); color: var(--black); }
+
+/* Card Body */
+.cardBody p {
+  margin: 0.25rem 0;
+  font-family: var(--font-body);
+  color: var(--dark-gray);
+}
+.driverTag {
+  font-style: italic;
+  color: var(--gray-hover);
+  font-size: 0.9rem;
+}
+
+/* Card Footer */
+.cardFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.actionBtn,
+.deleteBtn {
+  flex: 1;
+  padding: 0.5rem;
+  font-family: var(--font-body);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+.actionBtn  { background-color: var(--primary-color);   color: var(--white); }
+.actionBtn:hover  { background-color: var(--primary-color-hover); }
+.deleteBtn  { background-color: var(--secondary-color); color: var(--white); }
+.deleteBtn:hover  { background-color: var(--secondary-color-hover); }
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.pagination button {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-body);
+  background-color: var(--white);
+  border: 1px solid var(--border-color-dark);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+.pagination button:hover:not(:disabled) { background-color: var(--light-gray); }
+.pagination button:disabled { opacity: 0.5; cursor: default; }
+.pagination span {
+  font-family: var(--font-body);
+  color: var(--dark-gray);
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  z-index: 2000;
+}
+.modal {
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--box-shadow-primary);
+}
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color-dark);
+  background-color: var(--success-color, #28a745);
+  color: var(--white);
+}
+.modalHeader h2 { margin: 0; }
+.modalCloseBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--white);
+}
+.modalCloseBtn:hover { opacity: 0.8; }
+.modalBody { padding: 1rem; }
+.mainItemDetail { margin-bottom: 1rem; }
+.note { font-style: italic; color: var(--gray-hover); }
+.accompanimentsSection h4 { margin-bottom: 0.5rem; font-family: var(--font-heading); color: var(--dark-gray); }
+.accompanimentsSection p  { font-family: var(--font-body);    color: var(--dark-gray); }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .searchInput { width: 80%; }
+  .ordersGrid  { grid-template-columns: 1fr; }
+}

@@ -1,3 +1,4 @@
+// File: components/dashboard/AdminDashboard/MenuBuilder/CategoryList.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -21,6 +22,7 @@ import type { MenuCategory } from "@/utils/types";
 
 interface CategoryListProps {
   categories: MenuCategory[];
+  selected: string | null;                  // ← newly added
   onSelectCategory: (id: string) => void;
   onReorder: (newOrder: MenuCategory[]) => void;
   onEditCategory: (id: string) => void;
@@ -31,6 +33,7 @@ interface CategoryListProps {
 interface SortableItemProps {
   id: string;
   name: string;
+  selected: boolean;                        // ← newly added
   onSelectCategory: (id: string) => void;
   onEditCategory: (id: string) => void;
   onDeleteCategory: (id: string) => void;
@@ -39,6 +42,7 @@ interface SortableItemProps {
 const SortableItem: React.FC<SortableItemProps> = ({
   id,
   name,
+  selected,
   onSelectCategory,
   onEditCategory,
   onDeleteCategory,
@@ -67,7 +71,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
       style={style}
       {...attributes}
       {...listeners}
-      className={styles.categoryItem}
+      className={`${styles.categoryItem} ${selected ? styles.selected : ""}`}
       onClick={() => onSelectCategory(id)}
     >
       <span className={styles.itemName}>{name}</span>
@@ -91,6 +95,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
 
 const CategoryList: React.FC<CategoryListProps> = ({
   categories,
+  selected,
   onSelectCategory,
   onReorder,
   onEditCategory,
@@ -98,29 +103,25 @@ const CategoryList: React.FC<CategoryListProps> = ({
   onAddCategory,
 }) => {
   const [showList, setShowList] = useState(false);
-  // Track if the order has changed.
   const [isDirty, setIsDirty] = useState(false);
 
-  // Sort categories by their order property.
   const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
 
-  // Initialize DnD Kit sensors.
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over) return;
-    if (active.id !== over.id) {
-      const oldIndex = sortedCategories.findIndex((c) => c.id === active.id);
-      const newIndex = sortedCategories.findIndex((c) => c.id === over.id);
-      const reordered = arrayMove(sortedCategories, oldIndex, newIndex).map(
-        (cat, idx) => ({ ...cat, order: idx + 1 })
-      );
-      onReorder(reordered);
-      setIsDirty(true);
-    }
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortedCategories.findIndex(c => c.id === active.id);
+    const newIndex = sortedCategories.findIndex(c => c.id === over.id);
+    const reordered = arrayMove(sortedCategories, oldIndex, newIndex).map(
+      (cat, idx) => ({ ...cat, order: idx + 1 })
+    );
+    onReorder(reordered);
+    setIsDirty(true);
   };
 
   const handleSaveOrder = async () => {
@@ -128,21 +129,19 @@ const CategoryList: React.FC<CategoryListProps> = ({
       const res = await fetch("/api/menu/category/order", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order: sortedCategories.map((c) => c.id) }),
+        body: JSON.stringify({ order: sortedCategories.map(c => c.id) }),
       });
-      if (!res.ok) {
-        throw new Error("Failed to save category order");
-      }
+      if (!res.ok) throw new Error("Failed to save category order");
       setIsDirty(false);
       alert("Category order saved successfully!");
-    } catch (error: any) {
-      alert("Error saving category order: " + error.message);
+    } catch (err: any) {
+      alert("Error saving category order: " + err.message);
     }
   };
 
   return (
     <div className={styles.wrapper}>
-      {/* Controls Row: Add button on left and toggle button on right */}
+      {/* Controls Row */}
       <div className={styles.controls}>
         {onAddCategory && (
           <button className={styles.addButton} onClick={onAddCategory}>
@@ -151,7 +150,7 @@ const CategoryList: React.FC<CategoryListProps> = ({
         )}
         <button
           className={styles.toggleButton}
-          onClick={() => setShowList((prev) => !prev)}
+          onClick={() => setShowList(prev => !prev)}
         >
           {showList ? "Hide Categories" : "Show Categories"}
         </button>
@@ -165,15 +164,16 @@ const CategoryList: React.FC<CategoryListProps> = ({
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={sortedCategories.map((cat) => cat.id)}
+              items={sortedCategories.map(cat => cat.id)}
               strategy={verticalListSortingStrategy}
             >
               <div className={styles.categoryList}>
-                {sortedCategories.map((cat) => (
+                {sortedCategories.map(cat => (
                   <SortableItem
                     key={cat.id}
                     id={cat.id}
                     name={cat.name}
+                    selected={cat.id === selected}
                     onSelectCategory={onSelectCategory}
                     onEditCategory={onEditCategory}
                     onDeleteCategory={onDeleteCategory}

@@ -1,0 +1,100 @@
+/* File: app/dashboard/driver-dashboard/order/OrderDetail.module.css */
+
+.wrap {
+    max-width: 520px;
+    margin: 1.5rem auto;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .title {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-family: var(--font-heading);
+  }
+  
+  .stepper {
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    margin: 1rem 0;
+    padding: 0;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+  
+  .stepper li {
+    flex: 1;
+    text-align: center;
+    position: relative;
+  }
+  
+  .stepper li::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: #ccc;
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto 0.3rem;
+  }
+  
+  .stepper li.done::before,
+  .stepper li.active::before {
+    background: var(--primary-color);
+  }
+  
+  .panel {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+  }
+  
+  .panel h3 {
+    margin: 0 0 0.5rem;
+  }
+  
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  
+  .btn {
+    background: var(--primary-color);
+    color: #fff;
+    padding: 0.6rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  
+  .btn:hover {
+    background: var(--primary-color-hover);
+  }
+  
+  .back {
+    margin-top: 1rem;
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  
+  .msg {
+    text-align: center;
+    margin-top: 2rem;
+  }
+  
+  .done {
+    color: var(--gray);
+  }
+  
+  .active {
+    font-weight: 600;
+  }
+  

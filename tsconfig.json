@@ -8,10 +8,11 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "module": "ESNext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
@@ -20,23 +21,25 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "plugins": [
-      {
-        "name": "next"
-      }
+      { "name": "next" }
+    ],
+    "typeRoots": [
+      "node_modules/@types",
+      "utilities/types"
     ]
   },
   "include": [
+    "next-env.d.ts",
+    "app/**/*",
+    "utilities/types/**/*.d.ts",
+    "global.d.ts",
+    "prisma/seed.cjs",
     "**/*.ts",
     "**/*.tsx",
-    "app/**/*",
-    "next-env.d.ts",
-    ".next/types/**/*.ts",
-    "prisma/seed.cjs"
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

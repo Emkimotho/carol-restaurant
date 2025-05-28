@@ -20,7 +20,7 @@
 /* Fade in animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0);   }
 }
 
 /* Heading styles */
@@ -162,6 +162,43 @@
   transform: translateY(-2px);
 }
 
+/* FAQ item styling */
+.faqItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--white);
+  margin-bottom: 1rem;
+}
+
+/* Add/Remove FAQ buttons */
+.addFaqButton,
+.removeFaqButton {
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  margin-top: 0.5rem;
+  align-self: flex-start;
+}
+
+.addFaqButton:hover,
+.removeFaqButton:hover {
+  background-color: var(--secondary-color-hover);
+  transform: translateY(-2px);
+}
+
+.removeFaqButton {
+  align-self: flex-end;
+}
+
 /* Event list styling */
 .eventList {
   list-style: none;
@@ -240,4 +277,119 @@
   padding: 1rem;
   background: var(--light-gray);
   border-radius: 5px;
+}
+
+/* ------------------------------------------------------------------
+   NEW ‑ Submission “Card” styling
+------------------------------------------------------------------ */
+
+.submissionCard {
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow-secondary);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.submissionCard:hover {
+  transform: translateY(-2px);
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--foreground);
+  font-size: 0.95rem;
+}
+
+.cardMeta {
+  color: var(--gray);
+  font-size: 0.85rem;
+}
+
+.cardCounts {
+  font-weight: 500;
+}
+
+.deleteButton {
+  background: transparent;
+  color: var(--secondary-color);
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.deleteButton:hover {
+  background: var(--light-gray);
+}
+
+
+/* === Totals button & modal (shared by SubmissionTotals) === */
+.totalsBtn {
+  background: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.25s;
+  margin-left: 0.5rem;
+}
+.totalsBtn:hover {
+  background: var(--secondary-color-hover);
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0 0 0 / 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.modal {
+  background: var(--white);
+  padding: 2rem;
+  border-radius: 10px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: var(--box-shadow-primary);
+  animation: fadeIn 0.3s ease;
+}
+.modalHeading {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: var(--dark-gray);
+}
+.modalList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+}
+.modalItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.closeBtn {
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.closeBtn:hover {
+  background: var(--primary-color-hover);
 }

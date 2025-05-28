@@ -1,3 +1,4 @@
+// File: components/dashboard/AdminDashboard/MenuBuilder/OptionGroupEditor.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -116,9 +117,12 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
    */
   const updateNestedOptionGroup = (
     choiceIndex: number,
-    updated: NestedOptionGroup
+    changes: Partial<NestedOptionGroup>
   ) => {
-    updateChoice(choiceIndex, { nestedOptionGroup: updated });
+    const existing = localGroup.choices[choiceIndex].nestedOptionGroup;
+    if (!existing) return;
+    const updatedGroup: NestedOptionGroup = { ...existing, ...changes };
+    updateChoice(choiceIndex, { nestedOptionGroup: updatedGroup });
   };
 
   /**
@@ -224,7 +228,6 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
                   value={choice.nestedOptionGroup.title}
                   onChange={(e) =>
                     updateNestedOptionGroup(index, {
-                      ...choice.nestedOptionGroup,
                       title: e.target.value,
                     })
                   }
@@ -238,7 +241,6 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
                     value={choice.nestedOptionGroup.minRequired}
                     onChange={(e) =>
                       updateNestedOptionGroup(index, {
-                        ...choice.nestedOptionGroup,
                         minRequired: parseSafeNumber(e.target.value, 0),
                       })
                     }
@@ -251,7 +253,6 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
                     value={choice.nestedOptionGroup.maxAllowed ?? ""}
                     onChange={(e) =>
                       updateNestedOptionGroup(index, {
-                        ...choice.nestedOptionGroup,
                         maxAllowed: e.target.value
                           ? parseSafeNumber(e.target.value, 0)
                           : undefined,
@@ -271,7 +272,6 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
                         placeholder="Nested label (e.g. 'Fried')"
                         onChange={(e) => {
                           const updated = {
-                            ...choice.nestedOptionGroup!,
                             choices: choice.nestedOptionGroup!.choices.map(
                               (nc, i) =>
                                 i === nIdx
@@ -287,7 +287,6 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
                         value={nChoice.priceAdjustment ?? 0}
                         onChange={(e) => {
                           const updated = {
-                            ...choice.nestedOptionGroup!,
                             choices: choice.nestedOptionGroup!.choices.map(
                               (nc, i) =>
                                 i === nIdx
@@ -312,7 +311,6 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
                             (_, i) => i !== nIdx
                           );
                           updateNestedOptionGroup(index, {
-                            ...choice.nestedOptionGroup!,
                             choices: filtered,
                           });
                         }}
@@ -325,8 +323,7 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      const newNested = {
-                        ...choice.nestedOptionGroup!,
+                      const updated = {
                         choices: [
                           ...choice.nestedOptionGroup!.choices,
                           {
@@ -336,7 +333,7 @@ const OptionGroupEditor: React.FC<OptionGroupEditorProps> = ({
                           },
                         ],
                       };
-                      updateNestedOptionGroup(index, newNested);
+                      updateNestedOptionGroup(index, updated);
                     }}
                     className={styles.addChoice}
                   >

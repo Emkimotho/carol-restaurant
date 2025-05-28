@@ -1,136 +1,221 @@
+/* ------------------------------------------------------------------ */
+/*  File: components/Menu/Menu.tsx                                    */
+/* ------------------------------------------------------------------ */
+/*  • Keeps track of last‑visited category per section (localStorage). */
+/*  • When a user clicks a dish we append  ?from=main  or  ?from=golf  */
+/*    so the Item‑detail page knows which flow to use.                */
+/* ------------------------------------------------------------------ */
+
 "use client";
 
-import React, { useState, useContext } from "react";
+import React, {
+  useState,
+  useContext,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import dynamic      from "next/dynamic";
 import { Tabs, Tab } from "react-bootstrap";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
-import styles from "./Menu.module.css";
+import { toast }     from "react-toastify";
+import styles        from "./Menu.module.css";
 
-import { useQuery } from "@tanstack/react-query";
-import { CartContext } from "@/contexts/CartContext";
-import { AuthContext } from "@/contexts/AuthContext";
-import { OpeningHoursContext } from "@/contexts/OpeningHoursContext";
-import MenuItem from "@/components/MenuItem/MenuItem";
-import MenuTimingBar from "@/components/MenuTimingBar/MenuTimingBar";
-import ScheduleOrderModal from "@/components/ScheduleOrderModal/ScheduleOrderModal";
-import type { MenuItem as MenuItemType, MenuCategory } from "@/utils/types";
+import { useQuery, useQueryClient }       from "@tanstack/react-query";
+import { CartContext }                    from "@/contexts/CartContext";
+import { OpeningHoursContext }            from "@/contexts/OpeningHoursContext";
+import MenuItemComponent                  from "@/components/MenuItem/MenuItem";
+import MenuTimingBar                      from "@/components/MenuTimingBar/MenuTimingBar";
+import type {
+  MenuItem as MenuItemType,
+  MenuCategory,
+} from "@/utils/types";
+
+const ScheduleOrderModal = dynamic(
+  () => import("@/components/ScheduleOrderModal/ScheduleOrderModal"),
+  { ssr: false }
+);
+
+const MenuItem = React.memo(MenuItemComponent);
 
 interface MenuProps {
-  slug: string[];
+  slug: string[]; // [section, categoryId?]
 }
 
+/* =================================================================== */
 export default function Menu({ slug }: MenuProps) {
-  const router = useRouter();
-  const { user } = useContext(AuthContext);
-  const { isOpen } = useContext(OpeningHoursContext);
+  const router       = useRouter();
+  const queryClient  = useQueryClient();
+
+  /* ------------------------ context ------------------------------ */
   const { orderStatus, setOrderStatus, setScheduledTime } =
     useContext(CartContext)!;
+  const { isOpen } = useContext(OpeningHoursContext)!;
 
-  // For storing which item was clicked before showing the schedule modal
+  /* ------------------------ state -------------------------------- */
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [showModal,      setShowModal]      = useState(false);
 
-  // State to control the scheduling modal visibility
-  const [showModal, setShowModal] = useState(false);
+  /* remember last category per section (by id) */
+  const [lastCat, setLastCat] = useState<{ MainMenu: string; GolfMenu: string }>(
+    { MainMenu: "", GolfMenu: "" }
+  );
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lastMenuCategories");
+      if (raw) setLastCat(JSON.parse(raw));
+    } catch {/* ignore */ }
+  }, []);
 
-  // Fetch menu items using React Query
+  const persistLast = useCallback(
+    (section: "MainMenu" | "GolfMenu", id: string) => {
+      const upd = { ...lastCat, [section]: id };
+      setLastCat(upd);
+      localStorage.setItem("lastMenuCategories", JSON.stringify(upd));
+    },
+    [lastCat]
+  );
+
+  /* ------------------------ data --------------------------------- */
   const { data, error, isLoading } = useQuery<MenuItemType[]>({
     queryKey: ["menuItems"],
     queryFn: async () => {
-      const res = await fetch("/api/menu/item");
-      if (!res.ok) throw new Error("Failed to fetch menu items");
-      const json = await res.json();
-      return json.menuItems;
+      const r = await fetch("/api/menu/item");
+      if (!r.ok) throw new Error("fetch failed");
+      return (await r.json()).menuItems as MenuItemType[];
     },
+    staleTime: 60_000,
   });
   const menuItems = data || [];
 
-  // Sorting and grouping for MainMenu items
-  const mainMenuItems = menuItems.filter(
-    (m) => m.category && m.category.type === "MainMenu"
+  const prefetch = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: ["menuItems"],
+      queryFn: async () => {
+        const r = await fetch("/api/menu/item");
+        if (!r.ok) throw new Error("fetch failed");
+        return (await r.json()).menuItems as MenuItemType[];
+      },
+      staleTime: 60_000,
+    });
+  }, [queryClient]);
+
+  /* ------------------- derived lists ----------------------------- */
+  const mainItems = useMemo(
+    () =>
+      menuItems.filter(
+        (m) => m.category?.type === "MainMenu" && m.category.hidden === false
+      ),
+    [menuItems]
   );
-  const categoryMap = new Map<string, MenuCategory>();
-  mainMenuItems.forEach((item) => {
-    if (item.category && !categoryMap.has(item.category.id)) {
-      categoryMap.set(item.category.id, item.category);
-    }
-  });
-  const sortedCategories = Array.from(categoryMap.values()).sort(
-    (a, b) => a.order - b.order
+  const mainCats = useMemo(() => {
+    const map = new Map<string, MenuCategory>();
+    mainItems.forEach((m) => m.category && map.set(m.category.id, m.category));
+    return [...map.values()].sort((a, b) => a.order - b.order);
+  }, [mainItems]);
+
+  const golfItems = useMemo(
+    () =>
+      menuItems.filter(
+        (m) =>
+          (m.category?.type === "GolfMenu" || m.showInGolfMenu) &&
+          m.category.hidden === false
+      ),
+    [menuItems]
   );
-  const activeSection = slug[0] || "MainMenu";
-  const defaultCategoryName = sortedCategories[0]?.name || "";
-  const activeCategory = slug[1] || defaultCategoryName;
+  const golfCats = useMemo(() => {
+    const map = new Map<string, MenuCategory>();
+    golfItems.forEach((m) => m.category && map.set(m.category.id, m.category));
+    return [...map.values()].sort((a, b) => a.order - b.order);
+  }, [golfItems]);
 
-  // GolfMenu items filtering
-  const golfMenuItems = menuItems.filter(
-    (m) =>
-      (m.category && m.category.type === "GolfMenu") ||
-      m.showInGolfMenu === true
-  );
+  /* -------------- routing helpers ------------------------------- */
+  const activeSection  = slug[0] || "MainMenu";
+  const mainDefaultId  = lastCat.MainMenu || mainCats[0]?.id || "";
+  const golfDefaultId  = lastCat.GolfMenu || golfCats[0]?.id || "";
+  const activeCatId    =
+    activeSection === "MainMenu"
+      ? slug[1] || mainDefaultId
+      : slug[1] || golfDefaultId;
 
-  // Handlers for tab selection
-  function handleSectionSelect(key: string | null) {
-    if (!key) return;
-    if (key === "MainMenu") {
-      router.push(`/menu/MainMenu/${activeCategory}`);
-    } else {
-      router.push(`/menu/${key}`);
-    }
-  }
+  /* -- top‑level tabs (Main vs Golf) -- */
+  const handleSection = (k: string | null) => {
+    if (!k) return;
+    const catId = k === "MainMenu" ? mainDefaultId : golfDefaultId;
+    router.push(`/menu/${k}/${encodeURIComponent(catId)}`);
+  };
 
-  function handleCategorySelect(key: string | null) {
-    if (!key) return;
-    router.push(`/menu/MainMenu/${key}`);
-  }
+  /* -- sub‑tabs inside MAIN -- */
+  const handleMain = (id: string | null) => {
+    if (!id) return;
+    persistLast("MainMenu", id);
+    router.push(`/menu/MainMenu/${encodeURIComponent(id)}`);
+  };
 
-  // Order initiation handler
-  function handleStartOrder(itemId: string) {
-    setSelectedItemId(itemId);
+  /* -- sub‑tabs inside GOLF -- */
+  const handleGolf = (id: string | null) => {
+    if (!id) return;
+    persistLast("GolfMenu", id);
+    router.push(`/menu/GolfMenu/${encodeURIComponent(id)}`);
+  };
+
+  /* ----------------------------------------------------------------
+   *  Item‑click routing helpers
+   * ---------------------------------------------------------------- */
+  /* MAIN flow: may show schedule modal if it’s the user’s first time */
+  const startMain = (id: string) => {
+    const dest = `/menuitem/${id}?from=main`;
+
+    setSelectedItemId(id);
+
     if (orderStatus !== "none") {
-      router.push(`/menuitem/${itemId}`);
+      router.push(dest);
       return;
     }
+    /* first‑time users see the modal */
     setShowModal(true);
-  }
+  };
 
-  // Modal callbacks
-  function handleASAP() {
+  /* GOLF flow: always direct (if kitchen open) */
+  const startGolf = (id: string) => {
+    if (!isOpen) {
+      toast.info("Restaurant is currently closed.");
+      return;
+    }
+    router.push(`/menuitem/${id}?from=golf`);
+  };
+
+  /* ---------- schedule modal callbacks ---------- */
+  const handleASAP = () => {
+    if (!selectedItemId) return;
     setOrderStatus("asap");
     setScheduledTime(new Date().toISOString());
-    toast.success("Your order is set for ASAP!");
+    toast.success("ASAP order set!");
     setShowModal(false);
-    if (selectedItemId) {
-      router.push(`/menuitem/${selectedItemId}?schedule=asap`);
-    }
-  }
+    router.push(`/menuitem/${selectedItemId}?schedule=asap&from=main`);
+  };
 
-  function handleSchedule() {
+  const handleSchedule = () => {
+    if (!selectedItemId) return;
     setOrderStatus("scheduled");
     setScheduledTime(null);
-    toast.success("Scheduling your order. Please pick a time next!");
+    toast.success("Pick a time next!");
     setShowModal(false);
-    if (selectedItemId) {
-      router.push(`/schedule-order?itemId=${selectedItemId}`);
-    }
-  }
-
-  if (isLoading) {
-    return <p className="text-center">Loading menu...</p>;
-  }
-  if (error) {
-    return (
-      <p className="text-center">
-        Error loading menu: {(error as Error).message}
-      </p>
+    router.push(
+      `/schedule-order?itemId=${selectedItemId}` +
+        `&returnUrl=/menuitem/${selectedItemId}?from=main`
     );
-  }
+  };
+
+  /* --------------------- render ------------------------------- */
+  if (isLoading) return <p className="text-center">Loading…</p>;
+  if (error)     return <p className="text-center">Error: {(error as Error).message}</p>;
 
   return (
     <div className={`container py-5 ${styles.menuWrapper}`}>
-      <MenuTimingBar />
+      {activeSection === "MainMenu" && <MenuTimingBar />}
       <h1 className="text-center mb-4">Our Menu</h1>
 
-      {/* Scheduling Modal */}
       <ScheduleOrderModal
         show={showModal}
         onHide={() => setShowModal(false)}
@@ -139,36 +224,41 @@ export default function Menu({ slug }: MenuProps) {
         onSchedule={handleSchedule}
       />
 
-      {/* Outer Tabs: MainMenu vs GolfMenu */}
       <Tabs
         activeKey={activeSection}
-        onSelect={handleSectionSelect}
+        onSelect={handleSection}
         id="menu-tabs"
-        className={styles["nav-tabs"]}
+        mountOnEnter={false}
+        unmountOnExit={false}
       >
-        <Tab eventKey="MainMenu" title="Main Menu">
-          {/* Sub-tabs for each sub-category in MainMenu */}
+        {/* ------------------ MAIN MENU ------------------ */}
+        <Tab
+          eventKey="MainMenu"
+          title="Main Menu"
+          onMouseEnter={prefetch}
+          onFocus={prefetch}
+        >
           <Tabs
-            activeKey={activeCategory}
-            onSelect={handleCategorySelect}
-            id="main-menu-subtabs"
-            className={`mt-4 ${styles["nav-tabs"]}`}
+            activeKey={activeCatId}
+            onSelect={handleMain}
+            id="main-subtabs"
+            className="mt-4"
             mountOnEnter={false}
             unmountOnExit={false}
           >
-            {sortedCategories.map((cat) => (
-              <Tab key={cat.id} eventKey={cat.name} title={cat.name}>
-                <div className="row mt-4">
-                  {mainMenuItems
-                    .filter((m) => m.category?.name === cat.name)
+            {mainCats.map((cat) => (
+              <Tab key={cat.id} eventKey={cat.id} title={cat.name}>
+                <div className={`row mt-4 ${styles.fadeInEnter}`}>
+                  {mainItems
+                    .filter((m) => m.category?.id === cat.id)
                     .map((m) => (
                       <div className="col-md-6 col-lg-4 mb-4" key={m.id}>
                         <MenuItem
                           item={m}
-                          user={user}
-                          allowAddToCart={true}
+                          allowAddToCart
                           restaurantOpen={isOpen}
-                          onStartOrder={(id) => handleStartOrder(id)}
+                          onStartOrder={startMain}
+                          showGolfFlag={false}
                         />
                       </div>
                     ))}
@@ -178,20 +268,45 @@ export default function Menu({ slug }: MenuProps) {
           </Tabs>
         </Tab>
 
-        <Tab eventKey="GolfMenu" title="Golf Menu">
-          <div className="row mt-4">
-            {golfMenuItems.map((m) => (
-              <div className="col-md-6 col-lg-4 mb-4" key={m.id}>
-                <MenuItem
-                  item={m}
-                  user={user}
-                  allowAddToCart={true}
-                  restaurantOpen={isOpen}
-                  onStartOrder={(id) => handleStartOrder(id)}
-                />
-              </div>
+        {/* ------------------ GOLF MENU ------------------ */}
+        <Tab
+          eventKey="GolfMenu"
+          title={
+            <>
+              <span className={styles.golfFlag}>🚩</span>Golf Menu
+            </>
+          }
+          onMouseEnter={prefetch}
+          onFocus={prefetch}
+        >
+          <Tabs
+            activeKey={activeCatId}
+            onSelect={handleGolf}
+            id="golf-subtabs"
+            className="mt-4"
+            mountOnEnter={false}
+            unmountOnExit={false}
+          >
+            {golfCats.map((cat) => (
+              <Tab key={cat.id} eventKey={cat.id} title={cat.name}>
+                <div className={`row mt-4 ${styles.fadeInEnter}`}>
+                  {golfItems
+                    .filter((m) => m.category?.id === cat.id)
+                    .map((m) => (
+                      <div className="col-md-6 col-lg-4 mb-4" key={m.id}>
+                        <MenuItem
+                          item={m}
+                          allowAddToCart
+                          restaurantOpen={isOpen}
+                          onStartOrder={startGolf}
+                          showGolfFlag={true}
+                        />
+                      </div>
+                    ))}
+                </div>
+              </Tab>
             ))}
-          </div>
+          </Tabs>
         </Tab>
       </Tabs>
     </div>

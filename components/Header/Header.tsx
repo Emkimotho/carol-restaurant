@@ -1,3 +1,4 @@
+// File: components/Header/Header.tsx
 "use client";
 
 import React, { useState, useEffect, useRef, useContext } from "react";
@@ -5,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { FaShoppingCart } from "react-icons/fa";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
@@ -14,7 +16,6 @@ import styles from "./Header.module.css";
  */
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
     const checkWidth = () => {
       setIsMobile(window.innerWidth <= breakpoint);
@@ -23,11 +24,13 @@ const useIsMobile = (breakpoint = 991) => {
     window.addEventListener("resize", checkWidth);
     return () => window.removeEventListener("resize", checkWidth);
   }, [breakpoint]);
-
   return isMobile;
 };
 
 const Header: React.FC = () => {
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated";
+
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navbarRef = useRef<HTMLDivElement>(null);
@@ -38,7 +41,7 @@ const Header: React.FC = () => {
   // Calculate total items in the cart
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close the mobile menu if user clicks outside of it
+  // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
@@ -50,15 +53,13 @@ const Header: React.FC = () => {
   }, []);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
-
-  // Navigate to /cart
   const handleCartClick = () => {
     closeMobileMenu();
     router.push("/cart");
   };
 
-  // Define your nav items
-  const navItems = [
+  // Base nav items (no login/logout)
+  const baseNavItems = [
     { href: "/", label: "Home" },
     { href: "/menu", label: "Menu" },
     { href: "/reservation", label: "Reservation" },
@@ -67,13 +68,16 @@ const Header: React.FC = () => {
     { href: "https://harambee54.com", label: "Harambee54", external: true },
     { href: "/careers", label: "Careers" },
     { href: "/about", label: "About Us" },
-    { href: "/login", label: "Login" },
   ];
 
-  // -------------- DESKTOP NAV --------------
+  // If authenticated, add Dashboard link
+  const navItems = isAuthenticated
+    ? [...baseNavItems, { href: "/dashboard/customer-dashboard", label: "Dashboard" }]
+    : baseNavItems;
+
+  // -------------- DESKTOP NAVBAR --------------
   const desktopHeader = (
     <nav className={styles.desktopNavbar} ref={navbarRef}>
-      {/* Logo Section */}
       <div className={styles.logoContainer}>
         <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
           <Image
@@ -87,7 +91,6 @@ const Header: React.FC = () => {
         </Link>
       </div>
 
-      {/* Navigation Links */}
       <ul className={styles.navList}>
         {navItems.map(({ href, label, external }) => {
           const isActive = !external && pathname === href;
@@ -113,9 +116,18 @@ const Header: React.FC = () => {
             </li>
           );
         })}
+
+        {/* Login / Logout */}
+        <li className={styles.navItem}>
+          <button
+            onClick={() => (session ? signOut() : signIn())}
+            className={styles.navLink}
+          >
+            {session ? "Logout" : "Login"}
+          </button>
+        </li>
       </ul>
 
-      {/* Cart Button with ID for the flying ball animation */}
       <button
         onClick={handleCartClick}
         aria-label="Open Cart"
@@ -128,11 +140,10 @@ const Header: React.FC = () => {
     </nav>
   );
 
-  // -------------- MOBILE NAV --------------
+  // -------------- MOBILE NAVBAR --------------
   const mobileHeader = (
     <>
       <nav className={styles.mobileNavbar} ref={navbarRef}>
-        {/* Mobile Logo */}
         <div className={styles.mobileLogo}>
           <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
             <Image
@@ -146,7 +157,6 @@ const Header: React.FC = () => {
           </Link>
         </div>
 
-        {/* Mobile Cart Button */}
         <button
           onClick={handleCartClick}
           aria-label="Open Cart"
@@ -157,11 +167,12 @@ const Header: React.FC = () => {
           {totalItems > 0 && <span className={styles.mobileCartCount}>{totalItems}</span>}
         </button>
 
-        {/* Hamburger Toggle */}
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"
-          className={`${styles.hamburgerButton} ${mobileMenuOpen ? styles.hamburgerOpen : ""}`}
+          className={`${styles.hamburgerButton} ${
+            mobileMenuOpen ? styles.hamburgerOpen : ""
+          }`}
         >
           <span className={styles.hamburgerBar} />
           <span className={styles.hamburgerBar} />
@@ -169,7 +180,6 @@ const Header: React.FC = () => {
         </button>
       </nav>
 
-      {/* Mobile Menu Overlay */}
       <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.mobileMenuOpen : ""}`}>
         <button
           className={styles.closeMenuButton}
@@ -202,6 +212,18 @@ const Header: React.FC = () => {
               )}
             </li>
           ))}
+
+          <li className={styles.mobileNavItem}>
+            <button
+              onClick={() => {
+                closeMobileMenu();
+                session ? signOut() : signIn();
+              }}
+              className={styles.mobileNavLink}
+            >
+              {session ? "Logout" : "Login"}
+            </button>
+          </li>
         </ul>
       </div>
 

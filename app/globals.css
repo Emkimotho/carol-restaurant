@@ -89,7 +89,6 @@ a:focus {
 }
 
 /* 5. Button Styles */
-
 /* Base button styling using global variables */
 button,
 .btn {
@@ -105,7 +104,7 @@ button,
 
 button:hover,
 .btn:hover {
-  background-color: var(--primary-color);
+  background-color: var(--primary-color-hover);
   color: var(--white);
   transform: translateY(-2px);
 }
@@ -166,13 +165,10 @@ input[type="checkbox"] {
   color: var(--black);
   cursor: pointer;
   overflow: visible;
-  z-index: auto;
 }
 
 .popup-window .close-btn::before {
   content: "×";
-  position: static;
-  background: none;
 }
 
 .popup-window .close-btn:hover {
@@ -197,5 +193,59 @@ input[type="checkbox"] {
 @media (max-width: 768px) {
   html {
     font-size: 14px;
+  }
+}
+
+/* 10. Print Styles */
+@media print {
+  /* Hide interactive UI */
+  header,
+  nav,
+  .toolbar,
+  .tabs,
+  button,
+  .btn,
+  .popup-window {
+    display: none !important;
+  }
+
+  /* Full-page layout with minimal margins */
+  body {
+    margin: 1cm;
+  }
+  .container,
+  .wrapper {
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  /* Tables: avoid breaking rows across pages */
+  table {
+    page-break-inside: avoid;
+    width: 100%;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Standard print font sizing */
+  body,
+  p,
+  td,
+  th,
+  h1,
+  h2,
+  h3 {
+    font-size: 12pt;
+    color: #000;
+  }
+
+  /* Ensure backgrounds/colors print */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }

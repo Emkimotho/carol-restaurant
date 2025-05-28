@@ -1,0 +1,98 @@
+/* File: components/dashboard/AdminDashboard/RegisterUser/RegisterUser.module.css */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--white);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: var(--box-shadow-primary);
+}
+
+.form input,
+.form textarea {
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.25s ease;
+}
+
+.form input:focus,
+.form textarea:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+/* File upload */
+.fileLabel {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  background: var(--border-color);
+  color: var(--dark-gray);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+.fileLabel:hover {
+  background: var(--border-color-dark);
+}
+.fileLabel input {
+  display: none;
+}
+
+.previewImage {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  border: 2px solid var(--border-color);
+}
+
+/* Roles selection */
+.rolesFieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.rolesFieldset legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.roleLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.roleLabel input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Submit button */
+.submitButton {
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.9rem 1.5rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+.submitButton:hover {
+  background: var(--primary-color-hover);
+}
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

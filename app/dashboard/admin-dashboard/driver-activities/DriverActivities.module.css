@@ -1,0 +1,42 @@
+/* File: app/dashboard/admin-dashboard/driver-activities/DriverActivities.module.css */
+
+.container {
+    margin-top: 120px;
+    padding: 2rem;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--box-shadow-primary);
+  }
+  
+  .title {
+    font-size: 1.75rem;
+    font-family: var(--font-heading);
+    color: var(--dark-gray);
+    margin-bottom: 1rem;
+  }
+  
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--dark-gray);
+  }
+  
+  .table th {
+    font-weight: 600;
+  }
+  
+  .table tr:hover {
+    background: var(--light-gray);
+  }
+  

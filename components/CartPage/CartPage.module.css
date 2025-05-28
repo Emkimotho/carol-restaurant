@@ -1,3 +1,4 @@
+/* File: components/CartPage.module.css */
 /***************************************
   Container & Header
 ***************************************/
@@ -13,7 +14,7 @@
 }
 
 .inactiveWarning {
-  color: #dc3545; /* red for inactivity warning */
+  color: #dc3545;
   font-size: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -29,26 +30,22 @@
 }
 
 .emptyIcon {
-  /* Instead of emoji, using a masked SVG icon */
   width: 4rem;
   height: 4rem;
   background: var(--secondary-color);
-  mask: url('/images/empty-cart-icon.svg') center / contain no-repeat;
-  -webkit-mask: url('/images/empty-cart-icon.svg') center / contain no-repeat;
-  margin-bottom: 0.5rem;
+  mask: url("/images/empty-cart-icon.svg") center / contain no-repeat;
+  -webkit-mask: url("/images/empty-cart-icon.svg") center / contain no-repeat;
 }
 
 .emptyTitle {
   font-family: var(--font-heading);
   font-size: 1.8rem;
   color: var(--primary-color);
-  margin: 0;
 }
 
 .emptySubtitle {
   font-size: 1rem;
   color: var(--gray);
-  margin: 0;
 }
 
 /***************************************
@@ -63,20 +60,17 @@
 }
 
 .cartHeaderIcon {
-  /* Using masked SVG for cart icon */
   width: 2.5rem;
   height: 2.5rem;
   background: var(--secondary-color);
-  mask: url('/images/cart-icon.svg') center / contain no-repeat;
-  -webkit-mask: url('/images/cart-icon.svg') center / contain no-repeat;
-  margin-bottom: 0.5rem;
+  mask: url("/images/cart-icon.svg") center / contain no-repeat;
+  -webkit-mask: url("/images/cart-icon.svg") center / contain no-repeat;
 }
 
 .pageTitle {
   font-family: var(--font-heading);
   font-size: 2rem;
   color: var(--primary-color);
-  margin: 0;
 }
 
 .cartSubtitle {
@@ -123,7 +117,6 @@
   }
 }
 
-/* Numbering for items */
 .itemNumber {
   font-size: 1.1rem;
   font-weight: bold;
@@ -131,12 +124,13 @@
   color: var(--primary-color);
 }
 
-/* Item Header */
 .itemHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .thumbnail {
@@ -153,6 +147,7 @@
 
 .itemInfo {
   flex: 1;
+  min-width: 220px;
 }
 
 .itemTitle {
@@ -169,11 +164,16 @@
   color: var(--gray);
 }
 
-/* Action Buttons */
 .actionButtons {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+@media (min-width: 450px) {
+  .actionButtons {
+    flex-direction: row;
+  }
 }
 
 .removeBtn,
@@ -184,12 +184,12 @@
   padding: 0.45rem 0.9rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
   font-size: 0.8rem;
+  transition: background-color 0.3s ease;
 }
 
 .removeBtn:hover {
-  background-color: #c82333; /* darker red */
+  background-color: #c82333;
 }
 
 .saveLaterBtn:hover {
@@ -199,15 +199,18 @@
 /***************************************
   Quantity & Spice Level
 ***************************************/
-.quantityRow {
+.quantityRow,
+.spiceLevelRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   margin-top: 1rem;
 }
 
-.quantityRow label {
+.quantityRow label,
+.spiceLevelRow label {
   font-weight: 500;
   font-size: 0.9rem;
 }
@@ -234,18 +237,12 @@
   min-width: 30px;
   text-align: center;
   font-weight: bold;
-}
-
-.spiceLevelRow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  font-size: 1rem;
 }
 
 .spiceButtons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -256,6 +253,9 @@
   border-radius: 4px;
   padding: 0.3rem 0.8rem;
   transition: background-color 0.3s;
+  line-height: 1.2;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .spiceBtn:hover {
@@ -276,7 +276,6 @@
   border: 1px solid var(--light-gray);
   border-radius: 6px;
   background-color: #fdfdfd;
-  text-align: left;
 }
 
 .optionGroup {
@@ -304,15 +303,55 @@
   gap: 0.5rem;
 }
 
-.choiceRow {
+/***************************************
+  Checkbox & Radio – interactive hover
+***************************************/
+/* baseline look already inherits accent‑color var(--primary-color)       */
+/* add motion + glow only when device pointer is accurate (= not touch)  */
+@media (hover: hover) {
+  .choiceRow input[type="checkbox"],
+  .choiceRow input[type="radio"],
+  .nestedChoiceRow input[type="checkbox"] {
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+
+  .choiceRow input[type="checkbox"]:hover,
+  .choiceRow input[type="radio"]:hover,
+  .nestedChoiceRow input[type="checkbox"]:hover {
+    /* soft glow in brand colour */
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.25);
+    transform: scale(1.08);
+    cursor: pointer;
+  }
+
+  /* give keyboard users the same visual cue */
+  .choiceRow input[type="checkbox"]:focus-visible,
+  .choiceRow input[type="radio"]:focus-visible,
+  .nestedChoiceRow input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.35);
+  }
+}
+
+/* tighter spacing: input gets margin‑right, label uses flex */
+.choiceRow label,
+.nestedChoiceRow label {
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin-bottom: 0.3rem;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.choiceRow input,
+.nestedChoiceRow input {
+  margin: 0;
+  accent-color: var(--primary-color);
 }
 
 .nestedOptions {
-  margin-top: 0.5rem;
+  margin-top: 0.6rem;
   margin-left: 1.5rem;
   border-left: 2px solid var(--border-color);
   padding-left: 1rem;
@@ -351,11 +390,10 @@
 }
 
 /***************************************
-  Saved for Later Section
+  Saved for Later
 ***************************************/
 .savedContainer {
   margin: 2rem 0;
-  text-align: center;
 }
 
 .savedTitle {
@@ -377,12 +415,11 @@
   border: 1px solid var(--border-color-dark);
   padding: 1rem;
   border-radius: 8px;
+  width: 100%;
+  max-width: 520px;
   display: flex;
   align-items: center;
   gap: 1rem;
-  width: 100%;
-  max-width: 500px;
-  justify-content: space-between;
 }
 
 .savedThumbnail {
@@ -396,89 +433,61 @@
 }
 
 .savedItemTitle {
-  font-size: 1.2rem;
-  color: var(--primary-color);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
   margin: 0;
 }
 
 .savedItemPrice {
-  margin: 0.25rem 0 0;
   font-size: 0.9rem;
   color: var(--primary-color);
+  margin: 0.25rem 0 0;
 }
 
 .savedActions {
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+@media (min-width: 420px) {
+  .savedActions {
+    flex-direction: row;
+  }
 }
 
 .returnBtn,
 .removeSavedBtn {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   padding: 0.4rem 0.8rem;
   border-radius: 4px;
   border: none;
   cursor: pointer;
+  color: var(--white);
   position: relative;
   overflow: hidden;
+  line-height: 1;
 }
 
 .returnBtn {
   background-color: var(--primary-color);
-  color: var(--white);
-}
-
-.returnBtn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background-color: var(--secondary-color);
-  transition: transform 0.5s ease;
-  z-index: -1;
-}
-
-.returnBtn:hover::before {
-  transform: translateX(100%);
-}
-
-.returnBtn:hover {
-  color: var(--black);
 }
 
 .removeSavedBtn {
   background-color: #dc3545;
-  color: var(--white);
 }
 
-.removeSavedBtn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background-color: #c82333;
-  transition: transform 0.5s ease;
-  z-index: -1;
-}
-
-.removeSavedBtn:hover::before {
-  transform: translateX(100%);
-}
-
+.returnBtn:hover,
 .removeSavedBtn:hover {
-  color: var(--black);
+  filter: brightness(1.1);
 }
 
 /***************************************
-  Recommendations Section
+  Recommendations
 ***************************************/
 .recommendationsContainer {
   margin: 2rem 0;
-  text-align: center;
 }
 
 .recommendTitle {
@@ -488,16 +497,14 @@
   margin-bottom: 1rem;
 }
 
-/* Marquee Container */
 .marqueeWrapper {
   position: relative;
   overflow: hidden;
   width: 100%;
-  max-width: 600px;
+  max-width: 620px;
   margin: 0 auto;
 }
 
-/* Continuous Marquee Track */
 .marqueeTrack {
   display: flex;
   gap: 1rem;
@@ -516,17 +523,15 @@
 .recommendItem {
   background: #f9f9f9;
   border: 1px solid var(--border-color);
-  margin: 0 0.5rem;
   border-radius: 6px;
+  width: 180px;
+  min-height: 270px;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 180px;
-  min-height: 280px;
-  text-align: center;
   box-shadow: var(--box-shadow-primary);
   transition: box-shadow 0.2s, transform 0.2s;
-  padding: 1rem;
 }
 
 .recommendItem:hover {
@@ -538,10 +543,7 @@
   position: relative;
   width: 160px;
   height: 160px;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin-bottom: 0.6rem;
 }
 
 .recommendThumbnail {
@@ -549,53 +551,34 @@
 }
 
 .addRecommendBtn {
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.9rem;
   border: none;
+  border-radius: 4px;
   background-color: var(--primary-color);
   color: var(--white);
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-.addRecommendBtn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background-color: var(--secondary-color);
-  transition: transform 0.5s ease;
-  z-index: -1;
-}
-
-.addRecommendBtn:hover::before {
-  transform: translateX(100%);
+  transition: filter 0.3s;
 }
 
 .addRecommendBtn:hover {
-  color: var(--black);
+  filter: brightness(1.1);
 }
 
 .recommendInfo {
-  margin-top: 0.25rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--foreground);
+  margin-top: 0.4rem;
 }
 
 .recommendItemTitle {
-  margin: 0;
   font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--foreground);
+  margin: 0;
 }
 
 .recommendItemPrice {
   margin: 0.25rem 0 0;
-  font-size: 0.85rem;
   color: var(--primary-color);
 }
 
@@ -610,8 +593,8 @@
 .cartTotal {
   font-size: 1.3rem;
   font-weight: 600;
-  margin-bottom: 1rem;
   color: var(--primary-color);
+  margin-bottom: 1rem;
 }
 
 .footerButtons {
@@ -626,89 +609,33 @@
 .menuBtn {
   border: none;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  padding: 0.7rem 1.5rem;
+  padding: 0.65rem 1.3rem;
   color: var(--white);
-  position: relative;
-  overflow: hidden;
-  transition: color 0.3s ease 0.5s;
+  transition: filter 0.3s;
 }
 
 .checkoutBtn {
   background-color: var(--primary-color);
 }
 
-.checkoutBtn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background-color: var(--secondary-color);
-  transition: transform 0.5s ease;
-  z-index: -1;
-}
-
-.checkoutBtn:hover::before {
-  transform: translateX(100%);
-}
-
-.checkoutBtn:hover {
-  color: var(--black);
-}
-
 .clearBtn {
   background-color: #dc3545;
-}
-
-.clearBtn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background-color: #c82333;
-  transition: transform 0.5s ease;
-  z-index: -1;
-}
-
-.clearBtn:hover::before {
-  transform: translateX(100%);
-}
-
-.clearBtn:hover {
-  color: var(--black);
 }
 
 .menuBtn {
   background-color: var(--secondary-color);
 }
 
-.menuBtn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background-color: var(--primary-color);
-  transition: transform 0.5s ease;
-  z-index: -1;
-}
-
-.menuBtn:hover::before {
-  transform: translateX(100%);
-}
-
+.checkoutBtn:hover,
+.clearBtn:hover,
 .menuBtn:hover {
-  color: var(--black);
+  filter: brightness(1.1);
 }
 
 /***************************************
-  Flying Ball Animation
+  Flying Ball
 ***************************************/
 .flyingBall {
   position: fixed;

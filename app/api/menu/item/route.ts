@@ -1,39 +1,46 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+/* ------------------------------------------------------------------ */
+/*  File: app/api/menu/item/route.ts                                  */
+/* ------------------------------------------------------------------ */
+/*  • GET  /api/menu/item        → list items w/ nesting               */
+/*  • POST /api/menu/item        → create item (handles Golf flag)     */
+/* ------------------------------------------------------------------ */
 
-/**
- * GET /api/menu/item
- * Returns { menuItems: [...] } with nested option groups and category data.
- */
+import { NextResponse } from "next/server";
+import { prisma }       from "@/lib/prisma";
+
+/* ================================================================== */
+/*  GET  /api/menu/item                                               */
+/* ================================================================== */
 export async function GET() {
   try {
     const items = await prisma.menuItem.findMany({
       include: {
-        category: true, // <-- Ensure the category relation is included
+        category: true,
         optionGroups: {
           include: {
             choices: {
               include: {
-                nestedOptionGroup: {
-                  include: { choices: true },
-                },
+                nestedOptionGroup: { include: { choices: true } },
               },
             },
           },
         },
       },
+      orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ menuItems: items }, { status: 200 });
   } catch (error) {
     console.error("Error fetching menu items:", error);
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
-/**
- * POST /api/menu/item
- * Creates a new menu item.
- */
+/* ================================================================== */
+/*  POST /api/menu/item                                               */
+/* ================================================================== */
 export async function POST(request: Request) {
   try {
     const data = await request.json();
@@ -43,65 +50,89 @@ export async function POST(request: Request) {
       price,
       image,
       hasSpiceLevel,
-      categoryId,
       showInGolfMenu,
+      categoryId,
       optionGroups,
+      cloverItemId,
+      stock,
     } = data;
 
-    const optionGroupsCreate = optionGroups
-      ? {
-          create: optionGroups.map((group: any) => ({
-            title: group.title,
-            minRequired: group.minRequired,
-            maxAllowed: group.maxAllowed,
-            optionType: group.optionType,
-            choices: group.choices
-              ? {
-                  create: group.choices.map((choice: any) => ({
-                    label: choice.label,
-                    priceAdjustment: choice.priceAdjustment,
-                    nestedOptionGroup: choice.nestedOptionGroup
-                      ? {
-                          create: {
-                            title: choice.nestedOptionGroup.title,
-                            minRequired: choice.nestedOptionGroup.minRequired,
-                            maxAllowed: choice.nestedOptionGroup.maxAllowed,
-                            choices: choice.nestedOptionGroup.choices
-                              ? {
-                                  create: choice.nestedOptionGroup.choices.map(
-                                    (nc: any) => ({
-                                      label: nc.label,
-                                      priceAdjustment: nc.priceAdjustment,
-                                    })
-                                  ),
-                                }
-                              : undefined,
-                          },
-                        }
-                      : undefined,
-                  })),
-                }
-              : undefined,
-          })),
-        }
-      : undefined;
+    /* -------- basic validation ------------------------------------ */
+    if (!title || typeof title !== "string") {
+      return NextResponse.json({ message: "Title is required" }, { status: 400 });
+    }
+    if (price == null || typeof price !== "number") {
+      return NextResponse.json({ message: "Price must be a number" }, { status: 400 });
+    }
+    if (!categoryId || typeof categoryId !== "string") {
+      return NextResponse.json({ message: "categoryId is required" }, { status: 400 });
+    }
+    if (!cloverItemId || typeof cloverItemId !== "string") {
+      return NextResponse.json({ message: "cloverItemId is required" }, { status: 400 });
+    }
 
+    /* -------- transform optionGroups → create payload ------------- */
+    const buildOptionGroupsCreate = (optionGroups: any[]) =>
+      Array.isArray(optionGroups)
+        ? {
+            create: optionGroups.map((group: any) => ({
+              title:       group.title,
+              minRequired: group.minRequired,
+              maxAllowed:  group.maxAllowed,
+              optionType:  group.optionType,
+              choices: Array.isArray(group.choices)
+                ? {
+                    create: group.choices.map((choice: any) => ({
+                      label:           choice.label,
+                      priceAdjustment: choice.priceAdjustment,
+                      nestedOptionGroup: choice.nestedOptionGroup
+                        ? {
+                            create: {
+                              title:       choice.nestedOptionGroup.title,
+                              minRequired: choice.nestedOptionGroup.minRequired,
+                              maxAllowed:  choice.nestedOptionGroup.maxAllowed,
+                              choices: Array.isArray(choice.nestedOptionGroup.choices)
+                                ? {
+                                    create: choice.nestedOptionGroup.choices.map(
+                                      (nc: any) => ({
+                                        label:           nc.label,
+                                        priceAdjustment: nc.priceAdjustment,
+                                      }),
+                                    ),
+                                  }
+                                : undefined,
+                            },
+                          }
+                        : undefined,
+                    })),
+                  }
+                : undefined,
+            })),
+          }
+        : undefined;
+
+    /* -------- create item ----------------------------------------- */
     const item = await prisma.menuItem.create({
       data: {
         title,
         description,
         price,
         image,
-        hasSpiceLevel,
+        hasSpiceLevel:  Boolean(hasSpiceLevel),
+        showInGolfMenu: Boolean(showInGolfMenu),
         categoryId,
-        showInGolfMenu,
-        optionGroups: optionGroupsCreate,
+        cloverItemId,
+        stock: stock ?? 0,
+        optionGroups: buildOptionGroupsCreate(optionGroups),
       },
     });
 
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
     console.error("Error creating menu item:", error);
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
