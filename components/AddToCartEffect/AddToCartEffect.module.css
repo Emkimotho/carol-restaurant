@@ -1,0 +1,71 @@
+/* dimmed backdrop */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* slightly bigger modal, pure global green */
+.modal {
+  position: relative;
+  width: 360px;    /* was 320 */
+  height: 280px;   /* was 240 */
+  background: var(--primary-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* hole sits underneath the message */
+.hole {
+  position: absolute;
+  width: 50px;
+  height: 15px;
+  background: #111;
+  border-radius: 50%/100%;
+  bottom: 20px;
+  left: calc(50% - 25px);
+  box-shadow: inset 0 0 6px #000;
+  z-index: 1;
+}
+
+/* ball underneath the message too */
+.ball {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle at 30% 30%, #fff 60%, #ddd 100%);
+  border: 2px solid #eee;
+  border-radius: 50%;
+  bottom: 20px;
+  left: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  will-change: left, bottom, transform, opacity;
+  opacity: 0;
+  z-index: 1;
+}
+
+/* bring the text above everything else */
+.message {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.5rem;      /* bumped font */
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);  /* stronger contrast band */
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.message.visible {
+  opacity: 1;
+}

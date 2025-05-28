@@ -215,88 +215,90 @@ export default function ItemDetailPage({
   }
 
   // Add item to cart
-  function handleAddToCart() {
-    if (isPreview) {
-      return toast.info("Preview mode: Add to cart is disabled.");
-    }
-    if (!canAddToCart()) return;
-
-    const provenance = (searchParams.get("from") || "").toLowerCase();
-    const sourceMenu =
-      provenance === "golf"
-        ? "GOLF"
-        : provenance === "main"
-        ? "MAIN"
-        : undefined;
-
-    const cartBase = {
-      id:             item.id,
-      title:          item.title,
-      description:    item.description,
-      price:          item.price,
-      image:          item.image,
-      hasSpiceLevel:  item.hasSpiceLevel,
-      optionGroups:   item.optionGroups || [],
-      showInGolfMenu: item.showInGolfMenu,
-      category:       item.category,
-      specialInstructions,
-      cloverItemId:   item.cloverItemId ?? undefined,
-      stock:          item.stock,
-      isAlcohol:      item.isAlcohol,
-    };
-
-    addToCart(
-      cartBase,
-      quantity,
-      specialInstructions,
-      item.hasSpiceLevel ? spiceLevel : undefined,
-      selectedOptions,
-      sourceMenu
-    );
-
-    if (item.isAlcohol) {
-      setOrder(prev => ({ ...prev, containsAlcohol: true }));
-    }
-
-    toast.success("Item added to cart!");
+function handleAddToCart() {
+  if (isPreview) {
+    return toast.info("Preview mode: Add to cart is disabled.");
   }
+  if (!canAddToCart()) return;
 
-  const handleQuantityIncrease = () => setQuantity(q => q + 1);
-  const handleQuantityDecrease = () => setQuantity(q => (q > 1 ? q - 1 : 1));
+  const provenance = (searchParams.get("from") || "").toLowerCase();
+  const sourceMenu =
+    provenance === "golf"
+      ? "GOLF"
+      : provenance === "main"
+      ? "MAIN"
+      : undefined;
 
-  const handleBackToMenu = () => {
-    if (isPreview) return toast.info("Preview mode: 'Back' disabled.");
-    router.back();
+  const cartBase = {
+    id:             item.id,
+    title:          item.title,
+    description:    item.description,
+    price:          item.price,
+    image:          item.image,
+    hasSpiceLevel:  item.hasSpiceLevel,
+    optionGroups:   item.optionGroups || [],
+    showInGolfMenu: item.showInGolfMenu,
+    category:       item.category,
+    specialInstructions,
+    cloverItemId:   item.cloverItemId ?? undefined,
+    stock:          item.stock,
+    isAlcohol:      item.isAlcohol,
   };
 
-  const provenance      = (searchParams.get("from") || "").toLowerCase();
-  const filteredDrinks  = recommendedDrinks.filter(d => d.id !== item.id);
-  const filteredDessert = desserts.filter(d => d.id !== item.id);
-  const filteredSnacks  = snacks.filter(d => d.id !== item.id);
-  const filteredSoft    = softDrinks.filter(d => d.id !== item.id);
+  addToCart(
+    cartBase,
+    quantity,
+    specialInstructions,
+    item.hasSpiceLevel ? spiceLevel : undefined,
+    selectedOptions,
+    sourceMenu
+  );
+  // ── trigger the golf-ball animation on every add to cart ──
+  window.dispatchEvent(new CustomEvent('cart-add'));
 
-  return (
-    <div className={styles.detailPageContainer}>
-      <div className={styles.mainContent}>
-        <div className={styles.imageContainer}>
-          {item.image && (
-            <Image
-              src={item.image}
-              alt={item.title}
-              width={500}
-              height={400}
-              unoptimized
-              className={styles.itemImage}
-            />
-          )}
-        </div>
+  if (item.isAlcohol) {
+    setOrder(prev => ({ ...prev, containsAlcohol: true }));
+  }
 
-        <div className={styles.infoContainer}>
-          <h1 className={styles.itemTitle}>{item.title}</h1>
-          {item.description && (
-            <p className={styles.itemDescription}>{item.description}</p>
-          )}
-          <p className={styles.price}>Price: ${item.price.toFixed(2)}</p>
+  toast.success("Item added to cart!");
+}
+
+const handleQuantityIncrease = () => setQuantity(q => q + 1);
+const handleQuantityDecrease = () => setQuantity(q => (q > 1 ? q - 1 : 1));
+
+const handleBackToMenu = () => {
+  if (isPreview) return toast.info("Preview mode: 'Back' disabled.");
+  router.back();
+};
+
+const provenance      = (searchParams.get("from") || "").toLowerCase();
+const filteredDrinks  = recommendedDrinks.filter(d => d.id !== item.id);
+const filteredDessert = desserts.filter(d => d.id !== item.id);
+const filteredSnacks  = snacks.filter(d => d.id !== item.id);
+const filteredSoft    = softDrinks.filter(d => d.id !== item.id);
+
+return (
+  <div className={styles.detailPageContainer}>
+    <div className={styles.mainContent}>
+      <div className={styles.imageContainer}>
+        {item.image && (
+          <Image
+            src={item.image}
+            alt={item.title}
+            width={500}
+            height={400}
+            unoptimized
+            className={styles.itemImage}
+          />
+        )}
+      </div>
+
+      <div className={styles.infoContainer}>
+        <h1 className={styles.itemTitle}>{item.title}</h1>
+        {item.description && (
+          <p className={styles.itemDescription}>{item.description}</p>
+        )}
+        <p className={styles.price}>Price: ${item.price.toFixed(2)}</p>
 
           {/* OPTION GROUPS */}
           {item.optionGroups?.map((group) => {

@@ -34,6 +34,7 @@
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "bootstrap": "^5.3.3",
+    "canvas-confetti": "^1.9.3",
     "chart.js": "^4.4.9",
     "disqus-react": "^1.1.6",
     "formidable": "^3.5.2",
