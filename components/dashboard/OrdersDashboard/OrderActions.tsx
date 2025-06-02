@@ -1,8 +1,11 @@
 // File: components/dashboard/OrderActions.tsx
 // ───────────────────────────────────────────────────────────────────────
-// Renders each card’s action buttons, now including:
-//  • “Collect Cash & En Route” and “Mark Delivered” for servers
-//  • Existing prep/cancel/unassign/details/delete for admin/staff
+// Renders each card’s action buttons, including:
+//  • Two‑step flow for servers:
+//      1) Pick Up & En Route   (ORDER_READY → PICKED_UP_BY_DRIVER)
+//      2) Collect Cash & Complete   (cash)  or  Mark Delivered (card)
+//  • Prep / Cancel for staff & admin
+//  • Details (all roles) and Delete (admin)
 // ───────────────────────────────────────────────────────────────────────
 
 import React from 'react';
@@ -19,7 +22,7 @@ export interface OrderActionsProps {
   onShowAgePatch: (nextStatus: string, msg: string) => void;
 }
 
-// Chef prep/ready transitions
+// Chef/admin prep/ready transitions
 const NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
   ORDER_RECEIVED: OrderStatus.IN_PROGRESS,
   IN_PROGRESS:    OrderStatus.ORDER_READY,
@@ -71,8 +74,8 @@ export default function OrderActions({
 
   return (
     <div className={styles.cardFooter}>
-      {/* Chef: Start Prep / Mark Ready */}
-      {role === 'staff' && order.status in NEXT && (
+      {/* Staff & Admin: Start Prep / Mark Ready */}
+      {(role === 'staff' || role === 'admin') && order.status in NEXT && (
         <button
           className={styles.actionBtn}
           onClick={() => {
@@ -91,8 +94,8 @@ export default function OrderActions({
         </button>
       )}
 
-      {/* Chef: Cancel */}
-      {role === 'staff' && canCancel(order.status as OrderStatus) && (
+      {/* Staff & Admin: Cancel */}
+      {(role === 'staff' || role === 'admin') && canCancel(order.status as OrderStatus) && (
         <button
           className={styles.actionBtn}
           onClick={() => patchOrder(OrderStatus.CANCELLED, 'Cancelling…')}
@@ -101,28 +104,44 @@ export default function OrderActions({
         </button>
       )}
 
-      {/* Server: Collect Cash & En Route */}
-      {role === 'server' &&
-       order.paymentMethod === 'CASH' &&
-       order.status === OrderStatus.ORDER_READY && (
+      {/* ─────────────  SERVER FLOW  ───────────── */}
+
+      {/* Step 1: Pick Up & En Route — always on ORDER_READY */}
+      {role === 'server' && order.status === OrderStatus.ORDER_READY && (
         <button
           className={styles.actionBtn}
           onClick={() =>
             patchOrder(
               OrderStatus.PICKED_UP_BY_DRIVER,
-              'Collecting cash & en route…'
+              'Picking up & en route…'
             )
           }
         >
-          Collect Cash & En Route
+          Pick Up & En Route
         </button>
       )}
 
-      {/* Server: Mark Delivered (card orders or after collecting cash) */}
-      {role === 'server' && (
-        (order.paymentMethod === 'CARD' && order.status === OrderStatus.ORDER_READY) ||
-        order.status === OrderStatus.PICKED_UP_BY_DRIVER
-      ) && (
+      {/* Step 2A: Collect Cash & Complete — cash + picked up */}
+      {role === 'server' &&
+       order.paymentMethod === 'CASH' &&
+       order.status === OrderStatus.PICKED_UP_BY_DRIVER && (
+        <button
+          className={styles.actionBtn}
+          onClick={() =>
+            patchOrder(
+              OrderStatus.DELIVERED,
+              'Collecting cash & completing…'
+            )
+          }
+        >
+          Collect Cash & Complete
+        </button>
+      )}
+
+      {/* Step 2B: Mark Delivered — card + picked up */}
+      {role === 'server' &&
+       order.paymentMethod === 'CARD' &&
+       order.status === OrderStatus.PICKED_UP_BY_DRIVER && (
         <button
           className={styles.actionBtn}
           onClick={() => patchOrder(OrderStatus.DELIVERED, 'Marking delivered…')}

@@ -73,7 +73,7 @@ export interface MenuItem {
   showInGolfMenu?: boolean;
   category:       MenuCategory;
   optionGroups?:  MenuItemOptionGroup[];
-  cloverItemId:   string;  // Clover inventory ID
+  cloverItemId?:   string;  
   stock:          number;
 }
 

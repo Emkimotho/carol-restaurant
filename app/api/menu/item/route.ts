@@ -2,7 +2,7 @@
 /*  File: app/api/menu/item/route.ts                                  */
 /* ------------------------------------------------------------------ */
 /*  • GET  /api/menu/item        → list items w/ nesting               */
-/*  • POST /api/menu/item        → create item (handles Golf flag)     */
+/*  • POST /api/menu/item        → create item (cloverItemId optional) */
 /* ------------------------------------------------------------------ */
 
 import { NextResponse } from "next/server";
@@ -67,15 +67,18 @@ export async function POST(request: Request) {
     if (!categoryId || typeof categoryId !== "string") {
       return NextResponse.json({ message: "categoryId is required" }, { status: 400 });
     }
-    if (!cloverItemId || typeof cloverItemId !== "string") {
-      return NextResponse.json({ message: "cloverItemId is required" }, { status: 400 });
+    if (cloverItemId !== undefined && typeof cloverItemId !== "string") {
+      return NextResponse.json(
+        { message: "cloverItemId, if provided, must be a string" },
+        { status: 400 }
+      );
     }
 
     /* -------- transform optionGroups → create payload ------------- */
-    const buildOptionGroupsCreate = (optionGroups: any[]) =>
-      Array.isArray(optionGroups)
+    const buildOptionGroupsCreate = (groups: any[]) =>
+      Array.isArray(groups)
         ? {
-            create: optionGroups.map((group: any) => ({
+            create: groups.map((group: any) => ({
               title:       group.title,
               minRequired: group.minRequired,
               maxAllowed:  group.maxAllowed,
@@ -111,6 +114,8 @@ export async function POST(request: Request) {
           }
         : undefined;
 
+    const optionGroupsCreate = buildOptionGroupsCreate(optionGroups);
+
     /* -------- create item ----------------------------------------- */
     const item = await prisma.menuItem.create({
       data: {
@@ -121,14 +126,26 @@ export async function POST(request: Request) {
         hasSpiceLevel:  Boolean(hasSpiceLevel),
         showInGolfMenu: Boolean(showInGolfMenu),
         categoryId,
-        cloverItemId,
+        cloverItemId: cloverItemId ?? null, // now optional
         stock: stock ?? 0,
-        optionGroups: buildOptionGroupsCreate(optionGroups),
+        optionGroups: optionGroupsCreate,
+      },
+      include: {
+        category: true,
+        optionGroups: {
+          include: {
+            choices: {
+              include: {
+                nestedOptionGroup: { include: { choices: true } },
+              },
+            },
+          },
+        },
       },
     });
 
     return NextResponse.json({ item }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating menu item:", error);
     return NextResponse.json(
       { message: "Internal server error" },

@@ -1,9 +1,11 @@
 /* ------------------------------------------------------------------
    File: components/dashboard/AdminDashboard/MenuBuilder/MenuItemEditor.tsx
    ------------------------------------------------------------------
-   • Adds / edits menu items
-   • Checkbox “Also show in Golf Menu” hidden for Golf categories
-   • After creating (POST), resets all fields to blank/new state
+   • Adds / edits menu items and immediately syncs that single item
+     to Clover by calling  POST /api/clover/sync‑items/[itemId]
+   • All money fields show a “$” prefix and never display a leading
+     zero (so typing “5” shows “5”, not “05”).
+   • After creating (POST), the form resets to a blank draft.
    ------------------------------------------------------------------ */
 
 "use client";
@@ -11,7 +13,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Image                   from "next/image";
 import OptionGroupEditor       from "./OptionGroupEditor";
-import CloverItemSelect        from "components/dashboard/AdminDashboard/MenuBuilder/CloverItemSelect";
 import styles                  from "./MenuItemEditor.module.css";
 import type {
   MenuCategory,
@@ -32,9 +33,6 @@ import {
 const DRAFT_KEY = "menuItemDraft";
 const createLocalPreviewURL = (file: File) => URL.createObjectURL(file);
 
-/* ------------------------------------------------------------------ */
-/*  Props                                                              */
-/* ------------------------------------------------------------------ */
 interface MenuItemEditorProps {
   categoryId:  string | null;
   editingItem: MenuItem | null;
@@ -54,24 +52,22 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   categories,
 }) => {
   /* --------------------- base state ------------------------------ */
-  const [title, setTitle]         = useState(editingItem?.title || "");
-  const [description, setDescription] = useState(editingItem?.description || "");
-  const [price, setPrice]         = useState(editingItem?.price || 0);
-  const [imageUrl, setImageUrl]   = useState(editingItem?.image || "");
+  const [title, setTitle]              = useState(editingItem?.title ?? "");
+  const [description, setDescription]  = useState(editingItem?.description ?? "");
+  const [price, setPrice]              = useState<number>(editingItem?.price ?? 0);
+  const [imageUrl, setImageUrl]        = useState(editingItem?.image ?? "");
   const [hasSpiceLevel, setHasSpiceLevel] =
-    useState(editingItem?.hasSpiceLevel || false);
-  const [hasAlcohol, setHasAlcohol] =
-    useState(editingItem?.isAlcohol || false);
-
+    useState(editingItem?.hasSpiceLevel ?? false);
+  const [hasAlcohol, setHasAlcohol]    =
+    useState(editingItem?.isAlcohol ?? false);
   const [optionGroups, setOptionGroups] =
-    useState<MenuItemOptionGroup[]>(editingItem?.optionGroups || []);
+    useState<MenuItemOptionGroup[]>(editingItem?.optionGroups ?? []);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading]       = useState(false);
-  const [selectedSubcategory, setSelectedSubcategory] =
-    useState(categoryId || "");
 
-  const [cloverItemId, setCloverItemId] =
-    useState(editingItem?.cloverItemId || "");
+  const [selectedSubcategory, setSelectedSubcategory] =
+    useState(categoryId ?? "");
+
   const [stock, setStock] = useState<number>(editingItem?.stock ?? 0);
 
   const [errors, setErrors] = useState<{
@@ -79,7 +75,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     price?: string;
     subcategory?: string;
     stock?: string;
-    cloverItemId?: string;
   }>({});
 
   const queryClient = useQueryClient();
@@ -91,23 +86,23 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   );
   const categoryIsGolf = !!getSelectedCategory()?.type?.includes("GolfMenu");
 
-  /* showInGolfMenu initial value ----------------------------------- */
   const [showInGolfMenu, setShowInGolfMenu] = useState(
     editingItem?.showInGolfMenu ??
       !!categories.find((c) => c.id === categoryId && c.type === "GolfMenu")
   );
+
+  /* ------------- sync state when switching to edit --------------- */
   useEffect(() => {
     if (editingItem) {
       setTitle(editingItem.title);
-      setDescription(editingItem.description || "");
+      setDescription(editingItem.description ?? "");
       setPrice(editingItem.price);
-      setImageUrl(editingItem.image || "");
+      setImageUrl(editingItem.image ?? "");
       setHasSpiceLevel(editingItem.hasSpiceLevel);
-      setHasAlcohol(editingItem.isAlcohol || false);
-      setOptionGroups(editingItem.optionGroups || []);
-      setCloverItemId(editingItem.cloverItemId || "");
+      setHasAlcohol(editingItem.isAlcohol ?? false);
+      setOptionGroups(editingItem.optionGroups ?? []);
       setStock(editingItem.stock);
-      setSelectedSubcategory(editingItem.category?.id || "");
+      setSelectedSubcategory(editingItem.category?.id ?? "");
       setShowInGolfMenu(
         editingItem.showInGolfMenu ||
           !!categories.find(
@@ -117,25 +112,25 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     }
   }, [editingItem, categories]);
 
+  /* ------------- load & auto‑save local draft (new item) ---------- */
   useEffect(() => {
     if (!editingItem) {
       const raw = localStorage.getItem(DRAFT_KEY);
       if (raw) {
         try {
           const d = JSON.parse(raw);
-          setTitle(d.title || "");
-          setDescription(d.description || "");
-          setPrice(d.price || 0);
-          setImageUrl(d.imageUrl || "");
-          setHasSpiceLevel(d.hasSpiceLevel || false);
-          setHasAlcohol(d.hasAlcohol || false);
-          setShowInGolfMenu(d.showInGolfMenu || false);
-          setOptionGroups(d.optionGroups || []);
-          setSelectedSubcategory(d.selectedSubcategory || categoryId || "");
-          setCloverItemId(d.cloverItemId || "");
+          setTitle(d.title ?? "");
+          setDescription(d.description ?? "");
+          setPrice(d.price ?? 0);
+          setImageUrl(d.imageUrl ?? "");
+          setHasSpiceLevel(d.hasSpiceLevel ?? false);
+          setHasAlcohol(d.hasAlcohol ?? false);
+          setShowInGolfMenu(d.showInGolfMenu ?? false);
+          setOptionGroups(d.optionGroups ?? []);
+          setSelectedSubcategory(d.selectedSubcategory ?? categoryId ?? "");
           setStock(d.stock ?? 0);
         } catch {
-          /* ignore parse errors */
+          /* ignore */
         }
       }
     }
@@ -156,7 +151,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
             showInGolfMenu,
             optionGroups,
             selectedSubcategory,
-            cloverItemId,
             stock,
           })
         );
@@ -173,7 +167,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     showInGolfMenu,
     optionGroups,
     selectedSubcategory,
-    cloverItemId,
     stock,
     editingItem,
   ]);
@@ -184,7 +177,12 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
   };
 
   /* --------------------- handlers -------------------------------- */
-  const handlePriceChange = (v: string) => setPrice(parseFloat(v) || 0);
+  const handlePriceChange = (v: string) => {
+    // Strip leading zeros while allowing empty string
+    const cleaned = v.replace(/^0+(?=\d)/, "");
+    setPrice(parseFloat(cleaned) || 0);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
       const f = e.target.files[0];
@@ -205,12 +203,14 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         choices: [],
       },
     ]);
+
   const updateOptionGroup = (idx: number, g: MenuItemOptionGroup) =>
     setOptionGroups((prev) => {
       const cp = [...prev];
       cp[idx] = g;
       return cp;
     });
+
   const removeOptionGroup = (idx: number) =>
     setOptionGroups((prev) => prev.filter((_, i) => i !== idx));
 
@@ -221,7 +221,6 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     if (price <= 0) e.price = "Price must be greater than zero.";
     if (!selectedSubcategory) e.subcategory = "Subcategory is required.";
     if (stock < 0) e.stock = "Stock cannot be negative.";
-    if (!cloverItemId.trim()) e.cloverItemId = "Clover ID is required.";
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -239,9 +238,11 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     });
     const j = await res.json();
     if (!res.ok) throw new Error(j.message || "Save failed");
-    return j;
+    return j; // j.item (POST) or j.menuItem (PUT)
   };
-  const mutation: UseMutationResult<any, Error, any> = useMutation({ mutationFn: save });
+  const mutation: UseMutationResult<any, Error, any> = useMutation({
+    mutationFn: save,
+  });
 
   /* --------------------- submit ---------------------------------- */
   const handleSubmit = async (e: React.FormEvent) => {
@@ -267,13 +268,27 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       showInGolfMenu,
       optionGroups,
       categoryId: selectedSubcategory,
-      cloverItemId,
       stock,
     };
 
     try {
-      await mutation.mutateAsync(payload);
+      const result = await mutation.mutateAsync(payload);
+
+      /* ---------- push this single item to Clover ---------- */
+      const savedItem =
+        result.item /* POST route */ || result.menuItem /* PUT route */;
+      if (savedItem?.id) {
+        await fetch(`/api/clover/sync-items/${savedItem.id}`, {
+          method: "POST",
+        }).catch((err) =>
+          console.error("Clover single‑item sync failed:", err)
+        );
+      }
+      /* ----------------------------------------------------- */
+
       onSaved();
+
+      /* reset form when creating new */
       if (!editingItem) {
         setTitle("");
         setDescription("");
@@ -284,8 +299,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         setHasAlcohol(false);
         setShowInGolfMenu(false);
         setOptionGroups([]);
-        setSelectedSubcategory(categoryId || "");
-        setCloverItemId("");
+        setSelectedSubcategory(categoryId ?? "");
         setStock(0);
         clearDraft();
       }
@@ -294,8 +308,10 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
     }
   };
 
+  /* --------------------- preview --------------------------- */
   const handlePreview = () => {
-    const cat = categories.find((c) => c.id === selectedSubcategory) || null;
+    const cat =
+      categories.find((c) => c.id === selectedSubcategory) || null;
     onPreview({
       id: editingItem?.id || "temp-id",
       title,
@@ -304,11 +320,10 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       image: imageUrl,
       hasSpiceLevel,
       hasAlcohol,
-      isAlcohol: hasAlcohol, // Add this line to match MenuItem type
+      isAlcohol: hasAlcohol,
       showInGolfMenu,
       category: cat,
       optionGroups,
-      cloverItemId,
       stock,
     } as MenuItem);
   };
@@ -326,7 +341,9 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
           onChange={(e) => setTitle(e.target.value)}
           required
         />
-        {errors.title && <span className={styles.error}>{errors.title}</span>}
+        {errors.title && (
+          <span className={styles.error}>{errors.title}</span>
+        )}
       </div>
 
       {/* Description */}
@@ -342,20 +359,32 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
       {/* Price */}
       <div className={styles.field}>
         <label htmlFor="price">Price:</label>
-        <input
-          id="price"
-          type="number"
-          value={price}
-          onChange={(e) => handlePriceChange(e.target.value)}
-          required
-        />
-        {errors.price && <span className={styles.error}>{errors.price}</span>}
+        <div className={styles.moneyInput}>
+          <span className={styles.dollar}>$</span>
+          <input
+            id="price"
+            type="number"
+            step="0.01"
+            min="0"
+            value={price === 0 ? "" : price}
+            onChange={(e) => handlePriceChange(e.target.value)}
+            required
+          />
+        </div>
+        {errors.price && (
+          <span className={styles.error}>{errors.price}</span>
+        )}
       </div>
 
       {/* Image upload */}
       <div className={styles.field}>
         <label htmlFor="imageUpload">Image Upload:</label>
-        <input id="imageUpload" type="file" accept="image/*" onChange={handleFileChange} />
+        <input
+          id="imageUpload"
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+        />
         {selectedFile && <p>Selected file: {selectedFile.name}</p>}
         {uploading && <p>Uploading image...</p>}
         {imageUrl && (
@@ -372,7 +401,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         )}
       </div>
 
-      {/* Subcategory select */}
+      {/* Subcategory */}
       <div className={styles.field}>
         <label htmlFor="subcategory">Subcategory:</label>
         <select
@@ -399,14 +428,17 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         <input
           id="stock"
           type="number"
-          value={stock}
+          min="0"
+          value={stock === 0 ? "" : stock}
           onChange={(e) => setStock(parseInt(e.target.value) || 0)}
           required
         />
-        {errors.stock && <span className={styles.error}>{errors.stock}</span>}
+        {errors.stock && (
+          <span className={styles.error}>{errors.stock}</span>
+        )}
       </div>
 
-      {/* Golf flag checkbox (hidden if category is GolfMenu) */}
+      {/* Golf flag */}
       {!categoryIsGolf && (
         <div className={styles.field}>
           <label>
@@ -420,7 +452,7 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         </div>
       )}
 
-      {/* Spice level toggle */}
+      {/* Spice level */}
       <div className={styles.field}>
         <label>
           <input
@@ -432,27 +464,19 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         </label>
       </div>
 
-{/* Alcohol flag toggle */}
-<div className={styles.field}>
-   <label>
-     <input
-       type="checkbox"
-       checked={hasAlcohol}
-      onChange={(e) => setHasAlcohol(e.target.checked)}
-   />
-     Contains Alcohol
-   </label>
- </div> 
-
-      {/* Clover item select */}
+      {/* Alcohol flag */}
       <div className={styles.field}>
-        <CloverItemSelect value={cloverItemId} onChange={setCloverItemId} />
-        {errors.cloverItemId && (
-          <span className={styles.error}>{errors.cloverItemId}</span>
-        )}
+        <label>
+          <input
+            type="checkbox"
+            checked={hasAlcohol}
+            onChange={(e) => setHasAlcohol(e.target.checked)}
+          />
+          Contains Alcohol
+        </label>
       </div>
 
-      {/* Option groups */}
+      {/* Option Groups */}
       <div className={styles.optionGroups}>
         <h3>Option Groups</h3>
         {optionGroups.map((g, idx) => (
@@ -477,12 +501,16 @@ const MenuItemEditor: React.FC<MenuItemEditorProps> = ({
         <button type="submit" disabled={uploading || mutation.isPending}>
           {mutation.isPending ? "Saving..." : "Save Menu Item"}
         </button>
-        <button type="button" onClick={handlePreview} disabled={uploading}>
+        <button
+          type="button"
+          onClick={handlePreview}
+          disabled={uploading}
+        >
           Preview
         </button>
       </div>
 
-      {/* Clear draft (new item only) */}
+      {/* Clear draft */}
       {!editingItem && (
         <div className={styles.clearDraftRow}>
           <button

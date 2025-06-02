@@ -8,28 +8,45 @@ import { OrderContext } from "@/contexts/OrderContext";
 import { CartContext }  from "@/contexts/CartContext";
 import styles from "./PaymentConfirmation.module.css";
 
+interface FetchedOrder {
+  id:           string;  // database ID
+  orderId:      string;  // human-readable code
+  totalAmount:  number;
+  orderType:    string | null;
+  deliveryAddress: {
+    street:      string;
+    city:        string;
+    state:       string;
+    zipCode:     string;
+    deliveryInstructions?: string;
+  } | null;
+  status:       string;
+  guestEmail:   string | null;
+  // add any other fields you need to display
+}
+
 export default function CardPaymentConfirmation() {
   const router    = useRouter();
   const params    = useSearchParams();
-  const orderId   = params.get("id") ?? "";
+  const dbId      = params.get("id") ?? "";
 
+  // Context fallback
   const orderCtx  = useContext(OrderContext);
   const cartCtx   = useContext(CartContext);
   if (!orderCtx || !cartCtx) return null;
 
-  const { order }       = orderCtx;
-  const { clearCart }   = cartCtx;
+  const { order: orderFromCtx } = orderCtx;
+  const { clearCart }           = cartCtx;
 
-  const {
-    totalAmount   = 0,
-    orderType     = "",
-    deliveryAddress,
-    status        = "",
-    guestEmail    = "",
-  } = order ?? {};
+  // State for fetched order
+  const [fetchedOrder, setFetchedOrder] = useState<FetchedOrder | null>(null);
+  const [loadingOrder, setLoadingOrder] = useState<boolean>(false);
+  const [fetchError, setFetchError]     = useState<string | null>(null);
 
+  // Track whether we sent the email
   const [emailSent, setEmailSent] = useState(false);
 
+  // Restaurant’s pickup address (fallback)
   const restaurantAddress =
     process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ||
     "20025 Mount Aetna Road, Hagerstown, MD 21742";
@@ -39,28 +56,65 @@ export default function CardPaymentConfirmation() {
     clearCart();
   }, [clearCart]);
 
-  // 2️⃣ Send confirmation email once
+  // 2️⃣ Fetch the latest order data by database ID
   useEffect(() => {
-    if (emailSent || !guestEmail) return;
+    if (!dbId) return;
 
+    setLoadingOrder(true);
+    fetch(`/api/orders/${encodeURIComponent(dbId)}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Fetch failed: ${res.status}`);
+        }
+        const data = (await res.json()) as { order: FetchedOrder };
+        setFetchedOrder(data.order);
+        setLoadingOrder(false);
+      })
+      .catch((err) => {
+        console.error("[PaymentConfirmation] Could not fetch order:", err);
+        setFetchError("Failed to load order details.");
+        setLoadingOrder(false);
+      });
+  }, [dbId]);
+
+  // 3️⃣ Send confirmation email once we know the guest email and amount
+  useEffect(() => {
+    const emailToSend = fetchedOrder?.guestEmail ?? orderFromCtx?.guestEmail;
+    const amount      = fetchedOrder?.totalAmount ?? orderFromCtx?.totalAmount ?? 0;
+    if (emailSent || !emailToSend) return;
+
+    const humanId = fetchedOrder?.orderId ?? orderFromCtx?.orderId ?? "";
     const subject = "Credit Card Payment Confirmation";
-    const text = `Credit card payment of $${totalAmount.toFixed(
+    const text = `Credit card payment of $${amount.toFixed(
       2
-    )} received for order #${orderId}.`;
-    const html = `<p>Credit card payment of <strong>$${totalAmount.toFixed(
+    )} received for order #${humanId}.`;
+    const html = `<p>Credit card payment of <strong>$${amount.toFixed(
       2
-    )}</strong> received for order #${orderId}.</p>`;
+    )}</strong> received for order #${humanId}.</p>`;
 
     fetch("/api/send-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to: guestEmail, subject, text, html }),
+      body: JSON.stringify({ to: emailToSend, subject, text, html }),
     })
       .then((res) => {
         if (res.ok) setEmailSent(true);
+        else console.error("[PaymentConfirmation] Email send failed:", res.statusText);
       })
-      .catch((err) => console.error("Email error:", err));
-  }, [emailSent, guestEmail, orderId, totalAmount]);
+      .catch((err) => console.error("[PaymentConfirmation] Email error:", err));
+  }, [emailSent, fetchedOrder, orderFromCtx]);
+
+  // Choose which “order” object to display:
+  //  • If fetchedOrder is loaded, use that.
+  //  • Otherwise, fall back to context’s order (even if stale).
+  const displayOrder = fetchedOrder ?? (orderFromCtx as FetchedOrder | null);
+
+  // Extract fields safely
+  const humanOrderId     = displayOrder?.orderId ?? "";
+  const totalAmount      = displayOrder?.totalAmount ?? 0;
+  const orderType        = displayOrder?.orderType ?? "";
+  const deliveryAddress  = displayOrder?.deliveryAddress ?? null;
+  const status           = displayOrder?.status ?? "";
 
   return (
     <div className={styles.container}>
@@ -77,14 +131,22 @@ export default function CardPaymentConfirmation() {
         </div>
 
         <h1 className={styles.title}>Payment Confirmed!</h1>
-        <p className={styles.message}>
-          Your payment has been successfully processed. Your order is being
-          prepared.
-        </p>
 
-        {orderId && (
+        {loadingOrder ? (
+          <p className={styles.message}>Loading order details…</p>
+        ) : fetchError ? (
+          <p className={styles.message}>
+            Your payment succeeded, but we couldn’t load full order details.
+          </p>
+        ) : (
+          <p className={styles.message}>
+            Your payment has been successfully processed. Your order is now being prepared.
+          </p>
+        )}
+
+        {humanOrderId && (
           <p className={styles.orderLine}>
-            <strong>Order #</strong> {orderId}
+            <strong>Order #</strong> {humanOrderId}
           </p>
         )}
 
@@ -93,7 +155,7 @@ export default function CardPaymentConfirmation() {
         </p>
 
         {/* Pickup vs Delivery Details */}
-        {(orderType ?? "").toLowerCase().includes("pickup") ? (
+        {orderType.toLowerCase().includes("pickup") ? (
           <div className={styles.detailSection}>
             <h2 className={styles.subtitle}>Pickup Location</h2>
             <p className={styles.address}>
@@ -120,9 +182,9 @@ export default function CardPaymentConfirmation() {
 
         {/* Navigation Buttons */}
         <div className={styles.navigation}>
-          {orderId && (
+          {humanOrderId && (
             <button
-              onClick={() => router.push(`/track-delivery/${orderId}`)}
+              onClick={() => router.push(`/track-delivery/${humanOrderId}`)}
               className={styles.trackButton}
             >
               Track My Order

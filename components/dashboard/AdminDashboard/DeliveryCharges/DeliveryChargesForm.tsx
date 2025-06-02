@@ -1,9 +1,22 @@
-"use client";
+/* ======================================================================
+ * File: components/dashboard/AdminDashboard/DeliveryCharges/AdminDeliveryCharges.tsx
+ * ----------------------------------------------------------------------
+ * “Manage Delivery Charges” form — fully wired to the new CSS module.
+ * -------------------------------------------------------------------*/
 
-import React, { useEffect, useState, FormEvent, ChangeEvent } from "react";
-import { toast } from "react-toastify";
-// or remove the 'toast' calls if you prefer your own approach.
+'use client';
 
+import React, {
+  useEffect,
+  useState,
+  FormEvent,
+  ChangeEvent,
+} from 'react';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import styles from './DeliveryChargesForm.module.css';
+
+/* ----------------------------- Types -------------------------------- */
 interface DeliveryChargesData {
   ratePerMile: string;
   ratePerHour: string;
@@ -13,29 +26,27 @@ interface DeliveryChargesData {
 }
 
 const AdminDeliveryCharges: React.FC = () => {
+  /* --------------------------- State -------------------------------- */
   const [formData, setFormData] = useState<DeliveryChargesData>({
-    ratePerMile: "",
-    ratePerHour: "",
-    restaurantFeePercentage: "",
-    minimumCharge: "",
-    freeDeliveryThreshold: "",
+    ratePerMile: '',
+    ratePerHour: '',
+    restaurantFeePercentage: '',
+    minimumCharge: '',
+    freeDeliveryThreshold: '',
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState('');
 
-  // 1) On mount, fetch /api/deliverycharges (like opening hours)
+  /* ------------------------- Fetch on mount ------------------------ */
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/deliverycharges");
-        if (!res.ok) {
-          throw new Error(`Failed to fetch. Status: ${res.status}`);
-        }
+        const res = await fetch('/api/deliverycharges');
+        if (!res.ok) throw new Error(`Failed to fetch. Status: ${res.status}`);
         const data = await res.json();
-        // data: { ratePerMile: "2.00", ratePerHour: "10.00", ... }
         setFormData(data);
       } catch (err: any) {
-        console.error("Error fetching delivery charges:", err);
+        console.error('Error fetching delivery charges:', err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -44,50 +55,49 @@ const AdminDeliveryCharges: React.FC = () => {
     fetchData();
   }, []);
 
-  // 2) Update local form state on user input
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData((prev) => ({
+  /* ----------------------- Input handler --------------------------- */
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
   };
 
-  // 3) Submit -> POST data to the route
+  /* ----------------------- Submit handler -------------------------- */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
 
     try {
-      const res = await fetch("/api/deliverycharges", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/deliverycharges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) {
-        throw new Error(`Failed to update. Status: ${res.status}`);
-      }
-      const result = await res.json(); // e.g. { message, deliveryCharges }
-      console.log("Updated result from server:", result);
-      // Optional: show a toast or custom message
-      toast.success("Delivery charges updated successfully!");
-      // Re-sync the form with the server result
+      if (!res.ok) throw new Error(`Failed to update. Status: ${res.status}`);
+
+      const result = await res.json();
+      toast.success('Delivery charges updated successfully!');
       setFormData(result.deliveryCharges);
     } catch (err: any) {
-      console.error("Error updating delivery charges:", err);
-      setError(err.message || "Error updating delivery charges");
-      toast.error("Error updating delivery charges");
+      console.error('Error updating delivery charges:', err);
+      setError(err.message || 'Error updating delivery charges');
+      toast.error('Error updating delivery charges');
     }
   };
 
-  if (loading) return <div>Loading delivery charges...</div>;
-  if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
+  /* ----------------------- Render ---------------------------------- */
+  if (loading) return <div>Loading delivery charges…</div>;
 
   return (
-    <div className="admin-delivery-charges">
+    <div className={styles.container}>
       <h2>Manage Delivery Charges</h2>
-      <form onSubmit={handleSubmit}>
+
+      <form className={styles.form} onSubmit={handleSubmit}>
         {/* Rate per Mile */}
-        <div>
+        <div className={styles.group}>
           <label htmlFor="ratePerMile">Rate per Mile ($):</label>
           <select
             id="ratePerMile"
@@ -106,7 +116,7 @@ const AdminDeliveryCharges: React.FC = () => {
         </div>
 
         {/* Rate per Hour */}
-        <div>
+        <div className={styles.group}>
           <label htmlFor="ratePerHour">Rate per Hour ($):</label>
           <select
             id="ratePerHour"
@@ -125,8 +135,10 @@ const AdminDeliveryCharges: React.FC = () => {
         </div>
 
         {/* Restaurant Fee Percentage */}
-        <div>
-          <label htmlFor="restaurantFeePercentage">Restaurant Fee Percentage (%):</label>
+        <div className={styles.group}>
+          <label htmlFor="restaurantFeePercentage">
+            Restaurant Fee Percentage (%):
+          </label>
           <input
             type="number"
             id="restaurantFeePercentage"
@@ -141,7 +153,7 @@ const AdminDeliveryCharges: React.FC = () => {
         </div>
 
         {/* Minimum Charge */}
-        <div>
+        <div className={styles.group}>
           <label htmlFor="minimumCharge">Minimum Charge ($):</label>
           <input
             type="number"
@@ -156,8 +168,10 @@ const AdminDeliveryCharges: React.FC = () => {
         </div>
 
         {/* Free Delivery Threshold */}
-        <div>
-          <label htmlFor="freeDeliveryThreshold">Free Delivery Threshold ($):</label>
+        <div className={styles.group}>
+          <label htmlFor="freeDeliveryThreshold">
+            Free Delivery Threshold ($):
+          </label>
           <input
             type="number"
             id="freeDeliveryThreshold"
@@ -170,7 +184,13 @@ const AdminDeliveryCharges: React.FC = () => {
           />
         </div>
 
-        <button type="submit">Save Changes</button>
+        {error && (
+          <div className={`${styles.status} ${styles.error}`}>{error}</div>
+        )}
+
+        <button type="submit" className={styles.submitBtn}>
+          Save Changes
+        </button>
       </form>
     </div>
   );

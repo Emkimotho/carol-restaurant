@@ -1,92 +1,76 @@
 // File: app/api/clover/webhook/route.ts
 // ----------------------------------------------------------------------
-// • Responsibility: handle Clover payment webhooks.
-//   1) Verify HMAC SHA-256 signature against CLOVER_SIGNING_SECRET.
-//   2) Listen for `payment.updated` events with status `"SUCCESS"`.
-//   3) Extract your internal order ID from payment.metadata.orderId.
-//   4) Update Prisma order → ORDER_RECEIVED.
-//   5) Decrement inventory stock for each line item.
-//   6) Broadcast real-time update via WebSocket.
+// • Responsibility: Handle incoming Clover webhooks, specifically
+//   the "invoice.paid" event for hosted-checkout payments.
+// • When Clover notifies that an invoice has been paid, extract
+//   the `externalPaymentContext.ourOrderId` and update the corresponding
+//   order in Prisma from "PENDING_PAYMENT" to "ORDER_RECEIVED".
+// • If the payload does not include a valid order ID or if any error
+//   occurs, log it and still return a 200 to Clover (so it won’t retry).
 // ----------------------------------------------------------------------
 
-import { NextResponse }          from "next/server";
-import { prisma }                from "@/lib/prisma";
-import { OrderStatus }           from "@prisma/client";
-import crypto                    from "crypto";
-import { broadcastStatus }       from "@/app/api/ws/route";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export const runtime = "nodejs"; // enable Node built-ins
-
-export async function POST(req: Request) {
-  // 1️⃣ Load webhook secret
-  const signingSecret = process.env.CLOVER_SIGNING_SECRET;
-  if (!signingSecret) {
-    console.error("[Webhook] Missing CLOVER_SIGNING_SECRET");
-    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
-  }
-
-  // 2️⃣ Read raw body & signature header
-  const signature = req.headers.get("Clover-Signature") || "";
-  const bodyText  = await req.text();
-
-  // 3️⃣ Verify signature
-  const hmac     = crypto.createHmac("sha256", signingSecret);
-  hmac.update(bodyText);
-  const expected = hmac.digest("base64");
-  if (signature !== expected) {
-    console.warn("[Webhook] Invalid signature", { expected, received: signature });
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-  }
-
-  // 4️⃣ Parse JSON
-  let event: any;
+/**
+ * Clover will send a JSON payload like:
+ * {
+ *   "type": "invoice.paid",
+ *   "data": {
+ *     "id": "...",
+ *     "externalPaymentContext": {
+ *       "ourOrderId": "<your-order-id>"
+ *     },
+ *     // ... other fields we don’t need ...
+ *   },
+ *   // ... other top-level event metadata ...
+ * }
+ *
+ * This endpoint reads that payload, checks for `type === "invoice.paid"`,
+ * pulls out `ourOrderId` from `data.externalPaymentContext`, and flips
+ * the local order’s status to "ORDER_RECEIVED".
+ */
+export async function POST(request: Request) {
   try {
-    event = JSON.parse(bodyText);
-  } catch (err) {
-    console.error("[Webhook] Bad JSON", err);
-    return NextResponse.json({ error: "Bad JSON" }, { status: 400 });
-  }
+    const event = await request.json();
 
-  // 5️⃣ Only handle payment.updated → SUCCESS
-  if (event.type === "payment.updated" && event.data?.object?.status === "SUCCESS") {
-    const paymentObj = event.data.object;
-    const ourOrderId = paymentObj.metadata?.orderId;
-    if (!ourOrderId) {
-      console.error("[Webhook] Missing metadata.orderId");
-      return NextResponse.json({ error: "Missing orderId metadata" }, { status: 400 });
+    // Only handle the invoice.paid event
+    if (event.type === "invoice.paid") {
+      const ourOrderId = event.data?.externalPaymentContext?.ourOrderId;
+
+      if (typeof ourOrderId === "string" && ourOrderId.trim() !== "") {
+        try {
+          // Update the order’s status in the database
+          await prisma.order.update({
+            where: { orderId: ourOrderId },
+            data:  { status: "ORDER_RECEIVED" },
+          });
+          console.log(
+            `[Clover Webhook] Order ${ourOrderId} marked as ORDER_RECEIVED`
+          );
+        } catch (dbErr: any) {
+          // If the order isn’t found or another DB error occurs, log it
+          console.error(
+            `[Clover Webhook] Failed to update order ${ourOrderId}:`,
+            dbErr
+          );
+        }
+      } else {
+        console.warn(
+          "[Clover Webhook] invoice.paid received without externalPaymentContext.ourOrderId",
+          event
+        );
+      }
+    } else {
+      // If it’s some other event type, just log and ignore
+      console.log(`[Clover Webhook] Ignoring event type: ${event.type}`);
     }
 
-    // a) Mark order as paid
-    await prisma.order.update({
-      where: { orderId: ourOrderId },
-      data:  { status: OrderStatus.ORDER_RECEIVED },
-    });
-
-    // b) Decrement inventory
-    const fullOrder = await prisma.order.findUnique({
-      where:   { orderId: ourOrderId },
-      include: { lineItems: true },
-    });
-    if (fullOrder?.lineItems) {
-      await Promise.all(
-        fullOrder.lineItems.map(li =>
-          prisma.menuItem.update({
-            where: { id: li.menuItemId },
-            data:  { stock: { decrement: li.quantity } },
-          })
-        )
-      );
-    }
-
-    // c) Broadcast real-time update
-    broadcastStatus("PAYMENTS", { orderId: ourOrderId, status: "PAID" });
-
-    console.info(`[Webhook] Order ${ourOrderId} marked PAID and inventory updated.`);
-  } else {
-    // ignore other events
-    console.debug("[Webhook] Ignored event type/status:", event.type, event.data?.object?.status);
+    // Respond 200 to acknowledge receipt (so Clover won’t retry)
+    return NextResponse.json({ received: true });
+  } catch (err: any) {
+    console.error("[Clover Webhook] Error parsing request:", err);
+    // Even on error, respond 200 to prevent Clover from retrying repeatedly.
+    return NextResponse.json({ received: false }, { status: 200 });
   }
-
-  // 6️⃣ Ack receipt
-  return NextResponse.json({ received: true }, { status: 200 });
 }

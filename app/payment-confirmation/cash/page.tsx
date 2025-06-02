@@ -6,7 +6,6 @@ import React, { useContext, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { OrderContext } from "@/contexts/OrderContext";
 import styles from "./PaymentConfirmation.module.css";
-import { fetchCloverItems } from "@/lib/clover";  // For Clover item fetching, if required for other logic
 
 export default function CashPaymentConfirmation() {
   const { order } = useContext(OrderContext)!;
@@ -16,11 +15,13 @@ export default function CashPaymentConfirmation() {
   
   const [sent, setSent] = useState(false);
 
-  const restaurantAddress = process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS || "20025 Mount Aetna Road, Hagerstown, MD 21742";
+  const restaurantAddress =
+    process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ||
+    "20025 Mount Aetna Road, Hagerstown, MD 21742";
 
   useEffect(() => {
     if (!sent) {
-      const email = order.guestEmail;  // Ensure you get the correct customer email
+      const email = order.guestEmail; // Ensure you get the correct customer email
       const subject = "Cash Payment Confirmation";
       const text = `Cash payment of $${totalAmount} received for order #${orderId}.`;
       const html = `<p>Cash payment of <strong>$${totalAmount}</strong> received for order #${orderId}.</p>`;
@@ -95,21 +96,21 @@ export default function CashPaymentConfirmation() {
         <div className={styles.navigation}>
           {/* Track My Order */}
           <button
-            onClick={() => window.location.href = `/track-delivery/${orderId}`}
+            onClick={() => (window.location.href = `/track-delivery/${orderId}`)}
             className={styles.trackButton}
           >
             Track My Order
           </button>
           {/* View Menu */}
           <button
-            onClick={() => window.location.href = "/menu"}
+            onClick={() => (window.location.href = "/menu")}
             className={styles.navButton}
           >
             View Menu
           </button>
           {/* Home */}
           <button
-            onClick={() => window.location.href = "/"}
+            onClick={() => (window.location.href = "/")}
             className={styles.navButton}
           >
             Home

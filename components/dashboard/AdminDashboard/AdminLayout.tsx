@@ -1,6 +1,6 @@
 // File: components/dashboard/AdminDashboard/AdminLayout.tsx
 // ──────────────────────────────────────────────────────────────
-//  Admin layout — now includes “Finances” and “Payouts” links in the header
+//  Admin layout — now includes “Finances”, “Payouts”, and “Cash Audit” links in the header
 // ──────────────────────────────────────────────────────────────
 
 "use client";
@@ -26,7 +26,8 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { href: "/dashboard/admin-dashboard/orders",       label: "Orders" },
     { href: "/dashboard/admin-dashboard/menu-builder", label: "Menu Builder" },
     { href: "/dashboard/admin-dashboard/finances",     label: "Finances" },
-    { href: "/dashboard/admin-dashboard/payouts",      label: "Payouts" },     // ← added
+    { href: "/dashboard/admin-dashboard/payouts",      label: "Payouts" },
+    { href: "/dashboard/admin-dashboard/cash-audit",   label: "Cash Audit" },    // ← added
     { href: "/dashboard/admin-dashboard/profile",      label: "Profile"  },
   ];
 

@@ -312,7 +312,7 @@ const Checkout: React.FC = () => {
           customTip={customTip}
           onTipChange={handleTipChange}
           onCustomTipChange={e => setCustomTip(e.target.value)}
-          taxRate={0.07}
+          taxRate={0.06}
           onNext={next}
           onBack={back}
           isGolf={golfOrder}

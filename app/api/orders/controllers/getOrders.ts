@@ -125,7 +125,11 @@ export async function getOrders(req: Request) {
             user: { select: { firstName: true, lastName: true } },
           },
         },
-        cashCollection: true,
+        cashCollection: {
+          include: {
+            server: { select: { firstName: true, lastName: true } }, // NEW
+          },
+        },
       },
     });
     return NextResponse.json(wrap(orders));
@@ -145,7 +149,11 @@ export async function getOrders(req: Request) {
       },
       orderBy: { createdAt: "desc" },
       include: {
-        cashCollection: true,
+        cashCollection: {
+          include: {
+            server: { select: { firstName: true, lastName: true } }, // NEW
+          },
+        },
         customer:       { select: { firstName: true, lastName: true } },
         driver:         { select: { firstName: true, lastName: true } },
         staff:          { select: { firstName: true, lastName: true } },

@@ -1,41 +1,60 @@
 // File: app/api/cash/route.ts
 
 import { NextResponse } from "next/server";
-import { fetchCloverItems } from "@/lib/clover";  // Reuse Clover API functions for other tasks if needed
-import { OrderContext } from "@/contexts/OrderContext";  // For accessing the current order (if needed)
+
+interface CashPaymentRequest {
+  orderId: string;
+  amountReceived: number;
+  customerEmail: string;
+}
 
 export async function POST(req: Request) {
   try {
-    // Get body data from request
-    const body = await req.json();
-    const { orderId, amountReceived } = body;
+    const body = (await req.json()) as CashPaymentRequest;
+    const { orderId, amountReceived, customerEmail } = body;
 
-    // Here, process the cash payment confirmation by interacting with Clover (or other logic)
-    // No need to interact with Clover API for cash payments immediately
+    if (
+      !orderId ||
+      typeof orderId !== "string" ||
+      typeof amountReceived !== "number" ||
+      !customerEmail ||
+      typeof customerEmail !== "string"
+    ) {
+      return NextResponse.json(
+        { success: false, message: "Invalid payload" },
+        { status: 400 }
+      );
+    }
 
-    // Update order state to reflect cash payment status
-    // Optionally, you can send email notification about cash payment received
-    const email = "customer@example.com"; // Get the email from the order context
+    // At this point, you could update your database to mark the order as paid in cash,
+    // create any “cashCollection” records, etc. For now, we just send a confirmation email.
+
     const subject = "Cash Payment Confirmation";
-    const text = `Cash payment of $${amountReceived} received for order #${orderId}.`;
-    const html = `<p>Cash payment of <strong>$${amountReceived}</strong> received for order #${orderId}.</p>`;
+    const text = `Cash payment of $${amountReceived.toFixed(
+      2
+    )} received for order #${orderId}.`;
+    const html = `<p>Cash payment of <strong>$${amountReceived.toFixed(
+      2
+    )}</strong> received for order #${orderId}.</p>`;
 
-    // Send confirmation email to customer
+    // Send confirmation email to the customer
     await fetch("/api/send-email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        to: email,
+        to: customerEmail,
         subject,
         text,
         html,
       }),
     });
 
-    // Clear the cart or other actions you want to take after payment (as needed)
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error processing cash payment:", error);
-    return NextResponse.json({ success: false }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Unknown error" },
+      { status: 500 }
+    );
   }
 }

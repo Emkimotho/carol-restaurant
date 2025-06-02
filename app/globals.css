@@ -93,19 +93,19 @@ a:focus {
 button,
 .btn {
   background-color: var(--primary-color);
-  color: var(--black);
+  color: var(--white); /* ← text now white by default */
   border: none;
   padding: 12px 20px;
   font-size: 1rem;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
 }
 
 button:hover,
 .btn:hover {
-  background-color: var(--primary-color-hover);
-  color: var(--white);
+  background-color: var(--secondary-color); /* ← gold on hover */
+  color: var(--black);                      /* ← black text on hover */
   transform: translateY(-2px);
 }
 
@@ -113,12 +113,13 @@ button:hover,
 button.secondary,
 .btn-secondary {
   background-color: var(--secondary-color);
-  color: var(--white);
+  color: var(--black);
 }
 
 button.secondary:hover,
 .btn-secondary:hover {
   background-color: var(--primary-color);
+  color: var(--white);
 }
 
 /* 6. Checkbox Styling */

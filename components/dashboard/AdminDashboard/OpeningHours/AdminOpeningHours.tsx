@@ -1,143 +1,150 @@
-// File: components/AdminDashboard/OpeningHours/AdminOpeningHours.tsx
-"use client";
+/* ======================================================================
+ * File: components/dashboard/AdminDashboard/OpeningHours/AdminOpeningHours.tsx
+ * ----------------------------------------------------------------------
+ * Manage restaurant opening hours – sleek, CSS‑module version.
+ * -------------------------------------------------------------------*/
 
-import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import { toast } from "react-toastify";
-import { useOpeningHours } from "@/contexts/OpeningHoursContext";
+'use client';
 
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  FormEvent,
+} from 'react';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { useOpeningHours } from '@/contexts/OpeningHoursContext';
+import styles from './AdminOpeningHours.module.css';
+
+/* ---------------- Types ---------------- */
 interface DailyHours {
   open: string;
   close: string;
 }
+type HoursData = Record<string, DailyHours>;
 
-type HoursData = {
-  [day: string]: DailyHours;
-};
-
-const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const AdminOpeningHours: React.FC = () => {
   const { openingHours, refreshHours } = useOpeningHours();
   const [formData, setFormData] = useState<HoursData>({});
 
-  // Initialize form data when openingHours updates
+  /* ----------- init local state from context ------------ */
   useEffect(() => {
-    const initialData: HoursData = {};
-    days.forEach((day) => {
-      initialData[day] = openingHours[day] || { open: "09:00", close: "17:00" };
+    const init: HoursData = {};
+    days.forEach(day => {
+      init[day] = openingHours[day] || { open: '09:00', close: '17:00' };
     });
-    setFormData(initialData);
+    setFormData(init);
   }, [openingHours]);
 
-  // Validate time in HH:mm 24-hour format or allow "closed"
-  const validateTime = (time: string) => {
-    if (time.toLowerCase() === "closed") return true;
-    const regex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-    return regex.test(time);
-  };
+  /* ----------- helpers ---------------------------------- */
+  const validTime = (val: string) =>
+    val.toLowerCase() === 'closed' ||
+    /^([01]\d|2[0-3]):([0-5]\d)$/.test(val);
 
-  // Update form data on input change
   const handleChange = (
     e: ChangeEvent<HTMLInputElement>,
     day: string,
-    field: "open" | "close"
+    field: 'open' | 'close'
   ) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [day]: {
-        ...prev[day],
-        [field]: e.target.value,
-      },
+      [day]: { ...prev[day], [field]: e.target.value },
     }));
   };
 
-  // Handle form submission with validations and API call
+  /* ----------- submit ----------------------------------- */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validate each day's opening and closing values
+    // validation
     for (const day of days) {
       const { open, close } = formData[day];
-      if (!validateTime(open) || !validateTime(close)) {
-        toast.error(`Invalid time format for ${day}. Use HH:mm or "Closed".`);
+      if (!validTime(open) || !validTime(close)) {
+        toast.error(`Invalid time for ${day}. Use HH:mm or "Closed".`);
         return;
       }
       if (
-        (open.toLowerCase() === "closed" && close.toLowerCase() !== "closed") ||
-        (open.toLowerCase() !== "closed" && close.toLowerCase() === "closed")
+        (open.toLowerCase() === 'closed') !==
+        (close.toLowerCase() === 'closed')
       ) {
-        toast.error(
-          `For ${day}, if one field is "Closed", both must be "Closed".`
-        );
+        toast.error(`For ${day}, both fields must be "Closed" or neither.`);
         return;
       }
     }
 
-    // Submit the form data to the API
     try {
-      const res = await fetch("/api/openinghours", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/openinghours', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to update opening hours");
-      }
-      toast.success("Opening hours updated successfully");
+      if (!res.ok) throw new Error('Failed to update opening hours');
+      toast.success('Opening hours updated successfully');
       refreshHours();
-    } catch (error) {
-      console.error(error);
-      toast.error("Error updating opening hours");
+    } catch (err) {
+      console.error(err);
+      toast.error('Error updating opening hours');
     }
   };
 
+  /* ----------- render ----------------------------------- */
   return (
-    <div className="admin-opening-hours container mx-auto p-4">
-      <h2 className="text-2xl font-heading mb-4">
-        Manage Restaurant Opening Hours
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {days.map((day) => (
-          <div key={day} className="day-form border p-4 rounded shadow-sm">
-            <h3 className="text-xl font-bold mb-2">{day}</h3>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <label htmlFor={`${day}-open`} className="block font-semibold mb-1">
+    <div className={styles.container}>
+      <h2 className={styles.heading}>Manage Restaurant Opening Hours</h2>
+
+      <form className={styles.form} onSubmit={handleSubmit}>
+        {days.map(day => (
+          <div key={day} className={styles.dayCard}>
+            <h3 className={styles.dayTitle}>{day}</h3>
+
+            <div className={styles.inputGroup}>
+              {/* Open */}
+              <div style={{ flex: 1 }}>
+                <label
+                  htmlFor={`${day}-open`}
+                  className={styles.label}
+                >
                   Open
                 </label>
                 <input
-                  type="text"
                   id={`${day}-open`}
-                  value={formData[day]?.open || ""}
-                  onChange={(e) => handleChange(e, day, "open")}
+                  type="text"
+                  className={styles.timeInput}
+                  value={formData[day]?.open || ''}
                   placeholder='e.g. "09:00" or "Closed"'
-                  className="w-full p-2 border rounded"
+                  onChange={e => handleChange(e, day, 'open')}
                   required
                 />
               </div>
-              <div className="flex-1">
-                <label htmlFor={`${day}-close`} className="block font-semibold mb-1">
+
+              {/* Close */}
+              <div style={{ flex: 1 }}>
+                <label
+                  htmlFor={`${day}-close`}
+                  className={styles.label}
+                >
                   Close
                 </label>
                 <input
-                  type="text"
                   id={`${day}-close`}
-                  value={formData[day]?.close || ""}
-                  onChange={(e) => handleChange(e, day, "close")}
+                  type="text"
+                  className={styles.timeInput}
+                  value={formData[day]?.close || ''}
                   placeholder='e.g. "17:00" or "Closed"'
-                  className="w-full p-2 border rounded"
+                  onChange={e => handleChange(e, day, 'close')}
                   required
                 />
               </div>
             </div>
           </div>
         ))}
-        <div className="flex justify-end">
-          <button type="submit" className="btn">
-            Save Changes
-          </button>
-        </div>
+
+        <button type="submit" className={styles.submitBtn}>
+          Save Changes
+        </button>
       </form>
     </div>
   );

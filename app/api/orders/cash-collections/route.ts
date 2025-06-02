@@ -1,9 +1,10 @@
-// File: app/api/cash-collections/route.ts
+// File: app/api/orders/cash-collections/route.ts
 // ------------------------------------------------------------------
-// • GET  /api/cash-collections
-//    – List cash‐collection records with optional filters
-// • POST /api/cash-collections
-//    – Create a new cash‐collection record (status defaults to PENDING)
+// • GET  /api/orders/cash-collections
+//    – List cash‑collection records with optional filters
+//    – NEW: ?groupBy=server returns aggregate totals per server (PENDING by default)
+// • POST /api/orders/cash-collections
+//    – Create a new cash‑collection record (status defaults to PENDING)
 // ------------------------------------------------------------------
 
 import { NextRequest, NextResponse }       from 'next/server';
@@ -19,8 +20,9 @@ export async function GET(req: NextRequest) {
     const statusParam   = searchParams.get('status');    // "PENDING" or "SETTLED"
     const serverIdParam = searchParams.get('serverId');
     const settledByParam= searchParams.get('settledById');
+    const groupByParam  = searchParams.get('groupBy');   // NEW  → "server"
 
-    // Build filter
+    /* ---------- basic filters ---------- */
     const where: any = {};
     if (orderId)         where.orderId      = orderId;
     if (statusParam && ['PENDING','SETTLED'].includes(statusParam)) {
@@ -29,6 +31,40 @@ export async function GET(req: NextRequest) {
     if (serverIdParam)   where.serverId      = Number(serverIdParam);
     if (settledByParam)  where.settledById   = Number(settledByParam);
 
+    /* ---------- group by server (aggregate) ---------- */
+    if (groupByParam === 'server') {
+      // Default to PENDING if no explicit status filter supplied
+      if (!where.status) where.status = CashCollectionStatus.PENDING;
+
+      // 1) fetch all matching records with their servers
+      const records = await prisma.cashCollection.findMany({
+        where,
+        include: {
+          server: { select: { id: true, firstName: true, lastName: true } },
+        },
+      });
+
+      // 2) aggregate in JS (Prisma's groupBy is still preview in some versions)
+      const map = new Map<number, { server: any; pendingOrders: number; totalAmount: number }>();
+
+      records.forEach((r) => {
+        const key = r.serverId;
+        if (!map.has(key)) {
+          map.set(key, {
+            server: r.server,
+            pendingOrders: 0,
+            totalAmount:   0,
+          });
+        }
+        const agg = map.get(key)!;
+        agg.pendingOrders += 1;
+        agg.totalAmount   += r.amount;
+      });
+
+      return NextResponse.json(Array.from(map.values()));
+    }
+
+    /* ---------- normal list (one record per order) ---------- */
     const records = await prisma.cashCollection.findMany({
       where,
       orderBy: { collectedAt: 'desc' },

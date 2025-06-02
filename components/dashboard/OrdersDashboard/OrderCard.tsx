@@ -109,6 +109,16 @@ export default function OrderCard({
             </small>
           </p>
         )}
+
+        {/* NEW — show who collected the cash (server) */}
+        {order.cashCollection?.server && (
+          <p className={styles.driverTag}>
+            <small>
+              Server: {order.cashCollection.server.firstName}{' '}
+              {order.cashCollection.server.lastName}
+            </small>
+          </p>
+        )}
       </div>
 
       {/* ── Driver assignment ── */}

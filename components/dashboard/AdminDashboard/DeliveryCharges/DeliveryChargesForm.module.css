@@ -1,92 +1,104 @@
 /* ======================================================================
-   Delivery‑Charges Form – Container
-   ====================================================================== */
-   .deliveryChargesContainer {
-    padding: 2rem;
-    background-color: var(--white);                /* global */
-    border-radius: 12px;
-    box-shadow: var(--box-shadow-primary);         /* global */
-    max-width: 580px;
-    margin: 0 auto;
+ * File: components/dashboard/AdminDashboard/DeliveryCharges/DeliveryChargesForm.module.css
+ * ----------------------------------------------------------------------
+ * Award‑ready styling for the Delivery‑Charges management form.
+ * Uses CSS variables from app/globals.css
+ * ------------------------------------------------------------------- */
+
+/* ---------- Outer wrapper (card) ----------------------------------- */
+.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: var(--box-shadow-primary);
+  animation: fadeInAnim 0.4s ease;
+}
+
+/* ---------- Form layout ------------------------------------------- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+/* ---------- Form group -------------------------------------------- */
+.group label {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-weight: 600;
+  color: var(--dark-gray);
+}
+
+.group select,
+.group input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.group select:focus,
+.group input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(0, 191, 99, 0.15);
+  outline: none;
+}
+
+/* ---------- Submit button ----------------------------------------- */
+.submitBtn {
+  align-self: flex-start;
+  background: var(--primary-color);
+  color: var(--white);
+  font-weight: 700;
+  padding: 0.9rem 1.7rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.25s, color 0.25s, transform 0.2s;
+}
+
+.submitBtn:hover {
+  background: var(--secondary-color); /* gold */
+  color: var(--black);
+  transform: translateY(-2px);
+}
+
+.submitBtn:active {
+  transform: translateY(0);
+}
+
+/* ---------- Status message ---------------------------------------- */
+.status {
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.success {
+  background: rgba(0, 191, 99, 0.12);
+  color: var(--primary-color);
+}
+
+.error {
+  background: rgba(255, 77, 77, 0.12);
+  color: var(--secondary-color);
+}
+
+/* ---------- Mobile tweaks ----------------------------------------- */
+@media (max-width: 640px) {
+  .container {
+    padding: 1.5rem;
   }
-  
-  /* ======================================================================
-     Form Layout
-     ====================================================================== */
-  .deliveryChargesForm {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;                                   /* modern spacing */
-  }
-  
-  /* ======================================================================
-     Form Group
-     ====================================================================== */
-  .formGroup label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: var(--dark-gray);                       /* global */
-  }
-  
-  .formGroup select {
+  .submitBtn {
     width: 100%;
-    padding: 0.8rem 1rem;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--light-gray);
-    color: var(--dark-gray);
-    font-size: 1rem;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
-  }
-  
-  .formGroup select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 4px rgba(0, 191, 99, 0.15);
-    outline: none;
-  }
-  
-  /* ======================================================================
-     Submission Status Messages
-     ====================================================================== */
-  .submissionStatus {
-    padding: 0.8rem 1rem;
-    border-radius: 8px;
     text-align: center;
-    font-weight: 600;
   }
-  
-  .success {
-    background-color: rgba(0, 191, 99, 0.1);       /* light green tint */
-    color: var(--primary-color);
-  }
-  
-  .error {
-    background-color: rgba(255, 77, 77, 0.1);      /* light red tint */
-    color: var(--secondary-color);
-  }
-  
-  /* ======================================================================
-     Submit Button
-     ====================================================================== */
-  .submitButton {
-    background-color: var(--primary-color);
-    color: var(--white);
-    border: none;
-    padding: 0.9rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 700;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.25s ease, transform 0.25s ease;
-  }
-  
-  .submitButton:hover {
-    background-color: var(--primary-color-hover);
-    transform: translateY(-2px);
-  }
-  
-  .submitButton:active {
-    transform: translateY(0);
-  }
-  
+}

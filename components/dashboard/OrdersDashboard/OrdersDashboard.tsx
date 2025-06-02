@@ -24,6 +24,9 @@ export interface OrdersDashboardProps {
   userId?: string | number;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Order shape sent down by our GET /api/orders controller            */
+/* ------------------------------------------------------------------ */
 export interface Order {
   id:               string;
   orderId:          string;
@@ -38,7 +41,11 @@ export interface Order {
   tipRecipientId?:  number;
   paymentMethod:    'CARD' | 'CASH';
   containsAlcohol:  boolean;
-  cashCollection?:  { status: 'PENDING' | 'SETTLED' };
+  cashCollection?: {
+    status: 'PENDING' | 'SETTLED';
+    amount?: number;
+    server?: { firstName: string; lastName: string } | null;
+  };
 
   items:            Array<Record<string, any>>;
   lineItems:        Array<Record<string, any>>;
@@ -49,6 +56,15 @@ export interface Order {
   driver?:          { id: number; firstName: string; lastName: string; isOnline: boolean } | null;
   staff?:           { firstName: string; lastName: string } | null;
   deliveryAddress?: DeliveryAddress | null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Cash‑collection aggregate used for the server filter (cashier)     */
+/* ------------------------------------------------------------------ */
+interface ServerAgg {
+  server: { id: number; firstName: string; lastName: string };
+  pendingOrders: number;
+  totalAmount:   number;
 }
 
 interface OrdersListResponse {
@@ -79,6 +95,15 @@ export default function OrdersDashboard({
   const [page, setPage]         = useState(1);
   const limit                   = 20;
 
+  /* ---------------- Cashier server filter ---------------- */
+  const [serverFilter, setServerFilter] = useState<string>(''); // '' = all servers
+  const { data: serverAgg = [] } =
+    useSWR<ServerAgg[]>(
+      role === 'cashier' ? '/api/orders/cash-collections?groupBy=server' : null,
+      fetcher,
+      { refreshInterval: 10000 },
+    );
+
   // Modals state
   const [detail, setDetail] = useState<Order | null>(null);
   const [agePatch, setAgePatch] = useState<{ order: Order; nextStatus: string; msg: string } | null>(null);
@@ -96,6 +121,7 @@ export default function OrdersDashboard({
   }
   if (role === 'cashier') {
     ordersKey += `&reconciled=false`;
+    if (serverFilter) ordersKey += `&serverId=${serverFilter}`;
   }
 
   const { data = { orders: [], page: 1, totalPages: 1 }, mutate } =
@@ -234,6 +260,27 @@ export default function OrdersDashboard({
               value={query}
               onChange={e => setQuery(e.target.value)}
             />
+          </div>
+        )}
+
+        {/* ---------- Cashier server filter ---------- */}
+        {role === 'cashier' && (
+          <div className={styles.searchRow}>
+            <label style={{ marginRight: 8 }}>
+              Server&nbsp;
+              <select
+                value={serverFilter}
+                onChange={(e) => { setServerFilter(e.target.value); setPage(1); }}
+                className={styles.searchInput}
+              >
+                <option value="">All servers</option>
+                {serverAgg.map((s) => (
+                  <option key={s.server.id} value={s.server.id}>
+                    {s.server.firstName} {s.server.lastName} &nbsp;({s.pendingOrders})
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         )}
 
