@@ -1,4 +1,5 @@
 /* File: app/payment-confirmation/card/PaymentConfirmation.module.css */
+/* All colours/spacing come from your already-loaded globals.css */
 
 .container {
   display: flex;
@@ -6,18 +7,18 @@
   justify-content: center;
   min-height: calc(100vh - var(--navbar-height));
   background: var(--light-gray);
-  padding: 20px;
+  padding: 1.5rem;
 }
 
 .confirmationCard {
   background: var(--white);
-  padding: 2rem;
-  border-radius: 10px;
+  width: 100%;
+  max-width: 540px;
+  padding: 2rem 2.5rem;
+  border-radius: 0.75rem;
   box-shadow: var(--box-shadow-primary);
   text-align: center;
-  animation: fadeIn 0.8s ease-out;
-  max-width: 500px;
-  width: 100%;
+  animation: fadeIn 0.6s ease;
 }
 
 .iconWrapper {
@@ -25,131 +26,146 @@
 }
 
 .checkIcon {
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
   stroke: var(--primary-color);
-  stroke-width: 2;
-  animation: strokeAnim 0.6s ease-in-out forwards;
 }
 
-.checkCircle {
+.checkCircle,
+.checkMark {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
   stroke-dasharray: 166;
   stroke-dashoffset: 166;
-  stroke-width: 2;
-  stroke-miterlimit: 10;
-  stroke: var(--primary-color);
-  fill: none;
-  animation: circleAnim 0.6s ease-in-out forwards;
+  animation: dash 0.9s ease forwards;
 }
 
 .checkMark {
   stroke-dasharray: 48;
-  stroke-dashoffset: 48;
-  stroke-width: 2;
-  stroke-linecap: round;
-  animation: checkAnim 0.6s 0.6s ease-in-out forwards;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
 .title {
   font-family: var(--font-heading);
   font-size: 2rem;
-  margin-bottom: 0.5rem;
   color: var(--primary-color);
+  margin-bottom: 0.5rem;
 }
 
 .message {
-  font-size: 1.2rem;
+  font-size: 1.125rem;
+  margin-bottom: 1.25rem;
+}
+
+.retryBtn {
+  margin-left: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ─── Order number row ───────────────────────────────────────────────── */
+.orderNumberRow {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 1rem 0 0.75rem;
+}
+
+.orderNumberRow .factLabel {
+  font-size: 0.875rem;
+  color: var(--gray);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.orderNumberRow .orderNumber {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* ─── Paid & Placed side-by-side ─────────────────────────────────────── */
+.paidPlacedRow {
+  display: flex;
+  justify-content: space-around;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.paidPlacedRow > div {
+  text-align: center;
+}
+
+.paidPlacedRow .factLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--gray);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.25rem;
+}
+
+/* ─── Status row ─────────────────────────────────────────────────────── */
+.statusRow {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.5rem;
   margin-bottom: 1.5rem;
 }
 
+.statusRow .factLabel {
+  font-size: 0.875rem;
+  color: var(--gray);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* ─── Fulfillment details ───────────────────────────────────────────── */
 .detailSection {
   margin-bottom: 2rem;
 }
 
 .subtitle {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .address {
   font-size: 1rem;
   color: var(--dark-gray);
+  line-height: 1.4;
 }
 
-.trackButton {
-  margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-  background-color: var(--primary-color);
-  color: var(--white);
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.trackButton:hover {
-  background-color: var(--primary-color-hover);
-  transform: translateY(-3px);
-}
-
+/* ─── Navigation buttons ────────────────────────────────────────────── */
 .navigation {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   justify-content: center;
+  margin-bottom: 1.5rem;
 }
 
-.navButton {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-  background-color: var(--secondary-color);
-  color: var(--white);
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
+/* The actual .btn/.btn-secondary styles come from your globals.css */
 
-.navButton:hover {
-  background-color: var(--secondary-color-hover);
-  transform: translateY(-3px);
-}
-
+/* ─── Footer note ───────────────────────────────────────────────────── */
 .note {
-  font-size: 1rem;
-  color: var(--dark-gray);
-  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--gray);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes circleAnim {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes checkAnim {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes strokeAnim {
-  from {
-    stroke-dashoffset: 166;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
+/* ─── Hover tweaks ──────────────────────────────────────────────────── */
+.retryBtn:hover,
+.navigation .btn.secondary:hover {
+  transform: translateY(-1px);
 }

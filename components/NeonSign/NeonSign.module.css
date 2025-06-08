@@ -1,3 +1,7 @@
+/* File: components/NeonSign/NeonSign.module.css */
+
+/* ------------------------- */
+/* Base styling for the neon sign container */
 .neonSign {
   /* Local component variables */
   --neon-open: #28a745;
@@ -15,7 +19,68 @@
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
-/* Neon effect for "open" state */
+/* ------------------------- */
+/* Define a single “flicker” keyframes animation.
+   It briefly dips opacity/glow at irregular intervals,
+   then returns to full glow. */
+@keyframes flicker {
+  0% {
+    opacity: 1;
+    text-shadow:
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 40px currentColor;
+  }
+  5% {
+    opacity: 0.8;
+    /* slightly dimmed */
+    text-shadow:
+      0 0 3px currentColor,
+      0 0 6px currentColor,
+      0 0 12px currentColor,
+      0 0 24px currentColor;
+  }
+  10% {
+    opacity: 1;
+    text-shadow:
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 40px currentColor;
+  }
+  15% {
+    opacity: 0.85;
+    /* another quick dip */
+    text-shadow:
+      0 0 4px currentColor,
+      0 0 8px currentColor,
+      0 0 16px currentColor,
+      0 0 32px currentColor;
+  }
+  20% {
+    opacity: 1;
+    text-shadow:
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 40px currentColor;
+  }
+  /* From 20% onward, remain at full glow until 100% */
+  100% {
+    opacity: 1;
+    text-shadow:
+      0 0 5px currentColor,
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 40px currentColor;
+  }
+}
+
+/* ------------------------- */
+/* Neon effect for “open” state:
+   – Use the green glow (var(--neon-open))
+   – Apply the flicker animation over a 3-second loop */
 .neonSign.open {
   color: var(--neon-open);
   text-shadow:
@@ -23,9 +88,14 @@
     0 0 10px var(--neon-open),
     0 0 20px var(--neon-open),
     0 0 40px var(--neon-open);
+
+  /* Flicker animation: 3s duration, infinite, ease-in-out */
+  animation: flicker 3s infinite ease-in-out;
 }
 
-/* Neon effect for "closed" state */
+/* Neon effect for “closed” state:
+   – Use the red glow (var(--neon-closed))
+   – Apply the flicker animation over a slightly longer 3.5-second loop */
 .neonSign.closed {
   color: var(--neon-closed);
   text-shadow:
@@ -33,9 +103,13 @@
     0 0 10px var(--neon-closed),
     0 0 20px var(--neon-closed),
     0 0 40px var(--neon-closed);
+
+  /* Flicker animation: 3.5s duration, infinite, ease-in-out */
+  animation: flicker 3.5s infinite ease-in-out;
 }
 
-/* Inline-flex for icon and text alignment */
+/* ------------------------- */
+/* Inline-flex for icon + text alignment */
 .statusContainer {
   display: inline-flex;
   align-items: center;
@@ -43,7 +117,13 @@
   gap: 0.5em;
 }
 
-/* Keeps icon vertically aligned */
+/* Keep the icon vertically centered */
 .statusIcon {
   vertical-align: middle;
 }
+
+/* (Optionally, you can style the statusText if needed) */
+/* .statusText {
+  Inherit color from parent (.open or .closed)
+  You could also tweak letter-spacing, font-family, etc. here
+} */

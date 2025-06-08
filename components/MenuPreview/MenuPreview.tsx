@@ -1,72 +1,57 @@
+// File: components/MenuPreview/MenuPreview.tsx
+
 "use client";
 
 import React from "react";
+import useSWR from "swr";
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./MenuPreview.module.css";
 
+interface PreviewItem {
+  id: number;
+  title: string;
+  description: string | null;
+  imageUrl: string;
+  displayOrder: number;
+}
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 const MenuPreview: React.FC = () => {
+  const { data, error } = useSWR<PreviewItem[]>("/api/menupreview", fetcher);
+
+  if (error) {
+    return <p className="text-center text-danger">Failed to load menu preview.</p>;
+  }
+  if (!data) {
+    return <p className="text-center">Loading preview…</p>;
+  }
+
+  // Ensure `data` is an array before mapping
+  const items: PreviewItem[] = Array.isArray(data) ? data : [];
+
   return (
     <section className={styles.menuPreview}>
-      <div className={`${styles.container} container text-center`}>
+      <div className="container text-center">
         <h2>Menu Preview</h2>
         <div className="row mt-4">
-          {/* Menu Item 1 */}
-          <div className="col-md-4">
-            <div className={styles.menuItem}>
-              <Image
-                src="/images/menu-item1.jpg"
-                alt="Signature Steak"
-                width={300}
-                height={200}
-                style={{ objectFit: "cover" }}
-                quality={80}
-                placeholder="blur"
-                blurDataURL="/images/menu-item1.jpg"
-                className="img-fluid"
-              />
-              <h4>Signature Steak</h4>
-              <p>Our finest cut, grilled to perfection.</p>
+          {items.map((item) => (
+            <div key={item.id} className="col-md-4 mb-4">
+              <div className={styles.menuItem}>
+                <Image
+                  src={item.imageUrl}
+                  alt={item.title}
+                  width={300}
+                  height={200}
+                  style={{ objectFit: "cover", borderRadius: "8px" }}
+                  className="img-fluid"
+                />
+                <h4 className="mt-2">{item.title}</h4>
+                {item.description && <p>{item.description}</p>}
+              </div>
             </div>
-          </div>
-
-          {/* Menu Item 2 */}
-          <div className="col-md-4">
-            <div className={styles.menuItem}>
-              <Image
-                src="/images/menu-item2.jpg"
-                alt="Seafood Platter"
-                width={300}
-                height={200}
-                style={{ objectFit: "cover" }}
-                quality={80}
-                placeholder="blur"
-                blurDataURL="/images/menu-item2.jpg"
-                className="img-fluid"
-              />
-              <h4>Seafood Platter</h4>
-              <p>A delightful assortment of fresh seafood.</p>
-            </div>
-          </div>
-
-          {/* Menu Item 3 */}
-          <div className="col-md-4">
-            <div className={styles.menuItem}>
-              <Image
-                src="/images/menu-item3.jpg"
-                alt="Garden Salad"
-                width={300}
-                height={200}
-                style={{ objectFit: "cover" }}
-                quality={80}
-                placeholder="blur"
-                blurDataURL="/images/menu-item3.jpg"
-                className="img-fluid"
-              />
-              <h4>Garden Salad</h4>
-              <p>A fresh mix of organic greens and vegetables.</p>
-            </div>
-          </div>
+          ))}
         </div>
 
         <Link href="/menu" className={`${styles.btn} btn mt-4`}>

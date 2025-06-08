@@ -1,19 +1,27 @@
 // File: components/Header/Header.tsx
 "use client";
 
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { FaShoppingCart } from "react-icons/fa";
+import {
+  FaShoppingCart,
+  FaHome,
+  FaUtensils,
+  FaCalendarAlt,
+  FaGift,
+  FaGlobe,
+  FaBriefcase,
+  FaInfoCircle,
+  FaTachometerAlt,
+  FaSignInAlt,
+  FaSignOutAlt,
+} from "react-icons/fa";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { CartContext } from "@/contexts/CartContext";
 import styles from "./Header.module.css";
 
-/**
- * Hook: useIsMobile
- * Detects if the viewport width is <= the given breakpoint.
- */
 const useIsMobile = (breakpoint = 991) => {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -30,27 +38,35 @@ const useIsMobile = (breakpoint = 991) => {
 const Header: React.FC = () => {
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
-
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navbarRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [prevCount, setPrevCount] = useState(0);
+  const [bumpCart, setBumpCart] = useState(false);
+
   const pathname = usePathname();
   const router = useRouter();
   const { cartItems } = useContext(CartContext)!;
 
-  // Calculate total items in the cart
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Close mobile menu when clicking outside
+  // Track scroll to toggle 'scrolled' class
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (navbarRef.current && !navbarRef.current.contains(e.target as Node)) {
-        setMobileMenuOpen(false);
-      }
+    const onScroll = () => {
+      setScrolled(window.scrollY > 50);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Bump cart count animation
+  useEffect(() => {
+    if (totalItems !== prevCount) {
+      setBumpCart(true);
+      setPrevCount(totalItems);
+      setTimeout(() => setBumpCart(false), 300);
+    }
+  }, [totalItems, prevCount]);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
   const handleCartClick = () => {
@@ -58,27 +74,37 @@ const Header: React.FC = () => {
     router.push("/cart");
   };
 
-  // Base nav items (no login/logout)
   const baseNavItems = [
-    { href: "/", label: "Home" },
-    { href: "/menu", label: "Menu" },
-    { href: "/reservation", label: "Reservation" },
-    { href: "/catering", label: "Catering" },
-    { href: "/events", label: "Events" },
-    { href: "https://harambee54.com", label: "Harambee54", external: true },
-    { href: "/careers", label: "Careers" },
-    { href: "/about", label: "About Us" },
+    { href: "/", label: "Home", icon: <FaHome /> },
+    { href: "/menu", label: "Menu", icon: <FaUtensils /> },
+    { href: "/reservation", label: "Reservation", icon: <FaCalendarAlt /> },
+    { href: "/catering", label: "Catering", icon: <FaGift /> },
+    { href: "/events", label: "Events", icon: <FaCalendarAlt /> },
+    {
+      href: "https://harambee54.com",
+      label: "Harambee54",
+      external: true,
+      icon: <FaGlobe />,
+    },
+    { href: "/careers", label: "Careers", icon: <FaBriefcase /> },
+    { href: "/about", label: "About Us", icon: <FaInfoCircle /> },
   ];
 
-  // If authenticated, add Dashboard link
   const navItems = isAuthenticated
-    ? [...baseNavItems, { href: "/dashboard/customer-dashboard", label: "Dashboard" }]
+    ? [
+        ...baseNavItems,
+        {
+          href: "/dashboard/customer-dashboard",
+          label: "Dashboard",
+          icon: <FaTachometerAlt />,
+        },
+      ]
     : baseNavItems;
 
-  // -------------- DESKTOP NAVBAR --------------
+  // ─────────────── DESKTOP NAVBAR ───────────────
   const desktopHeader = (
-    <nav className={styles.desktopNavbar} ref={navbarRef}>
-      <div className={styles.logoContainer}>
+    <nav className={`${styles.desktopNavbar} ${scrolled ? styles.scrolled : ""}`}>
+      <div className={styles.leftContainer}>
         <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
           <Image
             src="/images/logo.png"
@@ -116,34 +142,52 @@ const Header: React.FC = () => {
             </li>
           );
         })}
-
-        {/* Login / Logout */}
         <li className={styles.navItem}>
           <button
-            onClick={() => (session ? signOut() : signIn())}
+            onClick={() =>
+              session
+                ? signOut()
+                : signIn()
+            }
             className={styles.navLink}
           >
-            {session ? "Logout" : "Login"}
+            {session ? (
+              <>
+                <FaSignOutAlt className={styles.iconInline} />
+                Logout
+              </>
+            ) : (
+              <>
+                <FaSignInAlt className={styles.iconInline} />
+                Login
+              </>
+            )}
           </button>
         </li>
       </ul>
 
-      <button
-        onClick={handleCartClick}
-        aria-label="Open Cart"
-        className={styles.cartButton}
-        id="cartIconTarget"
-      >
-        <FaShoppingCart className={styles.cartIcon} />
-        {totalItems > 0 && <span className={styles.cartCount}>{totalItems}</span>}
-      </button>
+      <div className={styles.rightContainer}>
+        <button
+          onClick={handleCartClick}
+          aria-label="Open Cart"
+          className={styles.cartButton}
+          id="cartIconTarget"
+        >
+          <FaShoppingCart className={styles.cartIcon} />
+          {totalItems > 0 && (
+            <span className={`${styles.cartCount} ${bumpCart ? styles.bump : ""}`}>
+              {totalItems}
+            </span>
+          )}
+        </button>
+      </div>
     </nav>
   );
 
-  // -------------- MOBILE NAVBAR --------------
+  // ─────────────── MOBILE NAVBAR ───────────────
   const mobileHeader = (
     <>
-      <nav className={styles.mobileNavbar} ref={navbarRef}>
+      <nav className={styles.mobileNavbar}>
         <div className={styles.mobileLogo}>
           <Link href="/" onClick={closeMobileMenu} className={styles.logoLink}>
             <Image
@@ -170,64 +214,81 @@ const Header: React.FC = () => {
         <button
           onClick={() => setMobileMenuOpen((prev) => !prev)}
           aria-label="Toggle Menu"
-          className={`${styles.hamburgerButton} ${
-            mobileMenuOpen ? styles.hamburgerOpen : ""
-          }`}
+          aria-expanded={mobileMenuOpen}
+          className={mobileMenuOpen ? "hamburger open" : "hamburger"}
         >
-          <span className={styles.hamburgerBar} />
-          <span className={styles.hamburgerBar} />
-          <span className={styles.hamburgerBar} />
+          <span className="bar bar1" />
+          <span className="bar bar2" />
+          <span className="bar bar3" />
         </button>
       </nav>
 
-      <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.mobileMenuOpen : ""}`}>
+      <nav
+        className={mobileMenuOpen ? "overlay-nav open" : "overlay-nav"}
+        role="navigation"
+        aria-hidden={!mobileMenuOpen}
+      >
         <button
-          className={styles.closeMenuButton}
+          className="closeMenuButton"
           onClick={closeMobileMenu}
           aria-label="Close Menu"
         >
           X
         </button>
-        <ul className={styles.mobileNavList}>
-          {navItems.map(({ href, label, external }) => (
-            <li key={label} className={styles.mobileNavItem}>
-              {external ? (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.mobileNavLink}
-                  onClick={closeMobileMenu}
-                >
-                  {label}
-                </a>
-              ) : (
-                <Link
-                  href={href}
-                  className={styles.mobileNavLink}
-                  onClick={closeMobileMenu}
-                >
-                  {label}
-                </Link>
-              )}
-            </li>
-          ))}
 
-          <li className={styles.mobileNavItem}>
+        <ul className="overlay-menu">
+          {navItems.map(({ href, label, external, icon }) => {
+            const isActive = !external && pathname === href;
+            return (
+              <li key={label}>
+                {external ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`nav-link ${isActive ? "activeLink" : ""}`}
+                    onClick={closeMobileMenu}
+                  >
+                    {icon && <span className={styles.iconWrapper}>{icon}</span>}
+                    {label}
+                  </a>
+                ) : (
+                  <Link
+                    href={href}
+                    className={`nav-link ${isActive ? "activeLink" : ""}`}
+                    onClick={closeMobileMenu}
+                  >
+                    {icon && <span className={styles.iconWrapper}>{icon}</span>}
+                    {label}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+
+          <li>
             <button
               onClick={() => {
                 closeMobileMenu();
                 session ? signOut() : signIn();
               }}
-              className={styles.mobileNavLink}
+              className="nav-link"
             >
-              {session ? "Logout" : "Login"}
+              {session ? (
+                <>
+                  <FaSignOutAlt className={styles.iconWrapper} />
+                  Logout
+                </>
+              ) : (
+                <>
+                  <FaSignInAlt className={styles.iconWrapper} />
+                  Login
+                </>
+              )}
             </button>
           </li>
         </ul>
-      </div>
-
-      {mobileMenuOpen && <div className={styles.mobileOverlay} onClick={closeMobileMenu} />}
+      </nav>
     </>
   );
 

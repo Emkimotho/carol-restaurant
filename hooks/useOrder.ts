@@ -1,4 +1,3 @@
-// File: hooks/useOrder.ts
 /**
  * Hook to fetch a single order by ID and manage its loading/error state.
  *  • Performs GET /api/orders/:id when `orderId` is provided.
@@ -9,46 +8,39 @@
 import { useState, useEffect } from "react";
 
 export interface OrderData {
-  id: string;
-  orderId: string;
-  status: string;
-  // add other fields returned by GET /api/orders/:id as needed
+  id:               string;
+  orderId:          string;
+  status:           string;
+  deliveryType:     string;
+  holeNumber?:      number | null;
+  eventLocationId?: string | null;
+  serverName?:      string | null;
+  // You can add more fields here as you need them...
 }
 
 export function useOrder(orderId?: string | null) {
-  // Holds the current order data or null if not yet loaded
-  const [order, setOrder] = useState<OrderData | null>(null);
-  // Tracks whether the fetch is in progress
+  const [order, setOrder]     = useState<OrderData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  // Captures any error thrown during fetch
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError]     = useState<Error | null>(null);
 
   useEffect(() => {
-    // Do nothing when there is no orderId
     if (!orderId) return;
 
     setLoading(true);
     setError(null);
 
-    // Fetch the order from the API
-    fetch(`/api/orders/${orderId}`)
-      .then((res) => {
-        if (!res.ok) {
-          // Throw to be caught below if status is not 2xx
-          throw new Error(`Failed to fetch order: ${res.status}`);
-        }
+    fetch(`/api/orders/${encodeURIComponent(orderId)}`)
+      .then(res => {
+        if (!res.ok) throw new Error(`Failed to fetch order: ${res.status}`);
         return res.json();
       })
-      .then((data: OrderData) => {
-        // Store the retrieved order
-        setOrder(data);
+      .then((data: { order: OrderData }) => {
+        setOrder(data.order);
       })
-      .catch((err: Error) => {
-        // Capture any network or parsing errors
+      .catch(err => {
         setError(err);
       })
       .finally(() => {
-        // Always turn off loading when done
         setLoading(false);
       });
   }, [orderId]);

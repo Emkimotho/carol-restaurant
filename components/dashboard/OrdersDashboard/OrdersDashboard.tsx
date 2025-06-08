@@ -56,15 +56,25 @@ export interface Order {
   driver?:          { id: number; firstName: string; lastName: string; isOnline: boolean } | null;
   staff?:           { firstName: string; lastName: string } | null;
   deliveryAddress?: DeliveryAddress | null;
+
+  driverPayout?:    number;
+  deliveryInstructions?: string | null;
 }
 
 /* ------------------------------------------------------------------ */
-/*  Cash‑collection aggregate used for the server filter (cashier)     */
+/*  Cash-collection aggregate used for the server filter (cashier)     */
 /* ------------------------------------------------------------------ */
 interface ServerAgg {
   server: { id: number; firstName: string; lastName: string };
   pendingOrders: number;
   totalAmount:   number;
+}
+
+interface CashCollectionRecord {
+  id:          string;
+  orderId:     string;
+  amount:      number;
+  collectedAt: string | null;
 }
 
 interface OrdersListResponse {
@@ -101,7 +111,7 @@ export default function OrdersDashboard({
     useSWR<ServerAgg[]>(
       role === 'cashier' ? '/api/orders/cash-collections?groupBy=server' : null,
       fetcher,
-      { refreshInterval: 10000 },
+      { refreshInterval: 10000 }
     );
 
   // Modals state
@@ -109,16 +119,22 @@ export default function OrdersDashboard({
   const [agePatch, setAgePatch] = useState<{ order: Order; nextStatus: string; msg: string } | null>(null);
 
   // Build SWR key
-  let ordersKey = `/api/orders?role=${role}&page=${page}&limit=${limit}`;
+  let ordersKey = `/api/orders?page=${page}&limit=${limit}`;
+
+  // Only admins & staff search by q=…
   if ((role === 'admin' || role === 'staff') && debouncedQuery) {
     ordersKey += `&q=${encodeURIComponent(debouncedQuery)}`;
   }
+
+  // Staff sees only their own (staffId)
   if (role === 'staff' && userId) {
     ordersKey += `&staffId=${userId}`;
   }
-  if (role === 'server') {
-    ordersKey += `&status=ORDER_READY`;
-  }
+
+  // Servers: do NOT append any `role=` filter. The backend will simply return all orders,
+  // and the front end will split them into “Ready / En Route / Delivered / Pending Cash.”
+  // (In particular, we DO NOT pass &role=server or &role=driver here.)
+  // Cashiers:
   if (role === 'cashier') {
     ordersKey += `&reconciled=false`;
     if (serverFilter) ordersKey += `&serverId=${serverFilter}`;
@@ -144,48 +160,71 @@ export default function OrdersDashboard({
   const delivered   = orders.filter(o => o.status === 'DELIVERED');
   const pending     = orders.filter(o => o.status === 'PENDING_PAYMENT');
   const active      = orders.filter(o =>
-    !['PENDING_PAYMENT','DELIVERED','CANCELLED'].includes(o.status)
+    !['PENDING_PAYMENT', 'ORDER_READY', 'DELIVERED', 'CANCELLED'].includes(o.status)
   );
   const completed   = delivered;
   const cancelled   = orders.filter(o => o.status === 'CANCELLED');
   const toReconcile = orders.filter(o => o.cashCollection?.status === 'PENDING');
   const reconciled  = orders.filter(o => o.cashCollection?.status === 'SETTLED');
 
-  // Tabs & defaults by role
+  // Server: fetch pending cash‐collection records
+  const { data: pendingCashData = [] } = useSWR<CashCollectionRecord[]>(
+    role === 'server' && userId
+      ? `/api/orders/cash-collections?serverId=${userId}&status=PENDING`
+      : null,
+    fetcher,
+    { refreshInterval: 5000 }
+  );
+
+  // Remap pendingCashData for rendering
+  const pendingCash = pendingCashData.map(c => ({
+    cashId:      c.id,
+    orderId:     c.orderId,
+    amount:      c.amount,
+    collectedAt: c.collectedAt,
+  }));
+
+  // Tabs & defaults by role (including “Pending Cash” for Server)
   let tabs: Tab[]           = [];
   let defaultTab: TabKey    = 'active';
 
   switch (role) {
     case 'staff':
       tabs = [
-        { key: 'received',    label: 'Received',         count: received.length },
-        { key: 'inPrep',      label: 'In Prep',          count: inPrep.length    },
-        { key: 'ready',       label: 'Ready',            count: ready.length     },
+        { key: 'received',  label: 'Received',      count: received.length  },
+        { key: 'inPrep',    label: 'In Prep',       count: inPrep.length    },
+        { key: 'ready',     label: 'Ready',         count: ready.length     },
+        { key: 'completed', label: 'Completed',     count: completed.length },
       ];
       defaultTab = 'received';
       break;
+
     case 'server':
       tabs = [
-        { key: 'ready',       label: 'Ready to Serve',   count: ready.length   },
-        { key: 'enRoute',     label: 'En Route',         count: enRoute.length },
-        { key: 'delivered',   label: 'Delivered',        count: delivered.length },
+        { key: 'ready',       label: 'Ready to Serve',  count: ready.length       },
+        { key: 'enRoute',     label: 'En Route to Tee', count: enRoute.length     },
+        { key: 'delivered',   label: 'Delivered',       count: delivered.length   },
+        { key: 'pendingCash', label: 'Pending Cash',    count: pendingCash.length },
       ];
       defaultTab = 'ready';
       break;
+
     case 'cashier':
       tabs = [
-        { key: 'toReconcile', label: 'To Reconcile',     count: toReconcile.length },
-        { key: 'reconciled',  label: 'Reconciled',       count: reconciled.length  },
+        { key: 'toReconcile', label: 'To Reconcile', count: toReconcile.length },
+        { key: 'reconciled',  label: 'Reconciled',   count: reconciled.length  },
       ];
       defaultTab = 'toReconcile';
       break;
+
     case 'admin':
     default:
       tabs = [
-        { key: 'active',      label: 'Active',           count: active.length    },
-        { key: 'pending',     label: 'Pending Payment',  count: pending.length   },
-        { key: 'completed',   label: 'Completed',        count: completed.length },
-        { key: 'cancelled',   label: 'Cancelled',        count: cancelled.length },
+        { key: 'active',    label: 'Active',          count: active.length    },
+        { key: 'pending',   label: 'Pending Payment', count: pending.length   },
+        { key: 'ready',     label: 'Ready',           count: ready.length     },
+        { key: 'completed', label: 'Completed',       count: completed.length },
+        { key: 'cancelled', label: 'Cancelled',       count: cancelled.length },
       ];
       defaultTab = 'active';
   }
@@ -193,13 +232,14 @@ export default function OrdersDashboard({
   const [tab, setTab] = useState<TabKey>(defaultTab);
 
   // Select list for current tab
-  let listToShow: Order[] = orders;
+  let listToShow: Order[] = [];
   switch (tab) {
     case 'received':     listToShow = received;     break;
     case 'inPrep':       listToShow = inPrep;       break;
     case 'ready':        listToShow = ready;        break;
     case 'enRoute':      listToShow = enRoute;      break;
     case 'delivered':    listToShow = delivered;    break;
+    case 'pendingCash':  listToShow = [];           break; // rendered separately
     case 'toReconcile':  listToShow = toReconcile;  break;
     case 'reconciled':   listToShow = reconciled;   break;
     case 'active':       listToShow = active;       break;
@@ -229,9 +269,14 @@ export default function OrdersDashboard({
     }
   };
 
-  // Staff tip total
+  // Staff tip total: only from golf orders, where driverPayout ≠ 0 and deliveryInstructions is not null
   const tipTotal = orders
-    .filter(o => o.tipRecipientId === Number(userId))
+    .filter(o =>
+      o.tipRecipientId === Number(userId) &&
+      o.deliveryType !== 'DELIVERY' &&
+      (o.driverPayout ?? 0) !== 0 &&
+      o.deliveryInstructions != null
+    )
     .reduce((sum, o) => sum + (o.tipAmount ?? 0), 0);
 
   return (
@@ -286,11 +331,53 @@ export default function OrdersDashboard({
 
         <OrdersTabs tabs={tabs} current={tab} onChange={setTab} />
 
-        {role === 'cashier' && (
+        {/* ---------- Pending Cash Tab for Server ---------- */}
+        {role === 'server' && tab === 'pendingCash' && (
+          <div className={styles.cashTab}>
+            <h2>Your Pending Cash Orders</h2>
+            <table className={styles.cashTable}>
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Amount ($)</th>
+                  <th>Collected At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingCash.map((c) => (
+                  <tr key={c.cashId}>
+                    <td>{c.orderId}</td>
+                    <td>{c.amount.toFixed(2)}</td>
+                    <td>
+                      {c.collectedAt
+                        ? new Date(c.collectedAt).toLocaleString()
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+                {pendingCash.length === 0 && (
+                  <tr>
+                    <td colSpan={3}>No pending cash orders to reconcile.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+            <p className={styles.cashTotal}>
+              <strong>Total Pending:</strong> $
+              {pendingCash.reduce((sum, c) => sum + c.amount, 0).toFixed(2)}
+            </p>
+          </div>
+        )}
+
+        {/* ---------- Cashier reconciliation section ---------- */}
+        {role === 'cashier' && tab === 'toReconcile' && (
           <div className={styles.reconcileSection}>
             <h2>Cash Reconciliation</h2>
             <p>Pending orders: {listToShow.length}</p>
-            <p>Total cash amount: ${listToShow.reduce((sum, o) => sum + o.totalAmount, 0).toFixed(2)}</p>
+            <p>
+              Total cash amount: $
+              {listToShow.reduce((sum, o) => sum + o.totalAmount, 0).toFixed(2)}
+            </p>
             <label>
               Enter cash received:
               <input
@@ -310,27 +397,39 @@ export default function OrdersDashboard({
           </div>
         )}
 
-        <OrdersGrid
-          list={listToShow}
-          role={role}
-          drivers={drivers}
-          mutate={mutate}
-          onShowDetail={o => setDetail(o)}
-          onShowAgePatch={patch => setAgePatch(patch)}
-        />
+        {/* ---------- Orders Grid for all other tabs ---------- */}
+        {!(
+          (role === 'server' && tab === 'pendingCash') ||
+          (role === 'cashier' && tab === 'toReconcile')
+        ) && (
+          <OrdersGrid
+            list={listToShow}
+            role={role}
+            drivers={drivers}
+            // Pass serverId so that OrdersGrid can include it if needed for "claim" / "pick up"
+            serverId={role === 'server' ? Number(userId) : undefined}
+            mutate={mutate}
+            onShowDetail={o => setDetail(o)}
+            onShowAgePatch={patch => setAgePatch(patch)}
+          />
+        )}
 
         {totalPages > 1 && (
           <div className={styles.pagination}>
-            <button disabled={page <= 1}          onClick={() => setPage(p => p - 1)}>Prev</button>
+            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+              Prev
+            </button>
             <span>Page {page} of {totalPages}</span>
-            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</button>
+            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+              Next
+            </button>
           </div>
         )}
       </div>
 
       <AgeCheckModal
         isOpen={!!agePatch}
-        patch={agePatch}
+        patch={agePatch!}
         onClose={() => setAgePatch(null)}
         onDone={() => { mutate(); setAgePatch(null); }}
       />

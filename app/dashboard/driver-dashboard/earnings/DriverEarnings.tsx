@@ -1,9 +1,4 @@
 // File: app/dashboard/driver-dashboard/earnings/DriverEarnings.tsx
-// Description: Driver Earnings & Payouts — shows earnings charts for day/week/month/year/custom, 
-// and a new “Payouts” tab listing that driver’s paid payouts.
-
-// Ensures all dates/times use America/New_York timezone.
-
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -26,15 +21,19 @@ type CorePeriod = 'day' | 'week' | 'month' | 'year';
 type Period     = CorePeriod | 'custom' | 'payouts';
 
 interface Totals {
-  totalDeliveryFee?: number | null;
-  tipAmount?:        number | null;
+  totalDeliveryFee?: number;
+  tipAmount?:        number;
 }
 
 interface Row {
-  orderId:          string;
-  deliveredAt:      string | null;
-  totalDeliveryFee: number;
-  tipAmount:        number;
+  orderId:              string;
+  deliveredAt:          string | null;
+  totalDeliveryFee:     number;
+  tipAmount:            number;
+  deliveryType:         string;
+  driverPayout:         number | null;
+  deliveryInstructions: string | null;
+  tipRecipientId?:      number | null;
 }
 
 interface Payout {
@@ -49,21 +48,19 @@ interface Range { from: string; to: string; }
 const money = (n?: number | null) =>
   (n ?? 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
-// Format a Date to 'MMM d, yyyy' in New York time
 const pretty = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', {
     dateStyle: 'medium',
     timeZone: 'America/New_York',
   });
 
-// Get an ISO-style YYYY-MM-DD key based on New York date
 function getNYDateKey(dt: Date): string {
-  const [m, d, y] = dt.toLocaleDateString('en-US', { timeZone: 'America/New_York' }).split('/');
-  const mm = m.padStart(2, '0'), dd = d.padStart(2, '0'), yyyy = y;
-  return `${yyyy}-${mm}-${dd}`;
+  const [m, d, y] = dt
+    .toLocaleDateString('en-US', { timeZone: 'America/New_York' })
+    .split('/');
+  return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
 }
 
-// Get hour bucket like "HH:00" based on New York time
 function getNYHourKey(dt: Date): string {
   const hour = dt.toLocaleString('en-US', {
     hour: '2-digit',
@@ -80,33 +77,66 @@ const title: Record<CorePeriod, string> = {
   year: 'Annual',
 };
 
-export default function DriverEarnings({ driverId }: { driverId: number }) {
+type DriverEarningsProps = {
+  driverId: number;
+  /**
+   * When false, hide delivery-fee columns and only show tips (server mode).
+   */
+  showDeliveryFee?: boolean;
+};
+
+export default function DriverEarnings({
+  driverId,
+  showDeliveryFee = true,
+}: DriverEarningsProps) {
   const [period, setPeriod]     = useState<Period>('day');
-  const [totals, setTotals]     = useState<Totals>({});
+  const [totals, setTotals]     = useState<Totals>({ totalDeliveryFee: 0, tipAmount: 0 });
   const [rows, setRows]         = useState<Row[]>([]);
   const [range, setRange]       = useState<Range | null>(null);
   const [fromD, setFromD]       = useState('');
   const [toD, setToD]           = useState('');
   const [loading, setLoading]   = useState(false);
 
-  const [payouts, setPayouts]   = useState<Payout[]>([]);
+  const [payouts, setPayouts]      = useState<Payout[]>([]);
   const [payLoading, setPayLoading] = useState(false);
 
-  /* — fetch earnings — */
+  /* — fetch earnings or tips — */
   const load = async (p: CorePeriod | 'custom', f?: string, t?: string) => {
     setLoading(true);
     const qs = p === 'custom' ? `from=${f}&to=${t}` : `period=${p}`;
     try {
-      const data = await fetch(
-        `/api/drivers/earnings?driverId=${driverId}&${qs}&orders=true`
-      ).then(r => r.json());
+      const endpoint = showDeliveryFee
+        ? `/api/drivers/earnings?driverId=${driverId}&${qs}&orders=true`
+        : `/api/servers/earnings?staffId=${driverId}&${qs}&orders=true`;
+      const data = await fetch(endpoint).then(r => r.json());
+
       const {
         totals: newTotals = {},
         orders: fetchedOrders = [],
         range:  newRange = null,
-      } = data;
-      setTotals(newTotals);
-      setRows(fetchedOrders);
+      } = data as { totals?: Totals; orders?: Row[]; range?: Range | null };
+
+      let filtered: Row[] = [];
+
+      if (showDeliveryFee) {
+        filtered = fetchedOrders.filter(r =>
+          (r.driverPayout ?? 0) > 0 && r.deliveredAt != null
+        );
+      } else {
+        filtered = fetchedOrders.filter(r =>
+          r.deliveryType !== 'DELIVERY' &&
+          r.tipRecipientId === driverId &&
+          r.deliveredAt != null
+        );
+      }
+
+      const tipSum = filtered.reduce((sum, r) => sum + (r.tipAmount ?? 0), 0);
+      const feeSum = showDeliveryFee
+        ? filtered.reduce((sum, r) => sum + (r.totalDeliveryFee ?? 0), 0)
+        : 0;
+
+      setTotals({ totalDeliveryFee: feeSum, tipAmount: tipSum });
+      setRows(filtered);
       setRange(newRange);
     } catch {
       toast.error('Failed to load earnings');
@@ -136,7 +166,7 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
     } else if (period === 'payouts') {
       loadPayouts();
     }
-  }, [period]);
+  }, [period, showDeliveryFee]);
 
   /* — chart data — */
   const chart = useMemo(() => {
@@ -147,23 +177,21 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
     const m = new Map<string, number>();
     valid.forEach(r => {
       const dt = new Date(r.deliveredAt!);
-      const key =
-        period === 'day'
-          ? getNYHourKey(dt)
-          : getNYDateKey(dt);
-      m.set(key, (m.get(key) ?? 0) + r.totalDeliveryFee + r.tipAmount);
+      const key = (period === 'day')
+        ? getNYHourKey(dt)
+        : getNYDateKey(dt);
+      const amount = showDeliveryFee
+        ? (r.totalDeliveryFee ?? 0) + (r.tipAmount ?? 0)
+        : (r.tipAmount ?? 0);
+      m.set(key, (m.get(key) ?? 0) + amount);
     });
 
     const labels = [...m.keys()].sort();
     return {
       labels,
-      datasets: [{
-        label: 'Earnings ($)',
-        data: labels.map(l => m.get(l)!),
-        borderWidth: 1,
-      }],
+      datasets: [{ label: 'Earnings ($)', data: labels.map(l => m.get(l)!), borderWidth: 1 }],
     };
-  }, [rows, period]);
+  }, [rows, period, showDeliveryFee]);
 
   /* — CSV export — */
   const exportCSV = () => {
@@ -171,27 +199,29 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
     const valid = rows.filter(r => r.deliveredAt);
     if (!valid.length) { toast.warn('No data'); return; }
 
-    const head = 'Delivered,Order ID,Del.Fee,Tips,Total';
+    const headParts = ['Delivered','Order ID'];
+    if (showDeliveryFee) headParts.push('Del.Fee');
+    headParts.push('Tips','Total');
+    const head = headParts.join(',');
+
     const body = valid.map(r => {
       const dt = new Date(r.deliveredAt!);
-      const delivered = dt.toLocaleDateString('en-US', {
-        dateStyle: 'medium',
-        timeZone: 'America/New_York',
-      });
-      return [
-        delivered,
-        r.orderId,
-        r.totalDeliveryFee,
-        r.tipAmount,
-        r.totalDeliveryFee + r.tipAmount,
-      ].join(',');
+      const delivered = dt.toLocaleDateString('en-US',{ dateStyle:'medium', timeZone:'America/New_York' });
+      const parts: Array<string | number> = [delivered, r.orderId];
+      if (showDeliveryFee) parts.push(r.totalDeliveryFee ?? 0);
+      parts.push(r.tipAmount ?? 0);
+      parts.push(showDeliveryFee
+        ? (r.totalDeliveryFee ?? 0) + (r.tipAmount ?? 0)
+        : (r.tipAmount ?? 0)
+      );
+      return parts.join(',');
     }).join('\n');
 
     const blob = new Blob([head + '\n' + body], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `driver-earnings-${period}.csv`;
+    a.download = `earnings-${period}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -208,7 +238,7 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
     <div className={styles.container}>
       {range && period !== 'payouts' && (
         <div className={styles.printHeader}>
-          <h1>Driver Earnings Statement</h1>
+          <h1>{ showDeliveryFee ? 'Driver' : 'Server' } Earnings Statement</h1>
           <div className={styles.rangeLine}>
             Range: <strong>{rangeLabel}</strong>
           </div>
@@ -245,18 +275,10 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
       {period==='custom' && (
         <div className={styles.rangeBar}>
           <label>
-            From <input
-              type="date"
-              value={fromD}
-              onChange={e=>setFromD(e.target.value)}
-            />
+            From <input type="date" value={fromD} onChange={e=>setFromD(e.target.value)} />
           </label>
           <label>
-            To   <input
-              type="date"
-              value={toD}
-              onChange={e=>setToD(e.target.value)}
-            />
+            To   <input type="date" value={toD} onChange={e=>setToD(e.target.value)} />
           </label>
           <button onClick={()=>load('custom',fromD,toD)}>Apply</button>
         </div>
@@ -270,21 +292,13 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
-                <tr>
-                  <th>Paid At</th>
-                  <th>Order #</th>
-                  <th>Amount</th>
-                </tr>
+                <tr><th>Paid At</th><th>Order #</th><th>Amount</th></tr>
               </thead>
               <tbody>
                 {payouts.map(p => (
                   <tr key={p.id}>
-                    <td>
-                      {new Date(p.paidAt).toLocaleDateString('en-US', {
-                        timeZone: 'America/New_York',
-                      })}
-                    </td>
-                    <td>{p.order?.orderId || '—'}</td>
+                    <td>{new Date(p.paidAt).toLocaleDateString('en-US',{timeZone:'America/New_York'})}</td>
+                    <td>{p.order?.orderId||'—'}</td>
                     <td>{money(p.amount)}</td>
                   </tr>
                 ))}
@@ -299,36 +313,28 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
         <>
           {/* Totals cards */}
           <div className={styles.cards}>
-            <Card label="Delivery Fees" val={money(totals.totalDeliveryFee)} />
-            <Card label="Tips"          val={money(totals.tipAmount)} />
-            <Card label="Total"
-                  val={money((totals.totalDeliveryFee ?? 0) + (totals.tipAmount ?? 0))}
+            {showDeliveryFee && <Card label="Delivery Fees" val={money(totals.totalDeliveryFee)} />}
+            <Card label="Tips" val={money(totals.tipAmount)} />
+            <Card
+              label="Total"
+              val={money(
+                (showDeliveryFee ? (totals.totalDeliveryFee ?? 0) : 0) +
+                (totals.tipAmount ?? 0)
+              )}
             />
           </div>
 
           {/* Earnings chart */}
           {chart && (
             <div className={styles.chartWrap}>
-              <Bar
-                data={chart}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: false }
-                  }
-                }}
-              />
+              <Bar data={chart} options={{ responsive: true, plugins: { legend: { display: false } } }} />
             </div>
           )}
 
           {/* Actions */}
           <div className={styles.actions}>
-            <button onClick={exportCSV} disabled={!rows.some(r => r.deliveredAt)}>
-              Export CSV
-            </button>
-            <button onClick={() => window.print()}>
-              Print
-            </button>
+            <button onClick={exportCSV} disabled={!rows.some(r => r.deliveredAt)}>Export CSV</button>
+            <button onClick={() => window.print()}>Print</button>
           </div>
 
           {/* Orders table */}
@@ -338,7 +344,7 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
                 <tr>
                   <th>Delivered</th>
                   <th>Order #</th>
-                  <th>Del.Fee</th>
+                  {showDeliveryFee && <th>Del.Fee</th>}
                   <th>Tips</th>
                   <th>Total</th>
                 </tr>
@@ -348,26 +354,35 @@ export default function DriverEarnings({ driverId }: { driverId: number }) {
                   <tr key={r.orderId + r.deliveredAt}>
                     <td>{pretty(r.deliveredAt!)}</td>
                     <td>{r.orderId}</td>
-                    <td>{money(r.totalDeliveryFee)}</td>
+                    {showDeliveryFee && <td>{money(r.totalDeliveryFee)}</td>}
                     <td>{money(r.tipAmount)}</td>
-                    <td>{money(r.totalDeliveryFee + r.tipAmount)}</td>
+                    <td>{showDeliveryFee
+                      ? money((r.totalDeliveryFee ?? 0) + (r.tipAmount ?? 0))
+                      : money(r.tipAmount)
+                    }</td>
                   </tr>
                 ))}
                 {!rows.filter(r => r.deliveredAt).length && (
-                  <tr><td colSpan={5} className={styles.empty}>No data.</td></tr>
+                  <tr>
+                    <td colSpan={showDeliveryFee ? 5 : 4} className={styles.empty}>No data.</td>
+                  </tr>
                 )}
               </tbody>
-              <tfoot>
-                <tr>
-                  <th className={styles.footerCell}>Totals</th>
-                  <th></th>
-                  <th className={styles.footerCell}>{money(totals.totalDeliveryFee)}</th>
-                  <th className={styles.footerCell}>{money(totals.tipAmount)}</th>
-                  <th className={styles.footerCell}>
-                    {money((totals.totalDeliveryFee ?? 0) + (totals.tipAmount ?? 0))}
-                  </th>
-                </tr>
-              </tfoot>
+              {rows.filter(r => r.deliveredAt).length > 0 && (
+                <tfoot>
+                  <tr>
+                    <th className={styles.footerCell}>Totals</th><th></th>
+                    {showDeliveryFee && <th className={styles.footerCell}>{money(totals.totalDeliveryFee)}</th>}
+                    <th className={styles.footerCell}>{money(totals.tipAmount)}</th>
+                    <th className={styles.footerCell}>
+                      {money(
+                        (showDeliveryFee ? (totals.totalDeliveryFee ?? 0) : 0) +
+                        (totals.tipAmount ?? 0)
+                      )}
+                    </th>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </>

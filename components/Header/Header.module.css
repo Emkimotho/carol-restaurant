@@ -1,89 +1,118 @@
 /* File: components/Header/Header.module.css */
 
 /**************************************
- * HEADER WRAPPER
+ * HEADER WRAPPER & ENTRANCE ANIMATION
  **************************************/
- .header {
+.header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: var(--navbar-height);
-  background-color: var(--white);
-  box-shadow: var(--box-shadow-primary);
   z-index: 1000;
   font-family: var(--font-body);
+  overflow: hidden;
 }
 
 /**************************************
- * DESKTOP NAVBAR
+ * DESKTOP NAVBAR (Default + Scrolled)
  **************************************/
 .desktopNavbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* logo moved slightly closer to left */
   padding: 0 2.5rem 0 0.25rem;
   height: 100%;
-  background-color: var(--white);
+
+  /* Semi-transparent + backdrop blur by default */
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  box-shadow: none;
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease,
+    backdrop-filter 0.3s ease;
 }
 
-.logoContainer {
+.desktopNavbar.scrolled {
+  background-color: var(--white);
+  backdrop-filter: none;
+  box-shadow: var(--box-shadow-secondary);
+}
+
+/**************************************
+ * LEFT CONTAINER (Logo)
+ **************************************/
+.leftContainer {
   flex-shrink: 0;
 }
 
 .logoLink {
   display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.logoLink:hover .logoImage,
+.logoLink:focus .logoImage {
+  transform: scale(1.05);
 }
 
 .logoImage {
   width: auto;
   height: 100%;
   object-fit: contain;
+  transition: transform 0.3s ease;
 }
 
 /**************************************
- * DESKTOP NAV LINKS
+ * NAV LIST & UNDERLINE EFFECT
  **************************************/
 .navList {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
   white-space: nowrap;
   flex: 1;
-  max-width: 800px;
-  justify-content: center;
 }
 
 .navItem {
-  list-style: none;
+  position: relative;
 }
 
 .navLink {
   display: block;
   font-family: var(--font-heading);
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--foreground);
   padding: 0.75rem 0.5rem;
   background: transparent;
   border: none;
   cursor: pointer;
-  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   transition: color 0.25s ease;
+  position: relative;
 }
 
 .navLink::after {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 50%;
   bottom: 4px;
+  width: 0%;
   height: 2px;
-  background: transparent;
-  transition: background 0.25s ease;
+  background: var(--primary-color);
+  transition: width 0.3s ease, left 0.3s ease;
+}
+
+.navLink:hover::after,
+.navLink:focus::after {
+  width: 100%;
+  left: 0;
 }
 
 .navLink:hover,
@@ -91,30 +120,39 @@
   color: var(--primary-color-hover);
 }
 
-.navLink:hover::after,
-.navLink:focus::after {
-  background: var(--primary-color-hover);
-}
-
 .activeLink {
   color: var(--primary-color) !important;
 }
 
 .activeLink::after {
-  background: var(--primary-color);
+  width: 100%;
+  left: 0;
 }
 
 /**************************************
- * CART BUTTON
+ * RIGHT CONTAINER (Cart)
+ **************************************/
+.rightContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+/**************************************
+ * CART BUTTON + BUMP ANIMATION
  **************************************/
 .cartButton {
   background: transparent !important;
   border: none !important;
   padding: 0.5rem;
   cursor: pointer;
-  transition: transform 0.2s ease;
-  /* increased space between logout and cart */
-  margin-left: 2rem;
+  transition: transform 0.2s ease, color 0.25s ease;
+}
+
+.cartButton:hover .cartIcon,
+.cartButton:focus .cartIcon {
+  color: var(--primary-color-hover);
 }
 
 .cartIcon {
@@ -123,16 +161,27 @@
   transition: color 0.25s ease;
 }
 
-.cartButton:hover .cartIcon,
-.cartButton:focus .cartIcon {
-  color: var(--primary-color-hover);
-}
-
 .cartCount {
   margin-left: 0.4rem;
   color: var(--secondary-color);
   font-weight: 700;
   font-size: 1rem;
+  background: var(--white);
+  border-radius: 50%;
+  padding: 2px 6px;
+  position: relative;
+  top: -8px;
+  transition: transform 0.2s ease;
+}
+
+.bump {
+  animation: bumpAnim 0.3s ease forwards;
+}
+
+@keyframes bumpAnim {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.4); }
+  100% { transform: scale(1); }
 }
 
 /**************************************
@@ -166,6 +215,7 @@
     border: none;
     padding: 0.5rem;
     cursor: pointer;
+    transition: color 0.25s ease;
   }
 
   .mobileCartButton:hover .cartIcon,
@@ -178,137 +228,22 @@
     color: var(--secondary-color);
     font-weight: 700;
   }
-
-  .hamburgerButton {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 45px;
-    height: 45px;
-    background: transparent;
-    border: 2px solid var(--foreground);
-    border-radius: 4px;
-    padding: 0.3rem;
-    cursor: pointer;
-  }
-
-  .hamburgerBar {
-    height: 3px;
-    width: 100%;
-    background-color: var(--foreground);
-    transition: transform 0.3s ease, opacity 0.3s ease;
-  }
-
-  .hamburgerOpen .hamburgerBar:nth-child(1) {
-    transform: translateY(0.6rem) rotate(45deg);
-  }
-  .hamburgerOpen .hamburgerBar:nth-child(2) {
-    opacity: 0;
-  }
-  .hamburgerOpen .hamburgerBar:nth-child(3) {
-    transform: translateY(-0.6rem) rotate(-45deg);
-  }
-
-  .mobileMenu {
-    position: fixed;
-    top: 0;
-    right: -80%;
-    width: 80%;
-    max-width: 300px;
-    height: 100%;
-    background: repeating-linear-gradient(
-      0deg,
-      var(--primary-color) 0,
-      var(--primary-color) 2px,
-      var(--primary-color-hover) 2px,
-      var(--primary-color-hover) 4px,
-      var(--secondary-color) 4px,
-      var(--secondary-color) 6px
-    );
-    color: var(--white);
-    box-shadow: -2px 0 8px rgba(0,0,0,0.2);
-    transition: right 0.3s ease;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    padding: 2rem 1rem;
-  }
-
-  .mobileMenuOpen {
-    right: 0;
-  }
-
-  .closeMenuButton {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: none;
-    border: none;
-    color: var(--white);
-    font-size: 1.5rem;
-    cursor: pointer;
-  }
-
-  .mobileNavList {
-    margin: 0;
-    padding: 3rem 0 0;
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .mobileNavItem {
-    transform: translateX(15px);
-    opacity: 0;
-    animation: fadeInRight 0.3s forwards;
-  }
-  .mobileNavItem:nth-child(1) {
-    animation-delay: 0.05s;
-  }
-  .mobileNavItem:nth-child(2) {
-    animation-delay: 0.1s;
-  }
-  .mobileNavItem:nth-child(3) {
-    animation-delay: 0.15s;
-  }
-  .mobileNavItem:nth-child(4) {
-    animation-delay: 0.2s;
-  }
-
-  .mobileNavLink {
-    background: transparent;
-    border: none;
-    color: var(--white);
-    font-family: var(--font-heading);
-    font-size: 1.125rem;
-    padding: 0;
-    transition: color 0.25s ease;
-  }
-
-  .mobileNavLink:hover,
-  .mobileNavLink:focus {
-    color: var(--secondary-color-hover);
-    text-decoration: none;
-  }
-
-  @keyframes fadeInRight {
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-
-  .mobileOverlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0,0,0,0.4);
-    z-index: 998;
-  }
 }
 
+/**************************************
+ * MOBILE NAVBAR HIDE ON LARGE SCREENS
+ **************************************/
 @media (min-width: 992px) {
   .mobileNavbar {
     display: none;
   }
+}
+
+/**************************************
+ * ICON WRAPPER FOR MOBILE LINKS
+ **************************************/
+.iconWrapper {
+  margin-right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
 }

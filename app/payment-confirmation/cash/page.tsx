@@ -1,125 +1,142 @@
 // File: app/payment-confirmation/cash/page.tsx
-
 "use client";
 
-import React, { useContext, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useContext, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
 import { OrderContext } from "@/contexts/OrderContext";
+import { CartContext }  from "@/contexts/CartContext";
+
 import styles from "./PaymentConfirmation.module.css";
 
+interface FetchedOrder {
+  id:                   string;
+  orderId:              string;
+  totalAmount:          number;
+  deliveryType:         "PICKUP_AT_CLUBHOUSE" | "ON_COURSE" | "EVENT_PAVILION";
+  holeNumber?:          number;
+  guestEmail?:          string | null;
+  status:               string;
+  createdAt:            string; // ISO
+}
+
+const fmtMoney = (n: number) => `$${n.toFixed(2)}`;
+
 export default function CashPaymentConfirmation() {
-  const { order } = useContext(OrderContext)!;
-  const { items, totalAmount, orderType, deliveryAddress, status } = order;
+  const router = useRouter();
   const params = useSearchParams();
-  const orderId = params.get("id");
-  
-  const [sent, setSent] = useState(false);
+  const dbId   = params.get("id") ?? "";
 
-  const restaurantAddress =
-    process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ||
-    "20025 Mount Aetna Road, Hagerstown, MD 21742";
+  const orderCtx = useContext(OrderContext);
+  const cartCtx  = useContext(CartContext);
+  if (!orderCtx || !cartCtx) return null;
 
+  // clear cart immediately
+  useEffect(() => { cartCtx.clearCart(); }, [cartCtx]);
+
+  // local state
+  const [order, setOrder]       = useState<FetchedOrder | null>(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
+
+  // 1️⃣ fetch from API
   useEffect(() => {
-    if (!sent) {
-      const email = order.guestEmail; // Ensure you get the correct customer email
-      const subject = "Cash Payment Confirmation";
-      const text = `Cash payment of $${totalAmount} received for order #${orderId}.`;
-      const html = `<p>Cash payment of <strong>$${totalAmount}</strong> received for order #${orderId}.</p>`;
-
-      fetch("/api/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: email,
-          subject,
-          text,
-          html,
-        }),
+    if (!dbId) return;
+    setLoading(true);
+    fetch(`/api/orders/${encodeURIComponent(dbId)}`)
+      .then(async r => {
+        if (!r.ok) throw new Error(`Status ${r.status}`);
+        const { order } = await r.json();
+        setOrder(order as FetchedOrder);
       })
-        .then((res) => res.ok && setSent(true))
-        .catch((e) => console.error("email error:", e));
-    }
-  }, [sent, orderId, totalAmount, order.guestEmail]);
+      .catch(() => setError("Could not load order details."))
+      .finally(() => setLoading(false));
+  }, [dbId]);
+
+  // 2️⃣ send confirmation email once
+  useEffect(() => {
+    const o = order ?? orderCtx.order;
+    if (emailSent || !o?.guestEmail) return;
+    fetch("/api/send-email", {
+      method: "POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({
+        to:      o.guestEmail,
+        subject: "19th Hole — Cash Order Confirmation",
+        text:    `Your order #${o.orderId} for ${fmtMoney(o.totalAmount)} has been placed. Please have cash ready when we deliver.`,
+        html:    `<p>Your order <strong>#${o.orderId}</strong> for <strong>${fmtMoney(o.totalAmount)}</strong> has been placed. Please have cash ready when we deliver.</p>`
+      })
+    })
+      .then(r => r.ok && setEmailSent(true))
+      .catch(console.error);
+  }, [order, orderCtx.order, emailSent]);
+
+  // loading / error states
+  if (loading) return <div className={styles.message}>Loading order…</div>;
+  if (error)   return <div className={styles.message}>{error}</div>;
+
+  // final payload
+  const o = (order ?? orderCtx.order) as FetchedOrder;
+  const amt = fmtMoney(o.totalAmount);
+
+  // decide flow
+  let heading: string, instruction: React.ReactNode;
+  switch (o.deliveryType) {
+    case "PICKUP_AT_CLUBHOUSE":
+      heading    = "Pickup at Clubhouse";
+      instruction = <>Please pick up your order at the clubhouse when you’re ready and have <strong>{amt}</strong> in hand.</>;
+      break;
+    case "ON_COURSE":
+      heading    = o.holeNumber != null
+        ? `On-Course Delivery (Hole ${o.holeNumber})`
+        : "On-Course Delivery";
+      instruction = <>We’ll bring your order straight to your hole—please have <strong>{amt}</strong> ready.</>;
+      break;
+    case "EVENT_PAVILION":
+      heading    = "Event Pavilion Delivery";
+      instruction = <>We’ll deliver to the pavilion—please have <strong>{amt}</strong> ready.</>;
+      break;
+    default:
+      heading    = "Order Placed";
+      instruction = <>Your order is confirmed. Please have <strong>{amt}</strong> ready.</>;
+  }
 
   return (
     <div className={styles.container}>
       <div className={styles.confirmationCard}>
-        {/* Success Icon */}
         <div className={styles.iconWrapper}>
           <svg className={styles.checkIcon} viewBox="0 0 52 52">
             <circle className={styles.checkCircle} cx="26" cy="26" r="25" />
-            <path className={styles.checkMark} d="M14.1 27.2 21.2 34.4 37.9 17.6" />
+            <path  className={styles.checkMark} d="M14.1 27.2 21.2 34.4 37.9 17.6"/>
           </svg>
         </div>
 
-        <h1 className={styles.title}>Cash Payment Received!</h1>
-        <p className={styles.message}>
-          Thank you for your payment. Your order is being processed.
-        </p>
+        <h1 className={styles.title}>{heading}</h1>
+        <p className={styles.message}>{instruction}</p>
 
-        {orderId && (
-          <p className={styles.orderLine}>
-            <strong>Order #</strong> {orderId}
-          </p>
-        )}
-
-        <p className={styles.currentStatus}>
-          <strong>Current status:</strong> {status.replace(/_/g, " ")}
-        </p>
-
-        {/* Delivery or Pickup Details */}
-        {orderType?.includes("pickup") ? (
-          <div className={styles.detailSection}>
-            <h2 className={styles.subtitle}>Pickup Location</h2>
-            <p className={styles.address}>
-              {restaurantAddress}
-              <br />
-              Phone: (240) 313-2819
-            </p>
+        <div className={styles.factGrid}>
+          <div>
+            <span className={styles.factLabel}>Order #</span>
+            <span>{o.orderId}</span>
           </div>
-        ) : (
-          <div className={styles.detailSection}>
-            <h2 className={styles.subtitle}>Delivery Details</h2>
-            {deliveryAddress ? (
-              <p className={styles.address}>
-                {deliveryAddress.street}, {deliveryAddress.city}, {deliveryAddress.state} {deliveryAddress.zipCode}
-              </p>
-            ) : (
-              <p className={styles.address}>
-                Your delivery details will be provided shortly.
-              </p>
-            )}
+          <div>
+            <span className={styles.factLabel}>Status</span>
+            <span>{o.status.replace(/_/g, " ")}</span>
           </div>
-        )}
+        </div>
 
-        {/* Action Buttons */}
         <div className={styles.navigation}>
-          {/* Track My Order */}
-          <button
-            onClick={() => (window.location.href = `/track-delivery/${orderId}`)}
-            className={styles.trackButton}
-          >
-            Track My Order
-          </button>
-          {/* View Menu */}
-          <button
-            onClick={() => (window.location.href = "/menu")}
-            className={styles.navButton}
-          >
+          <button onClick={() => router.push("/menu")} className="btn secondary">
             View Menu
           </button>
-          {/* Home */}
-          <button
-            onClick={() => (window.location.href = "/")}
-            className={styles.navButton}
-          >
+          <button onClick={() => router.push("/")} className="btn secondary">
             Home
           </button>
         </div>
 
         <p className={styles.note}>
-          A confirmation e-mail {sent ? "has been sent" : "will be sent"} to you soon.
-          Thanks for choosing 19<sup>th</sup> Hole!
+          You’ll receive a confirmation email shortly. Thanks for choosing the 19<sup>th</sup> Hole!
         </p>
       </div>
     </div>

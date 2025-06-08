@@ -1,8 +1,15 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// File: app/api/menu/category/order/route.ts
+// ------------------------------------------------------------------
+// • PUT /api/menu/category/order → reorder categories
+// ------------------------------------------------------------------
 
+import { NextResponse } from "next/server";
+import { prisma }       from "@/lib/prisma";
+
+/* ================================================================== */
+/*  PUT /api/menu/category/order                                      */
+/* ================================================================== */
 /**
- * PUT /api/menu/category/order
  * Expects a JSON payload: { order: string[] }
  * Updates each category's order field according to its position.
  */

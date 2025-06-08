@@ -1,0 +1,30 @@
+/* File: app/dashboard/server-dashboard/ServerDashboard.module.css */
+
+.topBar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tabButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--secondary-color);
+  color: var(--black);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.tabButton:hover {
+  background-color: var(--secondary-color-hover);
+  color: var(--white);
+}
+
+.activeTabButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: default;
+}

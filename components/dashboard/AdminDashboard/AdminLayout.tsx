@@ -1,14 +1,14 @@
 // File: components/dashboard/AdminDashboard/AdminLayout.tsx
 // ──────────────────────────────────────────────────────────────
-//  Admin layout — now includes “Finances”, “Payouts”, and “Cash Audit” links in the header
+//  Admin layout — now includes “Finances”, “Payouts”, “Cash Audit” links in the header
 // ──────────────────────────────────────────────────────────────
 
 "use client";
 
-import React, { useState }   from "react";
-import Link                  from "next/link";
-import { signOut }           from "next-auth/react";
-import styles                from "./AdminDashboard.module.css";
+import React, { useState } from "react";
+import Link from "next/link";
+import { signOut } from "next-auth/react";
+import styles from "./AdminDashboard.module.css";
 
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   /* ------------------------------------------------------------------
@@ -16,7 +16,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   -------------------------------------------------------------------*/
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
-  const closeSidebar  = () => setSidebarOpen(false);
+  const closeSidebar = () => setSidebarOpen(false);
 
   /* ------------------------------------------------------------------
      Header links (visible on all screen sizes)
@@ -27,7 +27,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { href: "/dashboard/admin-dashboard/menu-builder", label: "Menu Builder" },
     { href: "/dashboard/admin-dashboard/finances",     label: "Finances" },
     { href: "/dashboard/admin-dashboard/payouts",      label: "Payouts" },
-    { href: "/dashboard/admin-dashboard/cash-audit",   label: "Cash Audit" },    // ← added
+    { href: "/dashboard/admin-dashboard/cash-audit",   label: "Cash Audit" },
     { href: "/dashboard/admin-dashboard/profile",      label: "Profile"  },
   ];
 
@@ -38,7 +38,10 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { href: "/dashboard/admin-dashboard/event-manager",   label: "Events" },
     { href: "/dashboard/admin-dashboard/opening-hours",   label: "Hours" },
     { href: "/dashboard/admin-dashboard/delivery-charge", label: "Delivery Charges" },
+     { href: "/dashboard/admin-dashboard/banner",          label: "Banner" },
     { href: "/dashboard/admin-dashboard/gallery",         label: "Gallery" },
+    { href: "/dashboard/admin-dashboard/subscriptions",   label: "Subscriptions" },
+    { href: "/dashboard/admin-dashboard/menu-preview",    label: "Menu Preview" },
     { href: "/dashboard/admin-dashboard/careers-manager", label: "Careers" },
     { href: "/dashboard/admin-dashboard/blog-news",       label: "Blog" },
     { href: "/dashboard/admin-dashboard/feedback-center", label: "Feedback" },

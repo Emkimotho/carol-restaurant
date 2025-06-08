@@ -1,136 +1,167 @@
-/* File: components/Banner/Banner.module.css */
+/* ──────────────────────────────────────────────────────────────
+   components/Banner/Banner.module.css
+   Fluid hero banner  •  zero CLS  •  height capped
+   Looks elegant on phones, laptops, and ultra‑wide 4 K monitors
+   ────────────────────────────────────────────────────────────── */
 
-/* ====== Banner Section ====== */
-.banner {
-  position: relative;
-  width: 100%;
-  /* Reduced banner height by 20% */
-  min-height: 400px;
-  max-height: 480px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Reduced gap between navbar and banner by 75% */
-  margin-top: calc(var(--navbar-height, 60px) * 0.125);
-  text-align: center;
-  overflow: hidden;
-  background-color: var(--light-gray); /* Fallback background */
+/* ╔══════════════════════════════════════════════════════════╗ */
+/* ║ 1) Ratio box  +  height clamp                            ║ */
+/* ╚══════════════════════════════════════════════════════════╝ */
+
+.banner { position: relative; width: 100%; }
+
+/* Default intrinsic ratio 16 : 6  (720 ÷ 1920 = 0.375) */
+.banner::after { content: ""; display: block; padding-top: 37.5%; }
+
+/* Cap: never shorter than 280 px, never taller than 600 px, but
+   still respect 70 vh on most laptops (≈ 630 px max).            */
+@media (min-height: 0px) {
+  .banner { max-height: clamp(280px, 70vh, 600px); }
 }
 
-/* Wrapper for the banner image */
+/* On ultra‑wide viewports (≥ 1800 px), use a slimmer 16 : 5 ratio
+   so the hero does not look too tall relative to width.           */
+@media (min-width: 1800px) {
+  .banner::after { padding-top: 31.25%; } /* 600 / 1920 = 0.3125 */
+}
+
+/* ╔══════════════════════════════════════════════════════════╗ */
+/* ║ 2) Gradient overlay (text readability)                   ║ */
+/* ╚══════════════════════════════════════════════════════════╝ */
+
+.banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,.40) 0%,
+    rgba(0,0,0,.70) 100%
+  );
+  z-index: 2; /* above slides, below text */
+}
+
+/* Darker overlay on very small phones for extra contrast */
+@media (max-width: 480px) {
+  .banner::before {
+    background: linear-gradient(
+      180deg,
+      rgba(0,0,0,.55) 0%,
+      rgba(0,0,0,.85) 100%
+    );
+  }
+}
+
+/* ╔══════════════════════════════════════════════════════════╗ */
+/* ║ 3) Slides (fade + slight zoom)                           ║ */
+/* ╚══════════════════════════════════════════════════════════╝ */
+
 .bannerImageContainer {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  overflow: hidden;
+  inset: 0;
+  transition: opacity .8s ease, transform 1.2s ease;
+  will-change: opacity, transform;
 }
+.active   { opacity: 1; transform: scale(1);    z-index: 1; }
+.inactive { opacity: 0; transform: scale(1.05); z-index: 0; pointer-events: none; }
 
-/* Banner Content */
+/* ╔══════════════════════════════════════════════════════════╗ */
+/* ║ 4) Content overlay                                       ║ */
+/* ╚══════════════════════════════════════════════════════════╝ */
+
 .bannerContent {
-  position: relative;
-  z-index: 1; /* Above the image */
+  position: absolute;
+  inset: 0;
+  z-index: 3;                     /* top layer */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   color: var(--white);
-  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5); /* Subtle shadow for text */
+  text-shadow: 2px 2px 6px rgba(0,0,0,.5);
   padding: 0 1rem;
+  max-width: 960px;
+  margin: 0 auto;
 }
 
-/* Banner Title */
+/* Fluid typography with clamp */
 .bannerTitle {
-  font-size: 2.5rem;
   font-family: var(--font-heading);
-  margin-bottom: 0.5rem;
+  font-size: clamp(1.4rem, 4vw, 2.5rem);
+  margin-bottom: .4rem;
 }
-
-/* Banner Subtitle */
 .bannerSubtitle {
-  font-size: 1.2rem;
   font-family: var(--font-body);
-  margin-top: 0.5rem;
+  font-size: clamp(.9rem, 2.5vw, 1.2rem);
+  max-width: 38ch;
+  margin-top: .4rem;
 }
 
-/* Banner Buttons Container */
+/* ╔══════════════════════════════════════════════════════════╗ */
+/* ║ 5) CTA buttons                                           ║ */
+/* ╚══════════════════════════════════════════════════════════╝ */
+
 .bannerButtons {
-  margin-top: 1.5rem;
   display: flex;
-  justify-content: center;
-  gap: 1rem; /* Space between buttons */
-  flex-wrap: wrap; /* Wrap buttons on smaller screens */
+  gap: clamp(.5rem, 2vw, 1rem);
+  flex-wrap: wrap;
+  margin-top: clamp(1rem, 3vw, 1.5rem);
 }
 
-/* Common Button Style */
 .button {
   font-family: var(--font-body);
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
+  padding: .75rem 1.5rem;
+  border-radius: .5rem;
   font-size: 1rem;
   text-decoration: none;
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  transition: transform .3s ease, background-color .3s ease;
   white-space: nowrap;
 }
+.primaryButton         { background: var(--primary-color);   color: var(--white); }
+.primaryButton:hover   { background: var(--primary-color-hover);   transform: scale(1.05); }
+.secondaryButton       { background: var(--secondary-color); color: var(--white); }
+.secondaryButton:hover { background: var(--secondary-color-hover); transform: scale(1.05); }
 
-/* Primary Button: Order Now */
-.primaryButton {
-  background-color: var(--primary-color);
-  color: var(--white);
+/* ╔══════════════════════════════════════════════════════════╗ */
+/* ║ 6) Pagination bullets                                    ║ */
+/* ╚══════════════════════════════════════════════════════════╝ */
+
+.bullets {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: .5rem;
+  z-index: 3;
 }
-
-.primaryButton:hover {
-  background-color: var(--primary-color-hover);
-  transform: scale(1.05);
+.bullet,
+.bulletActive {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,.5);
+  cursor: pointer;
 }
+.bulletActive { background: var(--primary-color); }
 
-/* Secondary Button: Book a Table */
-.secondaryButton {
-  background-color: var(--secondary-color);
-  color: var(--white);
-}
+/* ╔══════════════════════════════════════════════════════════╗ */
+/* ║ 7) Extra fine‑tuning for narrow screens                  ║ */
+/* ╚══════════════════════════════════════════════════════════╝ */
 
-.secondaryButton:hover {
-  background-color: var(--secondary-color-hover);
-  transform: scale(1.05);
-}
-
-/* Responsive Adjustments */
 @media (max-width: 768px) {
-  .banner {
-    min-height: 320px;  /* 80% of 400px */
-    max-height: 384px;  /* 80% of 480px */
-  }
-  .bannerTitle {
-    font-size: 2rem;
-  }
-  .bannerSubtitle {
-    font-size: 1rem;
-  }
-  .bannerButtons {
-    gap: 0.75rem;
-  }
-  .button {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
-  }
+  .banner::after { padding-top: 50%; }   /* 2 : 1 */
 }
 
 @media (max-width: 480px) {
-  .banner {
-    min-height: 240px;  /* 80% of 300px approx. */
-    max-height: 288px;
-  }
-  .bannerTitle {
-    font-size: 1.8rem;
-  }
-  .bannerSubtitle {
-    font-size: 0.85rem;
-  }
-  .bannerButtons {
-    gap: 0.5rem;
-  }
-  .button {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-  }
+  .banner::after   { padding-top: 56.25%; } /* 16 : 9 */
+  .button          { padding: .6rem 1.2rem; font-size: .9rem; }
+}
+
+@media (max-width: 360px) {
+  .bannerTitle     { font-size: 1.25rem; }
+  .bannerSubtitle  { font-size: .85rem;  }
+  .button          { padding: .45rem .9rem; font-size: .78rem; }
 }

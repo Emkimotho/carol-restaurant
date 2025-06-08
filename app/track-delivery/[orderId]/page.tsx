@@ -2,7 +2,9 @@
 
 import React from "react";
 import { prisma } from "@/lib/prisma";
-import DeliveryTracking from "@/components/deliverytracking/DeliveryTracking";
+import DeliveryTracking, {
+  DeliveryTrackingProps,
+} from "@/components/deliverytracking/DeliveryTracking";
 
 interface TrackDeliveryPageProps {
   params: Promise<{ orderId: string }>;
@@ -11,13 +13,21 @@ interface TrackDeliveryPageProps {
 export default async function TrackDeliveryPage({
   params,
 }: TrackDeliveryPageProps) {
-  // In Next.js 15, params is asynchronous
   const { orderId } = await params;
 
-  // Query by the friendly orderId field, not the numeric ID
+  // Fetch the extra fields we surfaced in the API
   const order = await prisma.order.findUnique({
     where: { orderId },
-    select: { id: true, orderId: true, status: true },
+    select: {
+      id:           true,
+      orderId:      true,
+      status:       true,
+      deliveryType: true,
+      holeNumber:   true,
+      staff: {
+        select: { firstName: true, lastName: true },
+      },
+    },
   });
 
   if (!order) {
@@ -28,5 +38,18 @@ export default async function TrackDeliveryPage({
     );
   }
 
-  return <DeliveryTracking initialOrder={order} />;
+  // Build the exact shape DeliveryTracking expects
+  const initialOrder: DeliveryTrackingProps["initialOrder"] = {
+    id:           order.id,
+    orderId:      order.orderId,
+    status:       order.status,
+    deliveryType: order.deliveryType,
+    holeNumber:   order.holeNumber ?? undefined,
+    serverName:
+      order.staff != null
+        ? `${order.staff.firstName} ${order.staff.lastName}`.trim()
+        : undefined,
+  };
+
+  return <DeliveryTracking initialOrder={initialOrder} />;
 }

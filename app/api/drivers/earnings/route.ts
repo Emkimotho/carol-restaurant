@@ -99,20 +99,26 @@ export async function GET(req: NextRequest) {
 
   // 7) Fetch per-order rows if requested
   interface Row {
-    orderId:          string;
-    deliveredAt:      Date | null;
-    totalDeliveryFee: number;
-    tipAmount:        number;
+    orderId:             string;
+    deliveredAt:         Date | null;
+    totalDeliveryFee:    number;
+    tipAmount:           number;
+    deliveryType:        string;
+    driverPayout:        number | null;
+    deliveryInstructions: string | null;
   }
   let orders: Row[] = [];
   if (qs.get('orders') === 'true') {
     orders = await prisma.order.findMany({
       where:  filter,
       select: {
-        orderId:          true,
-        deliveredAt:      true,
-        totalDeliveryFee: true,
-        tipAmount:        true,
+        orderId:             true,
+        deliveredAt:         true,
+        totalDeliveryFee:    true,
+        tipAmount:           true,
+        deliveryType:        true,
+        driverPayout:        true,
+        deliveryInstructions: true,
       },
       orderBy: { deliveredAt: 'desc' },
     });

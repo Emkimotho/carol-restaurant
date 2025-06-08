@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useOpeningHours } from '../../contexts/OpeningHoursContext';
+import CurrentYear from "@/components/common/CurrentYear";
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -17,6 +18,7 @@ import {
 } from 'react-icons/fa';
 import { convertTo12Hour } from '../../utils/timeUtils';
 import styles from './Footer.module.css';
+import { toast } from 'react-toastify';
 
 interface OpeningHours {
   [day: string]: {
@@ -37,6 +39,31 @@ const fullDayMapping: { [key: string]: string } = {
 
 const Footer: React.FC = () => {
   const { openingHours } = useOpeningHours();
+  const [email, setEmail] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim().includes('@')) {
+      toast.error('Please enter a valid email.');
+      return;
+    }
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase().trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Thank you for subscribing!');
+        setEmail('');
+      } else {
+        toast.error(data.error || 'Subscription failed.');
+      }
+    } catch {
+      toast.error('An unexpected error occurred.');
+    }
+  };
 
   return (
     <footer id="footer" className={styles.footer}>
@@ -173,7 +200,7 @@ const Footer: React.FC = () => {
             <div className={styles.newsletterContainer}>
               <h4 className={styles.widgetTitle}>Newsletter</h4>
               <p>Join our subscribers list to get the latest news and special offers.</p>
-              <form action="#" className={styles.newsletterForm}>
+              <form onSubmit={handleSubmit} className={styles.newsletterForm}>
                 <input
                   type="email"
                   placeholder="Your Email"
@@ -181,6 +208,8 @@ const Footer: React.FC = () => {
                   name="email"
                   aria-label="Your Email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
                 <div className={styles.newsletterControls}>
                   <div className={styles.checkboxWrapper}>
@@ -210,7 +239,6 @@ const Footer: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* ========== Footer Bottom ========== */}
         <div className={styles.footerBottom}>
           <ul className={styles.footerSocial}>
@@ -283,7 +311,7 @@ const Footer: React.FC = () => {
           </ul>
           <div className={styles.footerSeparator}></div>
           <p className={styles.footerBottomText}>
-            © {new Date().getFullYear()} The 19th Hole Restaurant and Bar at Black Rock. All Rights Reserved.
+            © <CurrentYear /> The 19th Hole Restaurant and Bar at Black Rock. All Rights Reserved.
           </p>
           <p className={styles.footerDevelopedBy}>
             Developed by{' '}

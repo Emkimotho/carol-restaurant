@@ -9,7 +9,7 @@
 import React from 'react';
 import styles from './orders.module.css';
 
-// Union of every tab key we might use
+// Union of every tab key we might use, including the new 'pendingCash'
 export type TabKey =
   | 'pending'
   | 'active'
@@ -21,7 +21,8 @@ export type TabKey =
   | 'enRoute'
   | 'delivered'
   | 'toReconcile'
-  | 'reconciled';
+  | 'reconciled'
+  | 'pendingCash';
 
 export interface Tab {
   key: TabKey;

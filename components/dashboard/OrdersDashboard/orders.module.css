@@ -1,7 +1,7 @@
 /* File: components/dashboard/ordersdashboard/orders.module.css
  *
  * Sleek, kitchen-friendly orders screen using global CSS variables.
- * Adds schedule badges (green ASAP, yellow Scheduled), golf, alcohol
+ * Adds schedule badges (green ASAP, yellow Scheduled), golf, alcohol,
  * and (NEW) cash flags, plus tight card-header alignment.
  */
 
@@ -50,13 +50,14 @@
   padding: 0.5rem 1rem;
   font-family: var(--font-body);
   border: 1px solid var(--border-color-dark);
-  background-color: var(--white);
+  background-color: var(--secondary-color);
+  color: var(--black);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
 }
 .tabs button:hover {
-  background-color: var(--secondary-color);
+  background-color: var(--secondary-color-hover);
   color: var(--white);
 }
 .tabs button.activeTab {
@@ -142,8 +143,8 @@
 }
 
 /* ───────────────── NEW ───────────────── */
-/* Cash Badge */
-.cashBadge {
+/* Cash Badges */
+.badgeCash {
   background-color: #e8f5e9;  /* light green */
   color: #2e7d32;             /* dark green text */
   padding: 0.25rem 0.5rem;
@@ -153,6 +154,17 @@
   text-transform: uppercase;
   pointer-events: none;
 }
+.badgeCard {
+  background-color: #e3f2fd;  /* light blue */
+  color: #1565c0;             /* dark blue text */
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
 /* ─────────────────────────────────────── */
 
 /* Pulse animation for beer/alcohol badge */
@@ -300,6 +312,32 @@
 .note { font-style: italic; color: var(--gray-hover); }
 .accompanimentsSection h4 { margin-bottom: 0.5rem; font-family: var(--font-heading); color: var(--dark-gray); }
 .accompanimentsSection p  { font-family: var(--font-body);    color: var(--dark-gray); }
+
+/* ─────────────────── SERVER “Pending Cash” Tab ─────────────────── */
+/* Table container */
+.cashTab {
+  background-color: var(--light-gray);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+/* Table styling */
+.cashTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+.cashTable th,
+.cashTable td {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color-dark);
+  text-align: left;
+}
+.cashTotal {
+  font-size: 1rem;
+  text-align: right;
+  margin-top: 0.5rem;
+}
 
 /* Mobile */
 @media (max-width: 768px) {

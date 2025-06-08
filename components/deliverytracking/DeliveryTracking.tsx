@@ -1,64 +1,63 @@
-// File: components/deliverytracking/DeliveryTracking.tsx
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "./DeliveryTracking.module.css";
 import { OrderContext } from "@/contexts/OrderContext";
-import { useOrder } from "@/hooks/useOrder";
+import { useOrder, OrderData } from "@/hooks/useOrder";
 
-interface Step { label: string; icon: string; }
-const steps: Step[] = [
+export interface DeliveryTrackingProps {
+  initialOrder: {
+    id:            string;
+    orderId:       string;
+    status:        string;
+    deliveryType:  string;
+    holeNumber?:   number;
+    serverName?:   string;
+  } | null;
+}
+
+const BASE_STEPS = [
   { label: "Order Received",       icon: "📩" },
   { label: "In Progress",          icon: "👨‍🍳" },
   { label: "Order Ready",          icon: "🍽️" },
-  { label: "Picked Up by Driver",  icon: "👨‍✈️" },
-  { label: "On the Way",           icon: "🚗" },
-  { label: "Delivered",            icon: "🏠" },
+  { label: "Picked Up by Driver",  icon: "🚗" },
+  { label: "On the Way",           icon: "🚚" },
+  { label: "Delivered",            icon: "🏁" },
 ];
 
-export interface DeliveryTrackingProps {
-  initialOrder: { id: string; orderId: string; status: string } | null;
-}
+export default function DeliveryTracking({
+  initialOrder,
+}: DeliveryTrackingProps) {
+  const { order: ctxOrder } = useContext(OrderContext) ?? { order: {} as any };
+  const orderId    = initialOrder?.id       ?? ctxOrder.id;
+  const friendly   = initialOrder?.orderId  ?? ctxOrder.orderId;
 
-export default function DeliveryTracking({ initialOrder }: DeliveryTrackingProps) {
-  const { order: contextOrder } = useContext(OrderContext) ?? { order: {} as any };
-  const orderId = initialOrder?.id ?? contextOrder.id;
-  const friendly = initialOrder?.orderId ?? contextOrder.orderId;
+  const { order: fetched, loading, error } = useOrder(orderId);
 
-  // Centralized hook to fetch static order data
-  const { order: fetchedOrder, loading: isLoading, error } = useOrder(orderId);
-
-  // Local status state: seed from initial or fetched
-  const [status, setStatus] = useState<string>(
-    initialOrder?.status ?? fetchedOrder?.status ?? "ORDER_RECEIVED"
+  // Current status
+  const [status, setStatus] = useState(
+    initialOrder?.status ?? fetched?.status ?? "ORDER_RECEIVED"
   );
-
-  // Sync to fetchedOrder updates
   useEffect(() => {
-    if (fetchedOrder?.status) {
-      setStatus(fetchedOrder.status);
-    }
-  }, [fetchedOrder?.status]);
+    if (fetched?.status) setStatus(fetched.status);
+  }, [fetched?.status]);
 
-  // WebSocket for live updates
+  // Live WebSocket updates
   useEffect(() => {
     if (!orderId) return;
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(
-      `${protocol}://${window.location.host}/api/ws?room=${orderId}`
-    );
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${proto}://${window.location.host}/api/ws?room=${orderId}`);
     ws.onmessage = (e) => {
       try {
         const { value } = JSON.parse(e.data);
         if (value.status) setStatus(value.status);
-      } catch {
-        // ignore malformed
-      }
+      } catch {}
     };
     return () => ws.close();
   }, [orderId]);
 
+  // Status → step index
   const statusMap: Record<string, number> = {
     ORDER_RECEIVED:      0,
     IN_PROGRESS:         1,
@@ -67,45 +66,114 @@ export default function DeliveryTracking({ initialOrder }: DeliveryTrackingProps
     ON_THE_WAY:          4,
     DELIVERED:           5,
   };
-  const step = statusMap[status] ?? 0;
+  const currentStep = statusMap[status] ?? 0;
+
+  // Detect golf vs regular delivery
+  const deliveryType = initialOrder?.deliveryType ?? fetched?.deliveryType;
+  const isGolf       = deliveryType !== "DELIVERY";
+  const holeNumber   = initialOrder?.holeNumber ?? fetched?.holeNumber;
+  const serverName   = initialOrder?.serverName ?? fetched?.serverName;
+
+  // Customize step label for golf (server instead of driver)
+  const steps = BASE_STEPS.map((s, idx) =>
+    idx === 3 // the "Picked Up" step
+      ? {
+          ...s,
+          label: isGolf
+            ? `Picked Up by ${serverName ? serverName : "Server"}`
+            : s.label,
+        }
+      : s
+  );
+
+  // --- Clubhouse pickup shortcut ---
+  if (isGolf && deliveryType === "PICKUP_AT_CLUBHOUSE") {
+    return (
+      <div className={styles.container}>
+        <div className={styles.trackingCard}>
+          <h1 className={styles.title}>Ready for Pickup!</h1>
+          {friendly && <p className={styles.sub}>Order # {friendly}</p>}
+          <p className={styles.message}>
+            Your order is hot and waiting at the clubhouse. Swing by when you’re ready!
+          </p>
+          <div className={styles.navigation}>
+            <Link href="/menu">
+              <button className={styles.navButton}>View Menu</button>
+            </Link>
+            <Link href="/">
+              <button className={styles.navButton}>Home</button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- On-course / Pavilion delivery header ---
+  const locationLabel =
+    deliveryType === "ON_COURSE"
+      ? `Hole ${holeNumber ?? "—"}`
+      : deliveryType === "EVENT_PAVILION"
+      ? "Pavilion"
+      : null;
 
   return (
     <div className={styles.container}>
       <div className={styles.trackingCard}>
-        <h1 className={styles.title}>Delivery Tracking</h1>
+        <h1 className={styles.title}>
+          {isGolf
+            ? deliveryType === "ON_COURSE"
+              ? "On-Course Delivery"
+              : "Pavilion Delivery"
+            : "Delivery Tracking"}
+        </h1>
 
-        {friendly && <p className={styles.orderId}>Order #: {friendly}</p>}
-        {orderId  && <p className={styles.orderIdSmall}>Tracking ID: {orderId}</p>}
+        {friendly && <p className={styles.sub}>Order # {friendly}</p>}
+        {locationLabel && (
+          <p className={styles.location}>Delivering to {locationLabel}</p>
+        )}
 
         <div className={styles.progressBar}>
-          {steps.map((s, idx) => (
+          {steps.map((stepDef, idx) => (
             <div key={idx} className={styles.stepContainer}>
-              <div className={`${styles.circle} ${idx <= step ? styles.active : ""}`}>
-                <span className={styles.icon}>{s.icon}</span>
+              <div className={`${styles.circle} ${idx <= currentStep ? styles.active : ""}`}>
+                <span className={styles.icon}>{stepDef.icon}</span>
               </div>
               {idx < steps.length - 1 && (
-                <div className={`${styles.line} ${idx < step ? styles.active : ""}`} />
+                <div className={`${styles.line} ${idx < currentStep ? styles.active : ""}`} />
               )}
               <div className={styles.labelContainer}>
-                <span className={styles.stepLabel}>{s.label}</span>
+                <span className={styles.stepLabel}>{stepDef.label}</span>
               </div>
             </div>
           ))}
         </div>
 
         <p className={styles.statusMessage}>
-          {step < steps.length - 1
-            ? `Your order is ${steps[step].label.toLowerCase()}…`
-            : "Your order has been delivered! Enjoy your meal."}
+          {currentStep < steps.length - 1
+            ? `Your order is ${steps[currentStep].label.toLowerCase()}…`
+            : isGolf
+            ? "Your order has arrived—enjoy!"
+            : "Delivered! Enjoy your meal!"}
         </p>
 
         <div className={styles.contact}>
-          <p>Questions? Call <strong>(240) 313-2819</strong>.</p>
+          <p>
+            Questions? Call 
+            <strong>
+              {isGolf ? serverName || "Server" : "Driver"} (240) 313-2819
+            </strong>
+            .
+          </p>
         </div>
 
         <div className={styles.navigation}>
-          <Link href="/menu"><button className={styles.navButton}>View Menu</button></Link>
-          <Link href="/"><button className={styles.navButton}>Home</button></Link>
+          <Link href="/menu">
+            <button className={styles.navButton}>View Menu</button>
+          </Link>
+          <Link href="/">
+            <button className={styles.navButton}>Home</button>
+          </Link>
         </div>
       </div>
     </div>

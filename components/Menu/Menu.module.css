@@ -4,15 +4,22 @@
 /*  Wrapper to scope overrides                                        */
 /* ------------------------------------------------------------------ */
 .menuWrapper {
-  margin-top: 100px;
+  margin-top: 100px; /* Default margin for desktop */
   padding: 2rem 0;
+}
+
+/* On mobile, increase top margin so “Our Menu” isn’t covered by timing bar */
+@media (max-width: 991px) {
+  .menuWrapper {
+    margin-top: 140px;
+  }
 }
 
 /* ------------------------------------------------------------------ */
 /*  Tabs Styling (override Bootstrap defaults)                        */
 /* ------------------------------------------------------------------ */
 
-/* Outer nav‑tabs border */
+/* Outer nav-tabs border */
 .menuWrapper :global(.nav-tabs) {
   border-bottom: 2px solid var(--border-color) !important;
 }
@@ -20,8 +27,8 @@
 /* Default tab look */
 .menuWrapper :global(.nav-tabs) :global(.nav-link) {
   background-color: var(--secondary-color) !important;
-  color: var(--black)                      !important;
-  border: none                             !important;
+  color: var(--black) !important;
+  border: none !important;
   border-radius: 4px;
   margin-right: 0.5rem;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -30,7 +37,7 @@
 /* Active tab */
 .menuWrapper :global(.nav-tabs) :global(.nav-link.active) {
   background-color: var(--primary-color) !important;
-  color: var(--white)                    !important;
+  color: var(--white) !important;
 }
 
 /* Hover */
@@ -78,7 +85,7 @@
 }
 
 /* ------------------------------------------------------------------ */
-/*  Fade‑in / slide‑up animation for category grid                    */
+/*  Fade-in / slide-up animation for category grid                    */
 /* ------------------------------------------------------------------ */
 @keyframes fadeInSlide {
   from { opacity: 0; transform: translateY(4px); }

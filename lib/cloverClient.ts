@@ -12,7 +12,7 @@ export interface CloverConfig {
   merchantId: string;
   /** Public OAuth API token – used for most endpoints */
   token:      string;
-  /** Private-eCom token – required only for fetchCloverItems */
+  /** Private‐eCom token – required only for fetchCloverItems */
   privToken?: string;
 }
 
@@ -28,13 +28,13 @@ export function getCloverConfig(): CloverConfig {
 
   if (isProd) {
     // Production environment – expect *_PROD variables
-    if (!process.env.CLOVER_BASE_URL_PROD || process.env.CLOVER_BASE_URL_PROD.trim() === "") {
+    if (!process.env.CLOVER_BASE_URL_PROD?.trim()) {
       throw new Error('Missing or invalid environment variable: "CLOVER_BASE_URL_PROD".');
     }
-    if (!process.env.CLOVER_MERCHANT_ID_PROD || process.env.CLOVER_MERCHANT_ID_PROD.trim() === "") {
+    if (!process.env.CLOVER_MERCHANT_ID_PROD?.trim()) {
       throw new Error('Missing or invalid environment variable: "CLOVER_MERCHANT_ID_PROD".');
     }
-    if (!process.env.CLOVER_API_TOKEN_PROD || process.env.CLOVER_API_TOKEN_PROD.trim() === "") {
+    if (!process.env.CLOVER_API_TOKEN_PROD?.trim()) {
       throw new Error('Missing or invalid environment variable: "CLOVER_API_TOKEN_PROD".');
     }
 
@@ -51,13 +51,13 @@ export function getCloverConfig(): CloverConfig {
     };
   } else {
     // Sandbox (development) environment – expect *_SANDBOX variables
-    if (!process.env.CLOVER_BASE_URL_SANDBOX || process.env.CLOVER_BASE_URL_SANDBOX.trim() === "") {
+    if (!process.env.CLOVER_BASE_URL_SANDBOX?.trim()) {
       throw new Error('Missing or invalid environment variable: "CLOVER_BASE_URL_SANDBOX".');
     }
-    if (!process.env.CLOVER_MERCHANT_ID_SANDBOX || process.env.CLOVER_MERCHANT_ID_SANDBOX.trim() === "") {
+    if (!process.env.CLOVER_MERCHANT_ID_SANDBOX?.trim()) {
       throw new Error('Missing or invalid environment variable: "CLOVER_MERCHANT_ID_SANDBOX".');
     }
-    if (!process.env.CLOVER_API_TOKEN_SANDBOX || process.env.CLOVER_API_TOKEN_SANDBOX.trim() === "") {
+    if (!process.env.CLOVER_API_TOKEN_SANDBOX?.trim()) {
       throw new Error('Missing or invalid environment variable: "CLOVER_API_TOKEN_SANDBOX".');
     }
 
@@ -160,7 +160,7 @@ export interface CloverCatalogItem {
 
 /**
  * Fetch all items from the Clover V3 catalog.
- * Uses the private-eCom token. Throws if `privToken` is missing.
+ * Uses the private‐eCom token. Throws if `privToken` is missing.
  * Falls back to /v2/merchants/{mId}/items if /v3/ returns 404.
  *
  * @returns Promise<CloverCatalogItem[]> – array of catalog items

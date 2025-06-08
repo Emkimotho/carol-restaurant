@@ -1,8 +1,7 @@
-/* =======================================================================
- * File: components/dashboard/OrdersDashboard/OrderCard.tsx
- * -----------------------------------------------------------------------
- * One order card: header badges • body summary • driver-assigner • actions
- * ---------------------------------------------------------------------*/
+// File: components/dashboard/OrdersDashboard/OrderCard.tsx
+// ───────────────────────────────────────────────────────────────────────
+// One order card: header badges • body summary • driver-assigner • actions
+// ───────────────────────────────────────────────────────────────────────
 
 'use client';
 
@@ -14,12 +13,12 @@ import OrderActions from './OrderActions';
 import DriverAssigner, { Driver } from './DriverAssigner';
 
 export interface OrderCardProps {
-  order: Order & { driverId?: number | null };  // ensure driverId exists
+  order: Order & { driverId?: number | null };
   role: 'admin' | 'staff' | 'server' | 'cashier';
   mutate: () => void;
   onShowDetail: () => void;
   onShowAgePatch: (nextStatus: string, msg: string) => void;
-  drivers: Driver[];                            // list for the <select>
+  drivers: Driver[];
 }
 
 export default function OrderCard({
@@ -42,6 +41,7 @@ export default function OrderCard({
   };
 
   const unassignDriver = async () => {
+    if (order.status === 'DELIVERED' || order.status === 'CANCELLED') return;
     await fetch(`/api/orders/${order.id}/driver`, {
       method: 'PATCH',
       credentials: 'include',
@@ -110,7 +110,6 @@ export default function OrderCard({
           </p>
         )}
 
-        {/* NEW — show who collected the cash (server) */}
         {order.cashCollection?.server && (
           <p className={styles.driverTag}>
             <small>
@@ -123,13 +122,16 @@ export default function OrderCard({
 
       {/* ── Driver assignment ── */}
       {(role === 'admin' || role === 'staff') && (
-        <DriverAssigner
-          orderId={order.id}
-          currentDriverId={order.driverId ?? null}
-          drivers={drivers}
-          onAssign={assignDriver}
-          onUnassign={unassignDriver}
-        />
+        order.status !== 'DELIVERED' &&
+        order.status !== 'CANCELLED' && (
+          <DriverAssigner
+            orderId={order.id}
+            currentDriverId={order.driverId ?? null}
+            drivers={drivers}
+            onAssign={assignDriver}
+            onUnassign={unassignDriver}
+          />
+        )
       )}
 
       {/* ── Footer actions ── */}

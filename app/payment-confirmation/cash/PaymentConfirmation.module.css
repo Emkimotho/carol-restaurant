@@ -1,155 +1,68 @@
 /* File: app/payment-confirmation/cash/PaymentConfirmation.module.css */
-
 .container {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   min-height: calc(100vh - var(--navbar-height));
   background: var(--light-gray);
-  padding: 20px;
-}
-
-.confirmationCard {
-  background: var(--white);
   padding: 2rem;
-  border-radius: 10px;
-  box-shadow: var(--box-shadow-primary);
+}
+.confirmationCard {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 1rem;
+  box-shadow: var(--box-shadow-secondary);
+  padding: 2rem;
+  max-width: 480px;
   text-align: center;
-  animation: fadeIn 0.8s ease-out;
-  max-width: 500px;
-  width: 100%;
+  animation: fadeIn 0.6s ease-out;
 }
+.iconWrapper { margin-bottom: 1rem; }
+.checkIcon { width: 70px; height: 70px; stroke: var(--primary-color); }
+.checkCircle, .checkMark {
+  fill: none; stroke-width: 3; stroke-linecap: round;
+  stroke-dasharray: 166; stroke-dashoffset: 166;
+  animation: dash 0.8s ease forwards;
+}
+.checkMark { stroke-dasharray: 48; }
+@keyframes dash { to { stroke-dashoffset: 0; } }
 
-.iconWrapper {
-  margin-bottom: 1rem;
-}
+.title { font-family: var(--font-heading); font-size: 1.75rem; color: var(--primary-color); }
+.subtitle { font-size: 1.25rem; margin: 0.5rem 0 1rem; color: var(--dark-gray); }
 
-.checkIcon {
-  width: 80px;
-  height: 80px;
-  stroke: var(--primary-color);
-  stroke-width: 2;
-  animation: strokeAnim 0.6s ease-in-out forwards;
+.box {
+  background: rgba(255,255,255,0.6);
+  padding: 1rem 0;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
 }
+.boxTitle { font-size: 0.9rem; color: var(--gray); text-transform: uppercase; }
+.amount { font-size: 1.5rem; margin-top: 0.5rem; }
 
-.checkCircle {
-  stroke-dasharray: 166;
-  stroke-dashoffset: 166;
-  stroke-width: 2;
-  stroke-miterlimit: 10;
-  stroke: var(--primary-color);
-  fill: none;
-  animation: circleAnim 0.6s ease-in-out forwards;
-}
-
-.checkMark {
-  stroke-dasharray: 48;
-  stroke-dashoffset: 48;
-  stroke-width: 2;
-  stroke-linecap: round;
-  animation: checkAnim 0.6s 0.6s ease-in-out forwards;
-}
-
-.title {
-  font-family: var(--font-heading);
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: var(--primary-color);
-}
-
-.message {
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-}
-
-.detailSection {
-  margin-bottom: 2rem;
-}
-
-.subtitle {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.address {
-  font-size: 1rem;
-  color: var(--dark-gray);
-}
-
-.trackButton {
-  margin-top: 1rem;
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-  background-color: var(--primary-color);
-  color: var(--white);
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.trackButton:hover {
-  background-color: var(--primary-color-hover);
-  transform: translateY(-3px);
-}
+.detailSection { font-size: 1rem; margin: 1rem 0; color: var(--foreground); }
 
 .navigation {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
+  display: flex; flex-wrap: wrap; gap: 0.75rem;
+  justify-content: center; margin: 1.5rem 0;
 }
+.actionBtn {
+  padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none;
+  font-size: 1rem; cursor: pointer; transition: transform 0.2s;
+}
+.actionBtn:hover { transform: translateY(-2px); }
 
-.navButton {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-  background-color: var(--secondary-color);
+.trackButton {
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
   color: var(--white);
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
 }
-
-.navButton:hover {
-  background-color: var(--secondary-color-hover);
-  transform: translateY(-3px);
+.secondary {
+  background: var(--secondary-color);
+  color: var(--black);
 }
 
 .note {
-  font-size: 1rem;
-  color: var(--dark-gray);
-  margin-top: 1.5rem;
+  font-size: 0.9rem; color: var(--gray);
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes circleAnim {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes checkAnim {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes strokeAnim {
-  from {
-    stroke-dashoffset: 166;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }

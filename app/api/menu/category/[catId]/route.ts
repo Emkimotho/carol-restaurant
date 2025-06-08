@@ -1,13 +1,15 @@
-/* ------------------------------------------------------------------ */
-/*  File: app/api/menu/category/[catId]/route.ts                      */
-/* ------------------------------------------------------------------ */
-/*  • GET    /api/menu/category/:catId                                */
-/*  • PUT    /api/menu/category/:catId                                */
-/*  • DELETE /api/menu/category/:catId                                */
-/* ------------------------------------------------------------------ */
+// File: app/api/menu/category/[catId]/route.ts
+// ------------------------------------------------------------------
+// • GET    /api/menu/category/:catId
+// • PUT    /api/menu/category/:catId (includes Clover rename)
+// • DELETE /api/menu/category/:catId (includes Clover delete)
+// ------------------------------------------------------------------
 
 import { NextResponse } from "next/server";
 import { prisma }       from "@/lib/prisma";
+import { cloverFetch, getCloverConfig } from "@/lib/cloverClient";
+
+const { merchantId } = getCloverConfig();
 
 /* ================================================================== */
 /*  GET  /api/menu/category/:catId                                    */
@@ -59,6 +61,34 @@ export async function PUT(
       );
     }
 
+    // 1. Retrieve existing row to get cloverCategoryId
+    const existing = await prisma.menuCategory.findUnique({
+      where: { id: catId },
+    });
+    if (!existing) {
+      return NextResponse.json({ message: "Category not found" }, { status: 404 });
+    }
+
+    // 2. If Clover ID exists, update category name in Clover
+    if (existing.cloverCategoryId && updateData.name !== undefined) {
+      try {
+        await cloverFetch(
+          `/v3/merchants/${merchantId}/categories/${existing.cloverCategoryId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify({ name: updateData.name }),
+          }
+        );
+      } catch (e: any) {
+        console.error("Failed to update category in Clover:", e);
+        return NextResponse.json(
+          { message: "Could not update category in Clover: " + e.message },
+          { status: 500 }
+        );
+      }
+    }
+
+    // 3. Update local row
     const updated = await prisma.menuCategory.update({
       where: { id: catId },
       data:  updateData,
@@ -85,6 +115,32 @@ export async function DELETE(
 ) {
   const { catId } = await ctx.params;
   try {
+    // 1. Fetch existing row to get cloverCategoryId
+    const existing = await prisma.menuCategory.findUnique({
+      where: { id: catId },
+      select: { cloverCategoryId: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ message: "Category not found" }, { status: 404 });
+    }
+
+    // 2. If a Clover category exists, delete it in Clover first
+    if (existing.cloverCategoryId) {
+      try {
+        await cloverFetch(
+          `/v3/merchants/${merchantId}/categories/${existing.cloverCategoryId}`,
+          { method: "DELETE" }
+        );
+      } catch (e: any) {
+        console.error("Failed to delete category in Clover:", e);
+        return NextResponse.json(
+          { message: "Could not delete category in Clover: " + e.message },
+          { status: 500 }
+        );
+      }
+    }
+
+    // 3. Delete local category and all related items
     await prisma.$transaction([
       prisma.nestedOptionChoice.deleteMany({
         where: {

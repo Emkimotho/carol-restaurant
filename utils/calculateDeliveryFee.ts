@@ -9,30 +9,20 @@ export interface DeliveryCalculationParams {
   travelTimeMinutes:       number; // minutes
   ratePerMile:             number; // $ / mile
   ratePerHour:             number; // $ / hour
-  restaurantFeePercentage: number; // FRACTION  e.g. 0.10 for 10 %
+  restaurantFeePercentage: number; // FRACTION e.g. 0.10 for 10 %
   orderSubtotal:           number; // food/items only
-  minimumCharge:           number; // absolute $
+  minimumCharge:           number; // absolute $
   freeDeliveryThreshold:   number; // subtotal level for free delivery
 }
 
 export interface DeliveryCalculationResult {
-  totalFee:                number; // rawFee after min‑charge
+  totalFee:                number; // what driver earns (distance/time, floored to minimum, plus any extra if subsidy > raw)
   customerFee:             number; // what the customer pays
   freeDelivery:            boolean;
-  additionalAmountForFree: number; // 0 if freeDelivery === true
-  discountSaved?:          number; // present only when freeDelivery
+  additionalAmountForFree: number; // how much more to reach free
+  discountSaved?:          number; // only present when freeDelivery
 }
 
-/* ------------------------------------------------------------------ */
-/*  calculateDeliveryFee()                                            */
-/* ------------------------------------------------------------------ */
-/**
- * Steps
- *  1. rawFee   = distance·ratePerMile + time·ratePerHour  (≥ minimumCharge)
- *  2. restaurantContribution = restaurantFeePercentage · orderSubtotal
- *  3. customerFee = max(rawFee – restaurantContribution, minimumCharge)
- *  4. Apply freeDeliveryThreshold logic
- */
 export function calculateDeliveryFee(
   params: DeliveryCalculationParams
 ): DeliveryCalculationResult {
@@ -47,35 +37,48 @@ export function calculateDeliveryFee(
     freeDeliveryThreshold,
   } = params;
 
-  /* ---------- 1. raw distance+time fee ----------------------------- */
-  let rawFee =
-    distance * ratePerMile + (travelTimeMinutes / 60) * ratePerHour;
-  if (rawFee < minimumCharge) rawFee = minimumCharge;
-
-  /* ---------- 2. restaurant kicks‑in ------------------------------- */
-  const restaurantContribution = restaurantFeePercentage * orderSubtotal;
-
-  /* ---------- 3. customer pays ------------------------------------- */
-  let customerFee = rawFee - restaurantContribution;
-  if (customerFee < minimumCharge) customerFee = minimumCharge;
-
-  /* ---------- 4. free‑delivery logic ------------------------------- */
+  // 1. Free-delivery if subtotal high enough
   if (orderSubtotal >= freeDeliveryThreshold) {
+    const raw =
+      distance * ratePerMile + (travelTimeMinutes / 60) * ratePerHour;
     return {
       totalFee:                0,
       customerFee:             0,
       freeDelivery:            true,
       additionalAmountForFree: 0,
-      discountSaved:           customerFee,
+      discountSaved:           Math.round(raw * 100) / 100,
     };
   }
 
-  const additionalAmountForFree = freeDeliveryThreshold - orderSubtotal;
+  // 2. Compute raw distance+time fee, floored to minimumCharge
+  let rawFee =
+    distance * ratePerMile + (travelTimeMinutes / 60) * ratePerHour;
+  if (rawFee < minimumCharge) {
+    rawFee = minimumCharge;
+  }
+
+  // 3. Restaurant subsidy based on subtotal
+  const restaurantContribution = restaurantFeePercentage * orderSubtotal;
+
+  // 4. Decide final fees:
+  //    - If subsidy > rawFee, then customer still pays the minimumCharge,
+  //      and driver gets minimumCharge + subsidy.
+  //    - Otherwise, customer pays rawFee minus subsidy, driver gets rawFee.
+  let totalFee: number;
+  let customerFee: number;
+
+  if (restaurantContribution > rawFee) {
+    customerFee = minimumCharge;
+    totalFee    = minimumCharge + restaurantContribution;
+  } else {
+    customerFee = rawFee - restaurantContribution;
+    totalFee    = rawFee;
+  }
 
   return {
-    totalFee:                Math.round(rawFee * 100) / 100,
+    totalFee:                Math.round(totalFee * 100) / 100,
     customerFee:             Math.round(customerFee * 100) / 100,
     freeDelivery:            false,
-    additionalAmountForFree: Math.round(additionalAmountForFree * 100) / 100,
+    additionalAmountForFree: Math.round((freeDeliveryThreshold - orderSubtotal) * 100) / 100,
   };
 }
