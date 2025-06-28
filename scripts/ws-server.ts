@@ -7,6 +7,7 @@
 //  • Each client connects with ?room=<orderId>|ALL
 //  • Use `broadcast(room, payload)` from other modules to push updates.
 // ──────────────────────────────────────────────────────────────
+import 'dotenv/config';
 
 import http, { IncomingMessage } from 'http';
 import { WebSocketServer }       from 'ws';

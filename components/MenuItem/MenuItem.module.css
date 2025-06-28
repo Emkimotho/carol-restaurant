@@ -13,15 +13,18 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+  min-height: 420px;               /* ★ new → keeps grid even        */
+  cursor: pointer;                 /* ★ new → entire card clickable  */
 }
 
 .container:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);     /* ★ new subtle lift on hover     */
 }
 
 /* ================================================================== */
-/*  Image container (forced 300 × 300)                                */
+/*  Image container (forced 300 × 300)                                */
 /* ================================================================== */
 .photo {
   width: 100%;
@@ -53,7 +56,7 @@
 }
 
 .title {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 1.6vw, 1.5rem);   /* ★ updated – responsive */
   color: var(--primary-color);
   margin-bottom: 0.5rem;
   font-family: var(--font-heading);
@@ -61,7 +64,7 @@
 
 .description {
   font-size: 1rem;
-  color: var(--gray);
+  color: var(--gray, #666);                  /* ★ fallback colour      */
   flex-grow: 1;
   font-family: var(--font-body);
 }
@@ -85,8 +88,12 @@
   cursor: pointer;
   width: 100%;
   text-align: center;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    transform        0.3s ease;
   font-family: var(--font-body);
+  outline: 2px solid transparent;           /* ★ new – focus ring base */
+  outline-offset: 2px;                      /* ★ new */
 }
 
 .btnAddToCart:hover {
@@ -100,11 +107,15 @@
   transform: none;
 }
 
+.btnAddToCart:focus-visible {               /* ★ new – accessibility  */
+  outline: 2px dashed var(--primary-color);
+}
+
 /* ================================================================== */
 /*  Muted text                                                        */
 /* ================================================================== */
 .textMuted {
-  color: var(--gray);
+  color: var(--gray, #666);
   font-style: italic;
   text-align: center;
   margin-top: 0.5rem;
@@ -112,7 +123,7 @@
 }
 
 /* ================================================================== */
-/*  2‑button popup styles (kept intact)                               */
+/*  2-button popup styles (kept intact)                               */
 /* ================================================================== */
 .orderChoiceOverlay {
   position: fixed;
@@ -147,7 +158,7 @@
 
 .orderChoiceModal p {
   font-size: 1rem;
-  color: var(--dark-gray);
+  color: var(--dark-gray, #444);           /* ★ fallback */
   margin-bottom: 1.5rem;
   line-height: 1.4;
   font-family: var(--font-body);
@@ -160,9 +171,8 @@
   margin-bottom: 1.5rem;
 }
 
-.btnChoice {
-  background-color: var(--secondary-color);
-  color: #fff;
+.btnChoice,
+.btnCloseChoice {
   padding: 0.75rem 1rem;
   border: none;
   border-radius: 6px;
@@ -170,32 +180,34 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s ease, transform 0.3s ease;
+  outline: 2px solid transparent;         /* ★ new focus-ring base    */
+  outline-offset: 2px;
 }
 
+.btnChoice {
+  background-color: var(--secondary-color);
+  color: #fff;
+}
 .btnChoice:hover {
   background-color: var(--secondary-color-hover);
   transform: scale(1.03);
+}
+.btnChoice:focus-visible,
+.btnCloseChoice:focus-visible {           /* ★ new */
+  outline: 2px dashed var(--secondary-color);
 }
 
 .btnCloseChoice {
   background-color: #666;
   color: #fff;
-  padding: 0.6rem 1rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s ease, transform 0.3s ease;
-  font-weight: 600;
 }
-
 .btnCloseChoice:hover {
   background-color: #555;
   transform: scale(1.02);
 }
 
 /* ================================================================== */
-/*  Golf‑flag overlay (red)                                           */
+/*  Golf-flag overlay                                                 */
 /* ================================================================== */
 .golfBadge {
   position: absolute;
@@ -214,17 +226,17 @@
 }
 
 .golfBadgeRed {
-  color: var(--secondary-color);     /* sleek red */
+  color: var(--secondary-color);          /* sleek red */
 }
 
 /* ================================================================== */
-/*  Sold‑out ribbon (NEW)                                             */
+/*  Sold-out ribbon                                                   */
 /* ================================================================== */
 .soldOut {
   position: absolute;
   top: 10px;
   right: -35px;
-  background: #dc2626;              /* Tailwind red‑600 */
+  background: #dc2626;                    /* Tailwind red-600 */
   color: #fff;
   padding: 0.25rem 2.1rem;
   font-size: 0.75rem;
@@ -234,15 +246,23 @@
   z-index: 2;
 }
 
+@media (max-width: 350px) {               /* ★ new small-card tweak   */
+  .soldOut {
+    font-size: 0.65rem;
+    padding: 0.2rem 1.6rem;
+  }
+}
+
 /* ================================================================== */
-/*  Spicy pepper icon (NEW)                                           */
+/*  Spicy pepper icon                                                 */
 /* ================================================================== */
 .spicy {
   margin-left: 0.3rem;
   font-size: 0.9rem;
+  vertical-align: text-top;              /* ★ aligns with baseline   */
 }
 
 /* ================================================================== */
-/*  Fade‑in utility (referenced by Menu.module.css)                   */
+/*  Fade-in utility (referenced by Menu.module.css)                   */
 /* ================================================================== */
 /* (No changes here – kept for future reference) */

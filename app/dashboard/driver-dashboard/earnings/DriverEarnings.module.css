@@ -1,59 +1,176 @@
-/* ----------------------------------------------------------------------
- *  File: app/dashboard/driver-dashboard/earnings/DriverEarnings.module.css
- * -------------------------------------------------------------------- */
+/* File: app/dashboard/driver-dashboard/earnings/DriverEarnings.module.css */
 
-/* container */
-.container { padding: 2rem; font-family: var(--font-body); }
+/* ═════════════ 1. Layout container ═════════════ */
+.container {
+  position: relative;
+  padding: 2rem;
+  font-family: var(--font-body);
+}
 
-/* ───────── Letter‑head (print only) ───────── */
-.printHeader      { display: none; }
-.printHeader h1   { font-family: var(--font-heading); font-size: 1.6rem; margin: 0; }
-.printHeader .rangeLine { margin: .4rem 0; font-size: .95rem; }
-.printHeader hr   { border: 0; border-top: 1px solid #aaa; margin: 1rem 0 1.2rem; }
-@media print { .printHeader { display: block; text-align: center; } }
+/* ═════════════ 2. Letter-head (print-only) ══════ */
+.printHeader {
+  display: none;               /* hidden on-screen */
+  text-align: center;
+}
+.printHeader h1 {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  margin: 0;
+}
+.printHeader .rangeLine {
+  font-size: 0.95rem;
+  margin: 0.4rem 0;
+}
+.printHeader hr {
+  margin: 1rem 0 1.2rem;
+  border: 0;
+  border-top: 1px solid #aaa;
+}
 
-/* ───────── Tabs ───────── */
-.tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+/* ═════════════ 3. Tabs / Top bar ════════════════ */
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
 .tab {
-  padding: .45rem 1rem; border-radius: 999px; background: var(--gray);
-  color: var(--white); border: none; cursor: pointer; transition: background .15s;
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--gray);
+  color: var(--white);
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
-.tab:hover { background: var(--gray-hover); }
-.active    { background: var(--primary-color)!important; color: var(--white); }
+.tab:hover   { background: var(--gray-hover); }
+.active      { background: var(--primary-color) !important; }
 
-/* ───────── Range Bar ───────── */
-.rangeBar      { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
-.rangeBar input{ padding: .35rem .6rem; font: inherit; }
-.rangeBar button{ padding: .45rem 1rem; }
+/* ═════════════ 4. Range bar ═════════════════════ */
+.rangeBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.rangeBar input {
+  font: inherit;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+}
+.rangeBar button {
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: var(--primary-color);
+  color: var(--white);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.rangeBar button:hover { background: var(--primary-color-hover); }
 
-/* ───────── KPI Cards ───────── */
-.cards { display: grid; gap: 1rem; margin-bottom: 1.5rem;
-         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+/* ═════════════ 5. KPI cards ═════════════════════ */
+.cards {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
 .card {
-  background: var(--white); border: 1px solid var(--border-color);
-  border-radius: var(--card-radius); box-shadow: var(--card-shadow);
-  padding: 1rem 1.25rem; transition: transform .15s;
+  padding: 1rem 1.25rem;
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--card-radius);
+  box-shadow: var(--box-shadow-secondary);
+  transition: transform 0.15s ease;
 }
-.card:hover     { transform: translateY(-3px); }
-.cardLabel      { font-size: .85rem; color: var(--text-muted); }
-.cardVal        { font-size: 1.4rem; font-weight: 600; margin-top: .25rem; }
+.card:hover        { transform: translateY(-3px); }
+.cardLabel         { font-size: 0.85rem; color: var(--gray-hover); }
+.cardVal           { font-size: 1.4rem; font-weight: 600; margin-top: 0.25rem; }
 
-/* ───────── Chart ───────── */
+/* ═════════════ 6. Chart wrapper ═════════════════ */
 .chartWrap { padding-bottom: 2rem; }
 
-/* ───────── Action buttons ───────── */
-.actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem; }
-.actions button{ padding: .45rem 1rem; }
+/* ═════════════ 7. Action buttons ════════════════ */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.actions button {
+  padding: 0.45rem 1rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: var(--primary-color);
+  color: var(--white);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.actions button:hover:not(:disabled) {
+  background: var(--primary-color-hover);
+  transform: translateY(-2px);
+}
+.actions button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ───────── Table ───────── */
-.tableWrap           { overflow-x: auto; }
-.table               { width: 100%; border-collapse: collapse; font-size: .88rem; }
-.table th, .table td { border: 1px solid var(--border-color); padding: .6rem .9rem; }
-.table th            { background: var(--light-gray); }
+/* ═════════════ 8. Orders / payouts tables ═══════ */
+.tableWrap { overflow-x: auto; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.table th,
+.table td {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border-color);
+}
+.table th                 { background: var(--light-gray); }
 .table tr:nth-child(even) td { background: #fafafa; }
 
-/* Footer totals */
 .footerCell { font-weight: 600; background: #eee; }
+.empty      { text-align: center; color: var(--gray-hover); padding: 1rem 0; }
 
-/* Empty row */
-.empty { text-align: center; padding: 1rem 0; color: var(--text-muted); }
+.noData {
+  text-align: center;
+  padding: 2rem;
+  color: var(--gray);
+}
+
+/* ═════════════ 9. Print rules ═══════════════════ */
+@media print {
+  /* 9-A show letter-head */
+  .printHeader { display: block; margin-bottom: 1rem; }
+
+  /* 9-B hide interactive chrome */
+  .topBar,
+  .tabs,
+  .rangeBar,
+  .actions { display: none !important; }
+
+  /* 9-C widen page */
+  .container { padding: 0.5in !important; }
+}
+
+/* ═════════════ 10. Responsive tweaks ════════════ */
+@media (max-width: 768px) {
+  .container { padding: 1rem; }
+
+  .tabs       { justify-content: center; }
+  .rangeBar   { flex-direction: column; align-items: flex-start; }
+  .cards      { grid-template-columns: 1fr; }
+  .chartWrap  { padding-bottom: 1rem; }
+
+  .table th,
+  .table td   { padding: 0.5rem; font-size: 0.8rem; }
+}

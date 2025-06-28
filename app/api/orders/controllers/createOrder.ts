@@ -1,6 +1,5 @@
 /* ========================================================================== */
 /*  File: app/api/orders/controllers/createOrder.ts                           */
-/*  (re‑fixed: always provides a finite tipAmount so Prisma never fails)      */
 /* ========================================================================== */
 
 import { NextResponse } from "next/server";
@@ -15,10 +14,13 @@ import {
   calculateTipAmount,
   calculateTaxAmount,
 }                       from "@/utils/checkoutUtils";
-import { TAX_RATE }    from "@/config/taxConfig";
+import { TAX_RATE }     from "@/config/taxConfig";
 import { calculateDeliveryFee } from "@/utils/calculateDeliveryFee";
 
-/* ---------- helpers ------------------------------------------------------- */
+// Import the helper to push to Clover and persist the returned internal ID
+import { pushOrderToClover } from "@/lib/clover/orderService";
+
+/// ---------- helpers -------------------------------------------------------
 const round = (n: number) => Math.round(n * 100) / 100;
 
 function computeItemTotal(it: any): number {
@@ -29,11 +31,9 @@ function computeItemTotal(it: any): number {
     it.optionGroups.forEach((grp: any) => {
       const sel = it.selectedOptions[grp.id];
       if (!sel) return;
-
       grp.choices.forEach((choice: any) => {
         if (!sel.selectedChoiceIds?.includes(choice.id)) return;
         price += choice.priceAdjustment ?? 0;
-
         if (choice.nestedOptionGroup && sel.nestedSelections?.[choice.id]) {
           sel.nestedSelections[choice.id].forEach((nid: string) => {
             const n = choice.nestedOptionGroup!.choices.find((c: any) => c.id === nid);
@@ -43,6 +43,7 @@ function computeItemTotal(it: any): number {
       });
     });
   }
+
   return round(price * qty);
 }
 
@@ -52,20 +53,19 @@ export async function createOrder(req: Request) {
     const body                = await req.json();
     const { items, deliveryType, paymentMethod } = body;
 
-    /* 1. basic validation -------------------------------------------------- */
+    /* 1. Validate */
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "items required" }, { status: 400 });
     }
 
-    /* 2. flags ------------------------------------------------------------- */
+    /* 2. Flags */
     const containsAlcohol = items.some((it: any) => it.isAlcohol === true);
     const isGolfOrder     = deliveryType !== DeliveryType.DELIVERY;
 
-    /* 3. recompute money fields ------------------------------------------- */
+    /* 3. Money calculations */
     const subtotal  = items.reduce((sum: number, it: any) => sum + computeItemTotal(it), 0);
     const taxAmount = calculateTaxAmount(subtotal, TAX_RATE);
 
-    /* tipAmount: prefer numeric body.tipAmount, else calculate, else 0      */
     let tipAmount = Number(body.tipAmount);
     if (!Number.isFinite(tipAmount)) {
       tipAmount = calculateTipAmount(subtotal, body.tip, body.customTip);
@@ -73,7 +73,6 @@ export async function createOrder(req: Request) {
       tipAmount = round(tipAmount);
     }
 
-    /* delivery‑fee block (only main orders) -------------------------------- */
     let customerDeliveryFee   = 0;
     let restaurantDeliveryFee = 0;
     let totalDeliveryFee      = 0;
@@ -82,7 +81,7 @@ export async function createOrder(req: Request) {
     let deliveryTimeMinutes   = 0;
     let freeDelivery          = false;
     let additionalForFree     = 0;
-    let discountSaved         : number | null = null;
+    let discountSaved: number | null = null;
 
     if (!isGolfOrder) {
       deliveryDistanceMiles = Number(body.deliveryDistanceMiles) || 0;
@@ -113,7 +112,7 @@ export async function createOrder(req: Request) {
 
     const totalAmount = round(subtotal + taxAmount + tipAmount + customerDeliveryFee);
 
-    /* 4. ids / status ------------------------------------------------------ */
+    /* 4. Generate IDs & status */
     const today   = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const random  = Math.random().toString(36).slice(2, 8).toUpperCase();
     const orderId = `ORD-${today}-${random}`;
@@ -123,19 +122,16 @@ export async function createOrder(req: Request) {
         ? OrderStatus.ORDER_RECEIVED
         : OrderStatus.PENDING_PAYMENT;
 
-    /* 5. assemble prisma data --------------------------------------------- */
+    /* 5. Prepare Order data */
     const data: any = {
       orderId,
       items,
-
       schedule:  isGolfOrder ? null : (body.schedule ? new Date(body.schedule) : null),
       orderType: isGolfOrder ? ""   : (body.orderType ?? ""),
       deliveryType,
       paymentMethod,
-
       containsAlcohol,
       ageVerified: !!body.ageVerified,
-
       subtotal,
       taxAmount,
       tipAmount,
@@ -146,29 +142,24 @@ export async function createOrder(req: Request) {
       freeDelivery,
       additionalAmountForFree: additionalForFree,
       discountSaved,
-
       deliveryDistanceMiles,
       deliveryTimeMinutes,
       totalAmount,
-
       status: initialStatus,
       metadata: body.metadata ?? null,
     };
 
-    /* golf extras */
     if (isGolfOrder) {
       if (body.holeNumber != null) data.holeNumber = Number(body.holeNumber);
       const cartId = req.headers.get("x-cart-id");
       if (cartId) data.cartId = cartId;
     }
 
-    /* delivery extras */
     if (deliveryType === DeliveryType.DELIVERY && body.deliveryAddress) {
       data.deliveryAddress      = body.deliveryAddress;
       data.deliveryInstructions = (body.deliveryInstructions || "").trim();
     }
 
-    /* guest vs customer */
     if (body.customerId) {
       data.customerId = Number(body.customerId);
     } else {
@@ -177,9 +168,34 @@ export async function createOrder(req: Request) {
       data.guestPhone = body.guestPhone || "";
     }
 
-    /* 6. persist ---------------------------------------------------------- */
+    /* 6. Persist Order locally */
     const created = await prisma.order.create({ data });
 
+    /* 7. Persist each OrderLineItem */
+    await Promise.all(
+      items.map(async (it: any) => {
+        const qty       =
+          typeof it.quantity === "number" && it.quantity > 0
+            ? it.quantity
+            : 1;
+        const totalItem = computeItemTotal(it);
+        const unitPrice = round(totalItem / qty);
+
+        await prisma.orderLineItem.create({
+          data: {
+            order: { connect: { id: created.id } },
+            menuItem: { connect: { id: it.id } },
+            quantity:      qty,
+            unitPrice,
+            spiceLevel:    it.spiceLevel   ?? undefined,
+            specialNotes:  it.specialNotes ?? undefined,
+            selectedOptions: it.selectedOptions ?? undefined,
+          },
+        });
+      })
+    );
+
+    /* 8. Persist status history */
     await prisma.orderStatusHistory.create({
       data: {
         orderId: created.id,
@@ -192,6 +208,27 @@ export async function createOrder(req: Request) {
       },
     });
 
+    /* 9. Push to Clover and persist cloverOrderId */
+    // We call pushOrderToClover which returns the internal Clover order ID.
+    // If it fails, we catch and log, but still return the local order response.
+    try {
+      const cloverOrderId = await pushOrderToClover(created.id);
+      if (cloverOrderId) {
+        // Persist in our local record
+        await prisma.order.update({
+          where: { id: created.id },
+          data: {
+            cloverOrderId,
+            cloverLastSyncAt: new Date(),
+          },
+        });
+      }
+    } catch (err: any) {
+      console.error(`[createOrder] Clover push failed for order ${created.orderId} (${created.id}):`, err);
+      // Do not block response; the queue worker or retry logic can handle retrying.
+    }
+
+    /* 10. Return the newly created order */
     return NextResponse.json(created, { status: 201 });
   } catch (err: any) {
     console.error("[POST /api/orders] Error:", err);

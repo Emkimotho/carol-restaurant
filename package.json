@@ -9,7 +9,8 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "next lint",
-    "seed": "node prisma/seed.cjs"
+    "seed": "node prisma/seed.cjs",
+    "sync-clover-inventory": "tsx scripts/sync-clover-inventory.ts"
   },
   "prisma": {
     "seed": "node prisma/seed.cjs"
@@ -35,13 +36,18 @@
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "bootstrap": "^5.3.3",
+    "bullmq": "^5.53.2",
     "canvas-confetti": "^1.9.3",
     "chart.js": "^4.4.9",
+    "chartjs-adapter-date-fns": "^3.0.0",
     "cloudinary": "^2.6.1",
+    "date-fns": "^4.1.0",
     "disqus-react": "^1.1.6",
+    "dotenv": "^16.5.0",
     "formidable": "^3.5.2",
     "formik": "^2.4.6",
     "framer-motion": "^12.6.2",
+    "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
     "luxon": "3.6.1",
     "next": "^15.3.3",
@@ -61,6 +67,7 @@
     "react-toastify": "^11.0.5",
     "remark-gfm": "^4.0.1",
     "sharp": "^0.33.5",
+    "stripe": "^18.2.1",
     "swr": "^2.3.3",
     "tailwindcss": "^4.1.4",
     "typescript": "^5.8.2",
@@ -75,10 +82,12 @@
     "@types/bcrypt": "^5.0.2",
     "@types/bootstrap": "^5.2.10",
     "@types/formidable": "^3.4.5",
+    "@types/ioredis": "^4.28.10",
     "@types/luxon": "3.6.2",
     "@types/node-fetch": "^2.6.12",
     "@types/react": "^18",
     "@types/react-dom": "^18.3.7",
+    "@types/stripe": "^8.0.416",
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.33.0",
     "@typescript-eslint/parser": "^8.33.0",
@@ -88,6 +97,6 @@
     "eslint-plugin-react": "^7.37.5",
     "prisma": "^6.6.0",
     "ts-node": "^10.9.2",
-    "tsx": "^4.7.0"
+    "tsx": "^4.19.4"
   }
 }

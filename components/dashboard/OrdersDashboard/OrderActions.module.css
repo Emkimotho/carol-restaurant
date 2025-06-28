@@ -1,0 +1,43 @@
+/* File: components/dashboard/OrdersDashboard/OrderActions.module.css */
+/* ─────────────────────────────────────────────────────────────────────
+   Styles for the action‐button row in each OrderCard
+   ──────────────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+}
+
+.deleteButton {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background-color: var(--danger-color, #c62828);
+  color: var(--white);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background-color: #a71d2a;
+}

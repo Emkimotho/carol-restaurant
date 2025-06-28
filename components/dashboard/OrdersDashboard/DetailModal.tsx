@@ -1,106 +1,56 @@
 // File: components/dashboard/OrdersDashboard/DetailModal.tsx
-// — Kitchen-dashboard “Order #XYZ” modal (full detail + history)
+// ───────────────────────────────────────────────────────────────────────────
+// Kitchen-dashboard “Order #XYZ” modal:  
+// • Header with status, timing, mode/address  
+// • Unified item-card list (qty, desc, spice, options, notes)  
+// • Admin only: toggleable status history  
+// ───────────────────────────────────────────────────────────────────────────
 
 'use client';
 
 import React, { useState } from 'react';
 import Ordersmodal from './Ordersmodal';
-import styles from './orders.module.css';
-import { Order as BaseOrder } from './OrdersDashboard';
+import styles from './DetailModal.module.css';
+import type { Order } from './types';
 
-/* ------------------------------------------------------------------ */
-/*                              Types                                 */
-/* ------------------------------------------------------------------ */
+/** Turn ENUM_STYLE → "ENUM STYLE" */
+const humanStatus = (s: string) => s.replace(/_/g, ' ');
 
-// Choice within an OptionGroup (falling back on label/name/title)
-type Choice = {
-  id: string;
-  label?: string;
-  name?: string;
-  title?: string;
-  nestedOptionGroup?: {
-    choices: Choice[];
-  };
-};
-
-// OptionGroup definition
 type OptionGroup = {
   id: string;
   title?: string;
   name?: string;
-  choices: Choice[];
-};
-
-/** 
- * Our modal’s order type: 
- *   – Everything in BaseOrder 
- *   – except we Omit the original `items` 
- *   – then add our raw `items`, plus holeNumber & deliveryType 
- */
-type OrderWithRaw = Omit<BaseOrder, 'items'> & {
-  holeNumber?: number | null;
-  deliveryType: string;
-  /** raw payload items straight from the DB */
-  items: Array<{
+  choices: Array<{
     id: string;
-    title?: string;
+    label?: string;
     name?: string;
-    description?: string;
-    quantity?: number;
-    specialInstructions?: string;
-    optionGroups?: OptionGroup[];
-    selectedOptions?: Record<
-      string,
-      {
-        selectedChoiceIds: string[];
-        nestedSelections?: Record<string, string[]>;
-      }
-    >;
+    title?: string;
+    nestedOptionGroup?: {
+      choices: Array<{ id: string; label?: string; name?: string; title?: string }>;
+    };
   }>;
 };
 
-export interface DetailModalProps {
-  isOpen: boolean;
-  order: OrderWithRaw | null;
-  role: 'admin' | 'staff' | 'server' | 'cashier';
-  onClose: () => void;
-}
-
-/* ------------------------------------------------------------------ */
-/*                         Helper utilities                           */
-/* ------------------------------------------------------------------ */
-const humanStatus = (s: string) => s.replace(/_/g, ' ');
-
-function choiceLabel(c: Choice) {
-  return (c.label ?? c.name ?? c.title ?? '').trim();
-}
-
-function groupLabel(g: OptionGroup) {
-  return (g.title ?? g.name ?? '').trim();
-}
-
-/** Render one item’s selected options (with nested) */
-function renderRawOptions(
-  optionGroups: OptionGroup[] | undefined,
-  selectedOptions:
-    | OrderWithRaw['items'][number]['selectedOptions']
-    | undefined
+/** Renders a single group of selected options (and nested) */
+function renderOptions(
+  groups?: OptionGroup[],
+  selected?: Record<string, any>
 ) {
-  if (!optionGroups || !selectedOptions) return null;
+  if (!groups || !selected) return null;
 
-  return optionGroups.map((g) => {
-    const sel = selectedOptions[g.id];
-    if (!sel) return null;
+  return groups.map((g) => {
+    const sel = selected[g.id];
+    if (!sel?.selectedChoiceIds?.length) return null;
 
     const labels: string[] = [];
     g.choices.forEach((c) => {
       if (!sel.selectedChoiceIds.includes(c.id)) return;
-      let lbl = choiceLabel(c);
-      const nestedIds = sel.nestedSelections?.[c.id] ?? [];
+      let lbl = (c.label ?? c.name ?? c.title ?? '').trim();
+      const nestedIds: string[] = sel.nestedSelections?.[c.id] ?? [];
       if (nestedIds.length && c.nestedOptionGroup) {
         const nested = c.nestedOptionGroup.choices
           .filter((n) => nestedIds.includes(n.id))
-          .map(choiceLabel);
+          .map((n) => (n.label ?? n.name ?? n.title ?? '').trim());
         if (nested.length) lbl += ` (${nested.join(', ')})`;
       }
       labels.push(lbl);
@@ -108,19 +58,29 @@ function renderRawOptions(
 
     if (!labels.length) return null;
     return (
-      <li key={g.id} className={styles.note}>
-        <em style={{ color: 'green', fontStyle: 'italic', fontWeight: 600 }}>
-          {groupLabel(g)}:
-        </em>{' '}
-        <span style={{ color: 'green' }}>{labels.join(', ')}</span>
+      <li key={g.id} className={styles.optionItem}>
+        <strong className={styles.optionGroupLabel}>
+          {g.title ?? g.name}:
+        </strong>{' '}
+        {/* choices in bold green */}
+        <strong
+          className={styles.optionLabel}
+          style={{ color: 'green', fontWeight: 'bold' }}
+        >
+          {labels.join(', ')}
+        </strong>
       </li>
     );
   });
 }
 
-/* ------------------------------------------------------------------ */
-/*                              Modal                                 */
-/* ------------------------------------------------------------------ */
+export interface DetailModalProps {
+  isOpen: boolean;
+  order: Order | null;
+  role: 'admin' | 'staff' | 'server' | 'cashier';
+  onClose: () => void;
+}
+
 export default function DetailModal({
   isOpen,
   order,
@@ -136,125 +96,90 @@ export default function DetailModal({
       title={`Order #${order.orderId}`}
       onClose={onClose}
     >
-      {/* ─────────  Meta  ───────── */}
-      <p>
-        <strong>Status:</strong> {humanStatus(order.status)}
-      </p>
-      <p>
-        <strong>Timing:</strong>{' '}
-        {order.schedule
-          ? `Scheduled – ${new Date(order.schedule).toLocaleString()}`
-          : 'ASAP'}
-      </p>
-      <p>
-        <strong>Delivery Mode:</strong> {humanStatus(order.deliveryType)}
-      </p>
-      {order.holeNumber != null && (
-        <p>
-          <strong>Hole #:</strong> {order.holeNumber}
-        </p>
-      )}
-
-      {/* address (main-menu) */}
-      {order.orderType === 'delivery' && order.deliveryAddress && (
-        <>
-          <p>
+      {/* ───────── HEADER ───────── */}
+      <div className={styles.meta}>
+        <div>
+          <strong>Status:</strong> {humanStatus(order.status)}
+        </div>
+        <div>
+          <strong>Timing:</strong>{' '}
+          {order.schedule
+            ? `Scheduled – ${new Date(order.schedule).toLocaleString()}`
+            : 'ASAP'}
+        </div>
+        <div>
+          <strong>Delivery Mode:</strong> {humanStatus(order.deliveryType)}
+        </div>
+        {'holeNumber' in order && order.holeNumber != null && (
+          <div>
+            <strong>Hole #:</strong> {order.holeNumber}
+          </div>
+        )}
+        {order.orderType === 'delivery' && order.deliveryAddress && (
+          <div>
             <strong>Address:</strong>{' '}
-            {order.deliveryAddress.street}, {order.deliveryAddress.city}
-          </p>
-          <p>
-            {order.deliveryAddress.state}{' '}
-            {order.deliveryAddress.zipCode}
-          </p>
-        </>
-      )}
+            {order.deliveryAddress.street}, {order.deliveryAddress.city}{' '}
+            {order.deliveryAddress.state} {order.deliveryAddress.zipCode}
+          </div>
+        )}
+      </div>
 
-      {/* driver / staff */}
-      {role === 'admin' && order.driver && (
-        <p>
-          <strong>Driver:</strong> {order.driver.firstName}{' '}
-          {order.driver.lastName}
-        </p>
-      )}
-      {role === 'admin' && order.staff && (
-        <p>
-          <strong>Staff:</strong> {order.staff.firstName}{' '}
-          {order.staff.lastName}
-        </p>
-      )}
+      <hr className={styles.separator} />
 
-      {/* ─────────  Normalised lineItems  ───────── */}
-      <hr />
-      <h3>Line Items</h3>
-      {order.lineItems.map((li) => (
-        <div key={li.id} className={styles.mainItemDetail}>
-          <p>
-            <strong>{li.menuItem.title}</strong> × {li.quantity}
-          </p>
-          {li.menuItem.description && (
-            <p className={styles.itemDesc}>
-              {li.menuItem.description}
-            </p>
-          )}
-          {li.spiceLevel && (
-            <p className={styles.note}>
-              <em>Spice Level:</em> {li.spiceLevel}
-            </p>
-          )}
-          {li.specialNotes && (
-            <p className={styles.note}>
-              <em>Note:</em> {li.specialNotes}
-            </p>
-          )}
-        </div>
-      ))}
-
-      {/* ─────────  Raw items for options / notes  ───────── */}
-      <hr />
-      <h3>Customisations & Notes</h3>
-      {order.items.map((item) => (
-        <div key={item.id} className={styles.mainItemDetail}>
-          {/* 1) Title × Qty */}
-          <p>
-            <strong>{item.title ?? item.name}</strong> × {item.quantity ?? 1}
-          </p>
-
-          {/* 2) Description */}
-          {item.description && (
-            <p className={styles.itemDesc}>{item.description}</p>
-          )}
-
-          {/* 3) Options right below, in green */}
-          <ul>
-            {renderRawOptions(item.optionGroups, item.selectedOptions) ?? (
-              <li className={styles.note}>
-                <em>No options selected</em>
-              </li>
+      {/* ───────── UNIFIED ITEM LIST ───────── */}
+      <h3 className={styles.sectionTitle}>Items</h3>
+      <ul className={styles.itemsList}>
+        {order.items.map((item: any) => (
+          <li key={item.id} className={styles.itemCard}>
+            <div className={styles.itemHeader}>
+              <span className={styles.itemTitle}>
+                {item.title ?? item.name}
+              </span>
+              <span className={styles.itemQty}>× {item.quantity ?? 1}</span>
+            </div>
+            {item.description && (
+              <div className={styles.itemDesc}>{item.description}</div>
             )}
-          </ul>
+            {item.spiceLevel && (
+              <div className={styles.itemMeta}>
+                <strong>Spice Level:</strong> {item.spiceLevel}
+              </div>
+            )}
+            <ul className={styles.optionsList}>
+              {renderOptions(item.optionGroups, item.selectedOptions) ?? (
+                <li className={styles.optionItem}>
+                  <em>No options selected</em>
+                </li>
+              )}
+            </ul>
+            {item.specialInstructions && (
+              <div className={styles.itemMeta}>
+                <strong>Note:</strong>{' '}
+                {/* notes in secondary color, italic & bold */}
+                <strong
+                  style={{ color: '#6c757d', fontStyle: 'italic', fontWeight: 'bold' }}
+                >
+                  {item.specialInstructions}
+                </strong>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
 
-          {/* 4) “Note:” last */}
-          {item.specialInstructions && (
-            <p className={styles.note}>
-              <em>Note:</em> {item.specialInstructions}
-            </p>
-          )}
-        </div>
-      ))}
-
-      {/* ─────────  History (admin only)  ───────── */}
+      {/* ───────── ADMIN HISTORY ───────── */}
       {role === 'admin' && order.statusHistory.length > 0 && (
         <>
-          <hr />
+          <hr className={styles.separator} />
           <button
-            className={styles.historyToggleBtn}
-            onClick={() => setShowHistory((s) => !s)}
+            className={styles.historyToggle}
+            onClick={() => setShowHistory((cur) => !cur)}
           >
             {showHistory ? 'Hide History' : 'Show History'}
           </button>
           {showHistory && (
             <ul className={styles.historyList}>
-              {order.statusHistory.map((h, i) => {
+              {order.statusHistory.map((h: any, i: number) => {
                 const who =
                   h.changedBy ??
                   (h.user
@@ -263,8 +188,7 @@ export default function DetailModal({
                 return (
                   <li key={i}>
                     <strong>{humanStatus(h.status)}:</strong>{' '}
-                    {new Date(h.timestamp).toLocaleString()} —{' '}
-                    <em>{who}</em>
+                    {new Date(h.timestamp).toLocaleString()} — <em>{who}</em>
                   </li>
                 );
               })}

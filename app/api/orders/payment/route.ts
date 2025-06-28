@@ -1,7 +1,8 @@
 // File: app/api/orders/payment/route.ts
 
-import { NextResponse } from "next/server";
+import { NextResponse }                from "next/server";
 import { cloverFetch, getCloverConfig } from "@/lib/clover";
+import { prisma }                      from "@/lib/prisma";
 
 const { merchantId } = getCloverConfig();
 
@@ -14,7 +15,6 @@ const { merchantId } = getCloverConfig();
 //   { name: "Delivery Fee",unitQty: 1, price: 500, taxable: false },
 //   { name: "Tip",         unitQty: 1, price: 705, taxable: false },
 // ]
-//
 // We simply forward that entire array to Clover below.
 
 interface ShoppingCartLine {
@@ -37,8 +37,7 @@ interface PaymentRequestBody {
     email?:       string;
     phoneNumber?: string;
   };
-  // You may optionally send your own redirectUrls, but if you don’t,
-  // we’ll fall back to building them here based on ourOrderId.
+  // Optional redirects; otherwise we build defaults below
   redirectUrls?: {
     success: string;
     failure: string;
@@ -51,7 +50,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as PaymentRequestBody;
     console.log("← /api/orders/payment RECEIVED BODY:", body);
 
-    // Basic validation
+    // Validate payload
     if (
       !body.ourOrderId ||
       typeof body.ourOrderId !== "string" ||
@@ -64,59 +63,48 @@ export async function POST(request: Request) {
       );
     }
 
-    // If the client did not send redirectUrls, build defaults here:
-    const defaultBase = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "";
+    // Build default redirect URLs if none provided
+    const defaultBase =
+      process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "";
     const redirectUrls = body.redirectUrls ?? {
       success: `${defaultBase}/payment-confirmation/card?id=${body.ourOrderId}`,
       failure: `${defaultBase}/payment-failed?id=${body.ourOrderId}`,
       cancel:  `${defaultBase}/payment-cancelled?id=${body.ourOrderId}`,
     };
 
-    // Build the final V1 payload exactly as Clover expects:
+    // Construct Clover payload per V1 spec
     const payload: any = {
       merchantId,
-      externalPaymentContext: {
-        ourOrderId: body.ourOrderId,
-      },
+      externalPaymentContext: { ourOrderId: body.ourOrderId },
       redirectUrls,
       shoppingCart: {
-        // Pass through every line item – base items, modifiers, fees, tip, etc.
         lineItems: body.shoppingCart.lineItems.map((li) => {
-          // Only include known keys in the final payload. Clover V1
-          // expects either { itemRefUuid, unitQty, taxable, unitPrice? }
-          // or { name, unitQty, price, taxable }.
           if (li.itemRefUuid) {
-            // “catalog item” line
             const entry: any = {
               itemRefUuid: li.itemRefUuid,
               unitQty:     li.unitQty,
               taxable:     li.taxable ?? true,
             };
-            // If the frontend sent unitPrice (in cents), pass it as unitPrice:
             if (typeof li.unitPrice === "number") {
               entry.unitPrice = li.unitPrice;
             }
             return entry;
           } else {
-            // “name+price” line (modifier or fee or tip)
-            const entry: any = {
+            return {
               name:    li.name || "",
               unitQty: li.unitQty,
               price:   li.price ?? 0,
               taxable: li.taxable ?? false,
             };
-            return entry;
           }
         }),
       },
       customer: body.customer ?? {},
-      // Any other V1‐only fields (e.g. “emailReceipt”: true) can be added here.
     };
 
     console.log("→ Clover payload (sent):", JSON.stringify(payload, null, 2));
 
-    // Call Clover’s Hosted‐Checkout V1 endpoint:
-    //    POST https://apisandbox.dev.clover.com/invoicingcheckoutservice/v1/checkouts
+    // Call Clover Hosted-Checkout V1 API
     const response = await cloverFetch<{
       href:              string;
       checkoutSessionId: string;
@@ -130,10 +118,18 @@ export async function POST(request: Request) {
 
     console.log("← Clover returned (raw):", response);
 
-    // Normalize the Clover response:
-    //   • `href` is the actual checkout URL
-    //   • `checkoutSessionId` is Clover’s session ID
-    const checkoutUrl = response.href;
+    // Extract URL and session ID
+    const checkoutUrl    = response.href;
+    const sessionId      = response.checkoutSessionId;
+
+    // **Persist the checkoutSessionId to your Order record**
+    await prisma.order.update({
+      where: { orderId: body.ourOrderId },
+      data:  { checkoutSessionId: sessionId },
+    });
+    console.log(
+      `✅ Persisted checkoutSessionId="${sessionId}" for order="${body.ourOrderId}"`
+    );
 
     console.log("↓↓↓↓ /api/orders/payment RESULT:", { checkoutUrl });
     return NextResponse.json({ success: true, checkoutUrl });

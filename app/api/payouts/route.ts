@@ -1,10 +1,10 @@
-// File: app/api/payouts/route.ts
-// Description: Lists payouts (paid/unpaid) with optional date‐range filtering, respects user roles.
+// Description: Lists payouts (paid/unpaid) with optional date‐range filtering, respects user roles,
+//              and splits server vs driver via `mode` query param.
 
 import { NextResponse } from "next/server";
-import prisma from "../../../lib/prisma";
+import prisma            from "../../../lib/prisma";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../../lib/auth";
+import { authOptions }      from "../../../lib/auth";
 
 export async function GET(req: Request) {
   // 1. Authenticate
@@ -17,15 +17,18 @@ export async function GET(req: Request) {
   const rawId = (session.user as any).id ?? (session.user as any).sub;
   const userId = typeof rawId === "string" ? parseInt(rawId, 10) : Number(rawId);
   const roles = Array.isArray((session.user as any).roles)
-    ? (session.user as any).roles
+    ? (session.user as any).roles.map((r: string) => r.toLowerCase())
     : [];
-  const isAdmin = roles.includes("ADMIN");
+  const isAdmin  = roles.includes("admin");
+  const isServer = roles.includes("server");
+  const isDriver = roles.includes("driver");
 
   // 3. Parse query params
-  const url       = new URL(req.url);
-  const paidParm  = url.searchParams.get("paid");
-  const fromParm  = url.searchParams.get("from");  // ISO date e.g. "2025-05-01"
-  const toParm    = url.searchParams.get("to");    // ISO date e.g. "2025-05-31"
+  const url      = new URL(req.url);
+  const paidParm = url.searchParams.get("paid");
+  const fromParm = url.searchParams.get("from");
+  const toParm   = url.searchParams.get("to");
+  const mode     = url.searchParams.get("mode");    // "server" or "driver"
 
   // 4. Build Prisma 'where' filter
   const where: any = {};
@@ -38,36 +41,42 @@ export async function GET(req: Request) {
   if (fromParm || toParm) {
     where.createdAt = {};
     if (fromParm) {
-      const fromDate = new Date(fromParm);
-      if (!isNaN(fromDate.valueOf())) {
-        where.createdAt.gte = fromDate;
-      }
+      const d = new Date(fromParm);
+      if (!isNaN(d.valueOf())) where.createdAt.gte = d;
     }
     if (toParm) {
-      const toDate = new Date(toParm);
-      if (!isNaN(toDate.valueOf())) {
-        // include entire 'to' day by setting time to end of day
-        toDate.setHours(23, 59, 59, 999);
-        where.createdAt.lte = toDate;
+      const d = new Date(toParm);
+      if (!isNaN(d.valueOf())) {
+        d.setHours(23, 59, 59, 999);
+        where.createdAt.lte = d;
       }
     }
   }
 
-  // non-admins only see their own payouts
+  // 5. Role‐based & mode‐based filtering
   if (!isAdmin) {
     where.userId = userId;
+
+    // if explicitly server‐only
+    if (isServer && mode === "server") {
+      where.order = { totalDeliveryFee: { equals: 0 } };
+    }
+    // if explicitly driver‐only
+    if (isDriver && mode === "driver") {
+      where.order = { totalDeliveryFee: { gt: 0 } };
+    }
   }
 
-  // 5. Query
+  // 6. Query
   const payouts = await prisma.payout.findMany({
     where,
     include: {
       user:  { select: { id: true, firstName: true, lastName: true } },
-      order: { select: { orderId: true } },
+      order: { select: { orderId: true, totalDeliveryFee: true } },
     },
     orderBy: { createdAt: "desc" },
   });
 
-  // 6. Return
+  // 7. Return
   return NextResponse.json(payouts);
 }

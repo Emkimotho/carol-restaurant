@@ -1,15 +1,14 @@
-// File: components/dashboard/OrdersTabs.tsx
+// File: components/dashboard/OrdersDashboard/OrdersTabs.tsx
 // ───────────────────────────────────────────────────────────────────────
 // Renders a dynamic set of tabs with counts, highlighting the active one.
-//
-// Keys are a union of all possible tabs across roles.
-// Display labels can be anything—spaces, capitalization, etc.
 // ───────────────────────────────────────────────────────────────────────
 
-import React from 'react';
-import styles from './orders.module.css';
+'use client';
 
-// Union of every tab key we might use, including the new 'pendingCash'
+import React from 'react';
+import styles from './OrdersTabs.module.css';
+
+// Union of every tab key we might use
 export type TabKey =
   | 'pending'
   | 'active'
@@ -46,7 +45,7 @@ export default function OrdersTabs({
       {tabs.map(tab => (
         <button
           key={tab.key}
-          className={tab.key === current ? styles.activeTab : ''}
+          className={`${styles.tab} ${tab.key === current ? styles.activeTab : ''}`}
           onClick={() => onChange(tab.key)}
         >
           {tab.label} ({tab.count})

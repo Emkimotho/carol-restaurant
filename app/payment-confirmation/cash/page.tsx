@@ -9,38 +9,45 @@ import { CartContext }  from "@/contexts/CartContext";
 
 import styles from "./PaymentConfirmation.module.css";
 
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
 interface FetchedOrder {
-  id:                   string;
-  orderId:              string;
-  totalAmount:          number;
-  deliveryType:         "PICKUP_AT_CLUBHOUSE" | "ON_COURSE" | "EVENT_PAVILION";
-  holeNumber?:          number;
-  guestEmail?:          string | null;
-  status:               string;
-  createdAt:            string; // ISO
+  id:           string;
+  orderId:      string;
+  totalAmount:  number;
+  deliveryType: "PICKUP_AT_CLUBHOUSE" | "ON_COURSE" | "EVENT_PAVILION";
+  holeNumber?:  number;
+  guestEmail?:  string | null;
+  status:       string;
+  createdAt:    string; // ISO
 }
 
 const fmtMoney = (n: number) => `$${n.toFixed(2)}`;
 
+/* ================================================================== */
+/*  Component                                                         */
+/* ================================================================== */
 export default function CashPaymentConfirmation() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const dbId   = params.get("id") ?? "";
+  const router  = useRouter();
+  const params  = useSearchParams();
+  const dbId    = params.get("id") ?? "";
 
   const orderCtx = useContext(OrderContext);
   const cartCtx  = useContext(CartContext);
   if (!orderCtx || !cartCtx) return null;
 
-  // clear cart immediately
-  useEffect(() => { cartCtx.clearCart(); }, [cartCtx]);
+  /* -------- clear cart exactly once (fixes infinite loop) -------- */
+  const { clearCart } = cartCtx;
+  useEffect(() => { clearCart(); }, [clearCart]);
 
-  // local state
-  const [order, setOrder]       = useState<FetchedOrder | null>(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
+  /* ---------------- local state ---------------------------------- */
+  const [order,      setOrder]      = useState<FetchedOrder | null>(null);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState<string | null>(null);
+  const [emailSent,  setEmailSent]  = useState(false);
 
-  // 1️⃣ fetch from API
+  /* 1️⃣ fetch order from API -------------------------------------- */
   useEffect(() => {
     if (!dbId) return;
     setLoading(true);
@@ -54,10 +61,11 @@ export default function CashPaymentConfirmation() {
       .finally(() => setLoading(false));
   }, [dbId]);
 
-  // 2️⃣ send confirmation email once
+  /* 2️⃣ send confirmation email once ------------------------------ */
   useEffect(() => {
     const o = order ?? orderCtx.order;
     if (emailSent || !o?.guestEmail) return;
+
     fetch("/api/send-email", {
       method: "POST",
       headers:{ "Content-Type":"application/json" },
@@ -72,33 +80,34 @@ export default function CashPaymentConfirmation() {
       .catch(console.error);
   }, [order, orderCtx.order, emailSent]);
 
-  // loading / error states
+  /* ---------------- loading / error UI --------------------------- */
   if (loading) return <div className={styles.message}>Loading order…</div>;
   if (error)   return <div className={styles.message}>{error}</div>;
 
-  // final payload
-  const o = (order ?? orderCtx.order) as FetchedOrder;
+  /* ---------------- final payload & display ---------------------- */
+  const o   = (order ?? orderCtx.order) as FetchedOrder;
   const amt = fmtMoney(o.totalAmount);
 
-  // decide flow
-  let heading: string, instruction: React.ReactNode;
+  let heading: string;
+  let instruction: React.ReactNode;
+
   switch (o.deliveryType) {
     case "PICKUP_AT_CLUBHOUSE":
-      heading    = "Pickup at Clubhouse";
-      instruction = <>Please pick up your order at the clubhouse when you’re ready and have <strong>{amt}</strong> in hand.</>;
+      heading     = "Pickup at Clubhouse";
+      instruction = <>Please pick up your order at the clubhouse and have <strong>{amt}</strong> in hand.</>;
       break;
     case "ON_COURSE":
-      heading    = o.holeNumber != null
+      heading     = o.holeNumber != null
         ? `On-Course Delivery (Hole ${o.holeNumber})`
         : "On-Course Delivery";
       instruction = <>We’ll bring your order straight to your hole—please have <strong>{amt}</strong> ready.</>;
       break;
     case "EVENT_PAVILION":
-      heading    = "Event Pavilion Delivery";
+      heading     = "Event Pavilion Delivery";
       instruction = <>We’ll deliver to the pavilion—please have <strong>{amt}</strong> ready.</>;
       break;
     default:
-      heading    = "Order Placed";
+      heading     = "Order Placed";
       instruction = <>Your order is confirmed. Please have <strong>{amt}</strong> ready.</>;
   }
 
@@ -108,7 +117,7 @@ export default function CashPaymentConfirmation() {
         <div className={styles.iconWrapper}>
           <svg className={styles.checkIcon} viewBox="0 0 52 52">
             <circle className={styles.checkCircle} cx="26" cy="26" r="25" />
-            <path  className={styles.checkMark} d="M14.1 27.2 21.2 34.4 37.9 17.6"/>
+            <path  className={styles.checkMark} d="M14.1 27.2 21.2 34.4 37.9 17.6" />
           </svg>
         </div>
 

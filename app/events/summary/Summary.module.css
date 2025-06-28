@@ -1,0 +1,77 @@
+/* File: app/events/summary/Summary.module.css */
+
+/* Container centers content and limits width */
+.container {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 2rem 1rem;
+}
+
+/* Card-like background */
+.card {
+  background-color: var(--white);
+  box-shadow: var(--box-shadow-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+/* Title style */
+.title {
+  font-family: var(--font-heading);
+  color: var(--primary-color);
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* Subtitle / section heading */
+.subtitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+}
+
+/* Generic section spacing */
+.section {
+  margin-bottom: 1.5rem;
+}
+
+/* Label and value styling for rows */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.label {
+  font-weight: 600;
+  color: var(--foreground);
+  margin-right: 0.5rem;
+}
+.value {
+  color: var(--dark-gray);
+}
+
+/* Button wrapper (centers the button) */
+.buttonWrapper {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+/* RSVP confirmation style */
+.rsvpMessage {
+  background-color: var(--white);
+  box-shadow: var(--box-shadow-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+.rsvpTitle {
+  font-family: var(--font-heading);
+  color: var(--primary-color);
+  font-size: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+.rsvpText {
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}

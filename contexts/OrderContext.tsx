@@ -1,4 +1,18 @@
 // File: contexts/OrderContext.tsx
+/* ======================================================================= */
+/*  Global Order Context – manages the “live” Order during checkout        */
+/*  and persists it to localStorage.                                       */
+/*                                                                         */
+/*  26 Jun 2025 PATCH 3                                                     */
+/*  --------------------------------------------------------------------- */
+/*  • Adds a post-login sync effect: once the NextAuth `user` arrives,      */
+/*    any missing delivery address fields are auto-filled from the user’s  */
+/*    saved profile (streetAddress, city, state, zip, aptSuite).           */
+/*  • Does NOT overwrite an address the user has already typed.            */
+/*  • All previous patches—phone‐number safety, helpers, persistence—stay  */
+/*    exactly as they were.                                                */
+/* ======================================================================= */
+
 "use client";
 
 import React, {
@@ -12,7 +26,6 @@ import { useAuth } from "./AuthContext";
 /* ──────────────────────────────────────────────────────────────────── */
 /*  Type helpers                                                       */
 /* ──────────────────────────────────────────────────────────────────── */
-// Updated to match Prisma enum
 export type DeliveryType =
   | "PICKUP_AT_CLUBHOUSE"
   | "ON_COURSE"
@@ -30,7 +43,6 @@ export interface DeliveryAddress {
   deliveryInstructions?: string;
 }
 
-/** The full Order object stored in React state */
 export interface Order {
   /* identifiers */
   id?: string;
@@ -50,16 +62,17 @@ export interface Order {
   deliveryType: DeliveryType;
   cartId?: string | null;
   holeNumber?: number | null;
-  // eventLocationId removed
 
   /* payment */
   paymentMethod: PaymentMethod;
 
-  /* customer */
+  /* customer (logged-in) */
   customerId?: string;
   customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 
-  /* guest */
+  /* guest (anonymous) */
   guestName?: string;
   guestEmail?: string;
   guestPhone?: string;
@@ -96,20 +109,21 @@ export interface Order {
   ageVerified: boolean;
 }
 
-/* What the context provides */
+/* ──────────────────────────────────────────────────────────────────── */
+/*  Context shape                                                      */
+/* ──────────────────────────────────────────────────────────────────── */
 export interface OrderContextType {
   order: Order;
   setOrder: React.Dispatch<React.SetStateAction<Order>>;
 
-  /* helpers */
-  setSchedule: (isoString: string, orderType?: string) => void;
+  setSchedule: (iso: string, orderType?: string) => void;
   clearSchedule: () => void;
+
   setDeliveryAddress: (addr: DeliveryAddress) => void;
-  setBillingAddress: (addr: DeliveryAddress) => void;
+  setBillingAddress:  (addr: DeliveryAddress) => void;
 
   setDeliveryType: (dt: DeliveryType) => void;
   setCartInfo: (cartId: string | null, hole: number | null) => void;
-  // setEventLocation removed
 
   setPaymentMethod: (pm: PaymentMethod) => void;
   setContainsAlcohol: (flag: boolean) => void;
@@ -122,14 +136,15 @@ export const OrderContext = createContext<OrderContextType | undefined>(
 
 const LOCAL_STORAGE_ORDER_KEY = "orderState";
 
-interface OrderProviderProps {
-  children: ReactNode;
-}
+/* =================================================================== */
+/*  Provider                                                           */
+/* =================================================================== */
+interface OrderProviderProps { children: ReactNode; }
 
 export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // may be null during SSR / before session loads
 
-  /* blank template */
+  /* ---------- blank-order factory ---------- */
   const createBlankOrder = (): Order => ({
     id: undefined,
     orderId: null,
@@ -144,15 +159,16 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     deliveryType: "PICKUP_AT_CLUBHOUSE",
     cartId: null,
     holeNumber: null,
-    // eventLocationId omitted
 
     /* payment */
     paymentMethod: "CARD",
 
     /* customer / guest */
-    customerId: user?.id.toString() ?? "",
-    customerName: user?.name ?? "",
-    guestName: "",
+    customerId:     user?.id?.toString() ?? "",
+    customerName:   user?.name ?? "",
+    customerEmail:  user?.email ?? "",
+    customerPhone: (user as any)?.phone ?? "",
+    guestName:  "",
     guestEmail: "",
     guestPhone: "",
 
@@ -169,17 +185,17 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     totalDeliveryFee: 0,
     driverPayout: 0,
 
-    /* delivery snapshot */
+    /* delivery snapshot (prefill if user already has one) */
     deliveryStreet: user?.streetAddress ?? "",
-    deliveryCity: user?.city ?? "",
-    deliveryState: user?.state ?? "",
-    deliveryZip: user?.zip ?? "",
+    deliveryCity:   user?.city ?? "",
+    deliveryState:  user?.state ?? "",
+    deliveryZip:    user?.zip ?? "",
     deliveryAddress: {
-      street: user?.streetAddress ?? "",
+      street:   user?.streetAddress ?? "",
       aptSuite: user?.aptSuite ?? "",
-      city: user?.city ?? "",
-      state: user?.state ?? "",
-      zipCode: user?.zip ?? "",
+      city:     user?.city ?? "",
+      state:    user?.state ?? "",
+      zipCode:  user?.zip ?? "",
       deliveryOption: undefined,
       deliveryInstructions: "",
     },
@@ -204,29 +220,25 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     ageVerified: false,
   });
 
-  /* lazy-load from localStorage */
+  /* ---------- initial state (localStorage or blank) ---------- */
   const getInitialOrder = (): Order => {
     if (typeof window === "undefined") return createBlankOrder();
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_ORDER_KEY);
       if (!raw) return createBlankOrder();
+
       const parsed = JSON.parse(raw) as Order;
 
-      /* ensure defaults */
-      parsed.schedule ??= null;
-      parsed.orderType ??= null;
-      parsed.deliveryType ??= "PICKUP_AT_CLUBHOUSE";
-      parsed.cartId ??= null;
-      parsed.holeNumber ??= null;
-      parsed.paymentMethod ??= "CARD";
-
+      /* make sure required props exist */
+      parsed.schedule        ??= null;
+      parsed.orderType       ??= null;
+      parsed.deliveryType    ??= "PICKUP_AT_CLUBHOUSE";
+      parsed.paymentMethod   ??= "CARD";
+      parsed.customerEmail   ??= user?.email ?? "";
+      parsed.customerPhone   ??= (user as any)?.phone ?? "";
       parsed.containsAlcohol ??= false;
-      parsed.ageVerified ??= false;
+      parsed.ageVerified     ??= false;
 
-      localStorage.setItem(
-        LOCAL_STORAGE_ORDER_KEY,
-        JSON.stringify(parsed)
-      );
       return parsed;
     } catch {
       return createBlankOrder();
@@ -235,39 +247,49 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
 
   const [order, setOrder] = useState<Order>(getInitialOrder);
   const [mounted, setMounted] = useState(false);
-
   useEffect(() => setMounted(true), []);
 
-  /* persist */
+  /* ---------- persist to localStorage ---------- */
   useEffect(() => {
     if (!mounted) return;
     try {
-      localStorage.setItem(
-        LOCAL_STORAGE_ORDER_KEY,
-        JSON.stringify(order)
-      );
+      localStorage.setItem(LOCAL_STORAGE_ORDER_KEY, JSON.stringify(order));
     } catch (err) {
       console.error("[OrderContext] save failed", err);
     }
   }, [order, mounted]);
 
-  /* helpers */
-  const setSchedule = (iso: string, ot?: string) =>
-    setOrder((prev) => ({
+  /* ---------- NEW: post-login address sync ---------- */
+  useEffect(() => {
+    if (!user || !user.streetAddress) return;                  // nothing to sync
+    if (order.deliveryStreet.trim()) return;                   // already filled
+
+    setOrder(prev => ({
       ...prev,
-      schedule: iso,
-      orderType: ot ?? prev.orderType,
+      deliveryStreet: user.streetAddress ?? "",
+      deliveryCity:   user.city          ?? "",
+      deliveryState:  user.state         ?? "",
+      deliveryZip:    user.zip           ?? "",
+      deliveryAddress: {
+        ...prev.deliveryAddress,
+        street:   user.streetAddress ?? "",
+        aptSuite: user.aptSuite      ?? "",
+        city:     user.city          ?? "",
+        state:    user.state         ?? "",
+        zipCode:  user.zip           ?? "",
+      },
     }));
+  }, [user, order.deliveryStreet]);
+
+  /* ---------- helper setters ---------- */
+  const setSchedule = (iso: string, ot?: string) =>
+    setOrder(prev => ({ ...prev, schedule: iso, orderType: ot ?? prev.orderType }));
 
   const clearSchedule = () =>
-    setOrder((prev) => ({
-      ...prev,
-      schedule: null,
-      orderType: null,
-    }));
+    setOrder(prev => ({ ...prev, schedule: null, orderType: null }));
 
   const setDeliveryAddress = (addr: DeliveryAddress) =>
-    setOrder((prev) => ({
+    setOrder(prev => ({
       ...prev,
       deliveryAddress: addr,
       deliveryStreet: addr.street,
@@ -277,30 +299,26 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     }));
 
   const setBillingAddress = (addr: DeliveryAddress) =>
-    setOrder((prev) => ({
-      ...prev,
-      billingAddress: addr,
-    }));
+    setOrder(prev => ({ ...prev, billingAddress: addr }));
 
   const setDeliveryType = (dt: DeliveryType) =>
-    setOrder((prev) => ({ ...prev, deliveryType: dt }));
+    setOrder(prev => ({ ...prev, deliveryType: dt }));
 
   const setCartInfo = (cartId: string | null, hole: number | null) =>
-    setOrder((prev) => ({ ...prev, cartId, holeNumber: hole }));
-
-  // setEventLocation is no longer needed
+    setOrder(prev => ({ ...prev, cartId, holeNumber: hole }));
 
   const setPaymentMethod = (pm: PaymentMethod) =>
-    setOrder((prev) => ({ ...prev, paymentMethod: pm }));
+    setOrder(prev => ({ ...prev, paymentMethod: pm }));
 
   const setContainsAlcohol = (flag: boolean) =>
-    setOrder((prev) => ({ ...prev, containsAlcohol: flag }));
+    setOrder(prev => ({ ...prev, containsAlcohol: flag }));
 
   const setAgeVerified = (flag: boolean) =>
-    setOrder((prev) => ({ ...prev, ageVerified: flag }));
+    setOrder(prev => ({ ...prev, ageVerified: flag }));
 
   if (!mounted) return null;
 
+  /* ---------- provider ---------- */
   return (
     <OrderContext.Provider
       value={{

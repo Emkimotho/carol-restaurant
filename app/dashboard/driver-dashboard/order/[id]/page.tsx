@@ -1,12 +1,10 @@
-/* ----------------------------------------------------------------------
- *  File: app/dashboard/driver-dashboard/order/[id]/page.tsx
- * ----------------------------------------------------------------------
- *  Driver-side single-order screen
- *    • Live SWR polling (4 s) for order document
- *    • Context-sensitive action buttons
- *    • Shows deliveryInstructions after Confirm Pick-Up
- *    • Allows driver to Unassign before pick-up
- * -------------------------------------------------------------------- */
+// File: app/dashboard/driver-dashboard/order/[id]/page.tsx
+// ----------------------------------------------------------------------
+// Driver-side single-order screen
+//  • Polls order every 4s with SWR
+//  • Calls /driver route for claim/unassign (no status flip)
+//  • Calls /api/orders/:id for real status changes
+// ----------------------------------------------------------------------
 
 'use client';
 
@@ -14,9 +12,8 @@ import React, { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import cls from '../OrderDetail.module.css';
-import { Order as BaseOrder } from '@/contexts/OrderContext';
+import type { Order as BaseOrder } from '@/contexts/OrderContext';
 
-/* ─── Local order type (deliveryAddress optional) ─── */
 interface DriverOrder extends Omit<BaseOrder, 'deliveryAddress'> {
   driverId?: number | null;
   deliveryInstructions?: string | null;
@@ -28,18 +25,18 @@ interface DriverOrder extends Omit<BaseOrder, 'deliveryAddress'> {
   };
 }
 
-/* ─── Helpers ─── */
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+const fetcher = (url: string) =>
+  fetch(url, { credentials: 'include' }).then(r => r.json());
 
-// Your clubhouse/golf-course address:
-const restaurantAddress = '20025 Mount Aetna Road, Hagerstown, MD 21742';
+const RESTAURANT_ADDRESS =
+  process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ||
+  '20025 Mount Aetna Road, Hagerstown, MD 21742';
 
-/* ─── Component ─── */
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  // SWR fetch + 4 s polling, expecting { order: DriverOrder }
+  // 1) Fetch live order
   const { data, mutate } = useSWR<{ order: DriverOrder }>(
     `/api/orders/${id}`,
     fetcher,
@@ -47,80 +44,94 @@ export default function OrderDetail() {
   );
   const order = data?.order;
 
-  // If unassigned or cancelled, bounce back to list
+  // Redirect if unassigned or cancelled
   useEffect(() => {
-    if (order && (order.driverId == null || order.status === 'CANCELLED')) {
+    if (!order) return;
+    if (order.driverId == null || order.status === 'CANCELLED') {
       router.push('/dashboard/driver-dashboard');
     }
   }, [order, router]);
 
-  if (!order) {
-    return <p className={cls.msg}>Loading…</p>;
-  }
+  if (!order) return <p className={cls.msg}>Loading…</p>;
 
-  // Generic PATCH helper
-  const patch = async (body: Record<string, any>) => {
-    await fetch(`/api/orders/${id}`, {
+  // 2) Assign/unassign via dedicated driver route
+  const setDriver = async (driverId: number | null) => {
+    await fetch(`/api/orders/${id}/driver`, {
       method: 'PATCH',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ driverId }),
     });
     mutate();
   };
 
-  // Unassign helper (back to list)
-  const unassign = async () => {
-    await fetch(`/api/orders/${id}/unassign`, { method: 'PATCH' });
-    router.push('/dashboard/driver-dashboard');
+  // 3) Real status changes via generic route
+  const changeStatus = async (status: string) => {
+    await fetch(`/api/orders/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    mutate();
   };
 
-  /* ── Action buttons vary by status ── */
   const ActionButtons = () => {
-    // Treat ORDER_RECEIVED+driverId as IN_PROGRESS
-    const effectiveStatus =
-      order.status === 'ORDER_RECEIVED' && order.driverId
-        ? 'IN_PROGRESS'
-        : order.status;
+    // Before pickup: show Navigate & Release, plus Arrive only on RECEIVED
+    if (order.status === 'ORDER_RECEIVED' || order.status === 'ORDER_READY') {
+      return (
+        <>
+          <button
+            className={cls.btn}
+            onClick={() =>
+              window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                  RESTAURANT_ADDRESS
+                )}`,
+                '_blank'
+              )
+            }
+          >
+            Navigate to Restaurant
+          </button>
 
-    switch (effectiveStatus) {
-      // Claimed but not ready
-      case 'IN_PROGRESS':
-        return (
-          <>
+          {order.status === 'ORDER_RECEIVED' && (
+            <button className={cls.btn} disabled>
+              Arrive (Wait Ready)
+            </button>
+          )}
+
+          <button
+            className={cls.btnOutline}
+            onClick={() => setDriver(null)}
+          >
+            Release / Unassign
+          </button>
+
+          {order.status === 'ORDER_READY' && (
             <button
               className={cls.btn}
-              onClick={() =>
-                window.open(
-                  `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                    restaurantAddress
-                  )}`,
-                  '_blank'
-                )
-              }
+              onClick={() => changeStatus('PICKED_UP_BY_DRIVER')}
             >
-              Navigate to Restaurant
+              Pick Up
             </button>
-            <button className={cls.btn} disabled>
-              Arrive (await Ready)
-            </button>
-            <button className={cls.btnOutline} onClick={unassign}>
-              Unassign
-            </button>
-          </>
-        );
+          )}
+        </>
+      );
+    }
 
-      // Chef marked it ready
-      case 'ORDER_READY':
+    // After pickup transitions
+    switch (order.status) {
+      case 'PICKED_UP_BY_DRIVER':
         return (
           <button
             className={cls.btn}
-            onClick={() => patch({ status: 'ON_THE_WAY' })}
+            onClick={() => changeStatus('ON_THE_WAY')}
           >
-            Confirm Pick-Up
+            Start Trip
           </button>
         );
 
-      // On the way
       case 'ON_THE_WAY':
         return (
           <>
@@ -129,7 +140,7 @@ export default function OrderDetail() {
               onClick={() =>
                 window.open(
                   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-                    `${order.deliveryAddress?.street}, ${order.deliveryAddress?.city}, ${order.deliveryAddress?.state} ${order.deliveryAddress?.zipCode}`
+                    `${order.deliveryAddress?.street ?? ''}, ${order.deliveryAddress?.city ?? ''}`
                   )}`,
                   '_blank'
                 )
@@ -140,12 +151,12 @@ export default function OrderDetail() {
             <button
               className={cls.btn}
               onClick={() =>
-                patch({ status: 'DELIVERED' }).then(() =>
+                changeStatus('DELIVERED').then(() =>
                   router.push('/dashboard/driver-dashboard')
                 )
               }
             >
-              Deliver
+              Mark Delivered
             </button>
           </>
         );
@@ -155,25 +166,31 @@ export default function OrderDetail() {
     }
   };
 
-  /* ── Stepper UI ── */
-  const STEPS = ['IN_PROGRESS', 'ORDER_READY', 'ON_THE_WAY', 'DELIVERED'] as const;
+  const STEPS = [
+    'ORDER_RECEIVED',
+    'ORDER_READY',
+    'PICKED_UP_BY_DRIVER',
+    'ON_THE_WAY',
+    'DELIVERED',
+  ] as const;
   type Step = typeof STEPS[number];
-
-  const stepClass = (s: Step) =>
+  const stepCls = (s: Step) =>
     s === order.status
       ? cls.active
       : STEPS.indexOf(s) < STEPS.indexOf(order.status as Step)
       ? cls.done
       : '';
 
-  /* ── Render ── */
   return (
     <div className={cls.wrap}>
       <h2 className={cls.title}>Order #{order.orderId}</h2>
+      <p className={cls.status}>
+        Status: {order.status.replace(/_/g, ' ')}
+      </p>
 
       <ul className={cls.stepper}>
-        {STEPS.map((s) => (
-          <li key={s} className={stepClass(s)}>
+        {STEPS.map(s => (
+          <li key={s} className={stepCls(s)}>
             {s.replace(/_/g, ' ')}
           </li>
         ))}
@@ -181,8 +198,8 @@ export default function OrderDetail() {
 
       <section className={cls.panel}>
         <h3>Items</h3>
-        {order.items?.length ? (
-          order.items.map((it: any, i: number) => (
+        {(order.items ?? []).length > 0 ? (
+          order.items.map((it, i) => (
             <p key={i}>
               {(it.title || it.name) ?? '—'} ×{it.quantity ?? 1}
             </p>
@@ -199,12 +216,12 @@ export default function OrderDetail() {
             {order.deliveryAddress.street}, {order.deliveryAddress.city}
           </p>
           <p>
-            {order.deliveryAddress.state} {order.deliveryAddress.zipCode}
+            {order.deliveryAddress.state}{' '}
+            {order.deliveryAddress.zipCode}
           </p>
         </section>
       )}
 
-      {/* Show instructions after pick-up */}
       {order.orderType === 'delivery' &&
         order.deliveryInstructions &&
         ['ON_THE_WAY', 'DELIVERED'].includes(order.status) && (

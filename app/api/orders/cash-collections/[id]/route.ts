@@ -1,7 +1,7 @@
 /* =======================================================================
  * File: app/api/orders/cash-collections/[id]/route.ts
  * -----------------------------------------------------------------------
- * • PATCH /api/orders/cash-collections/:id
+ 
  *     – Admin‑only edit of a single cash‑collection record
  *     – Accepts any subset of { amount, status, settledById }
  *

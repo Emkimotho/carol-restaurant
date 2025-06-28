@@ -1,0 +1,47 @@
+/* File: components/dashboard/OrdersDashboard/AgeCheckModal.module.css */
+/* ─────────────────────────────────────────────────────────────────────
+   Styles for the “Confirm you’re 21+” age-check modal footer
+   ──────────────────────────────────────────────────────────────────── */
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color-light);
+}
+
+/* Primary confirmation button */
+.actionBtn {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+}
+
+/* Secondary cancel button */
+.deleteBtn {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background-color: var(--secondary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background-color: var(--secondary-color-hover);
+}

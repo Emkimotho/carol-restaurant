@@ -7,29 +7,38 @@
 /* ------------------------------------------------------------------ */
 
 import { NextResponse, NextRequest } from 'next/server';
-import { prisma }                    from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 /** GET /api/drivers */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
+  // Grab the incoming query-string
+  const status = req.nextUrl.searchParams.get('status')?.toUpperCase() ?? null;
 
-  /* Optional query string: ?status=online|active */
-  const status = searchParams.get('status')?.toUpperCase() ?? null;
-
-  /* Base filter: a user that HAS a DriverProfile row */
+  // Base filter: user must have a DriverProfile row
   const where: any = {
-    driverProfile: { isNot: null },   // ← Prisma v6 syntax
+    driverProfile: { isNot: null },
   };
 
-  /* If caller asked for status filtering, add it */
-  if (status === 'ONLINE' || status === 'ACTIVE') {
-    where.status = 'ACTIVE';          // replace with your “online” column if different
+  // Apply status filtering if requested
+  if (status === 'ONLINE') {
+    // only drivers who have toggled themselves online
+    where.isOnline = true;
+  } else if (status === 'ACTIVE') {
+    // all drivers whose account is active
+    where.status = 'ACTIVE';
   }
 
-  /* Pull just enough for an assignment drop‑down */
+  // Fetch minimal fields for assignment dropdowns
   const drivers = await prisma.user.findMany({
     where,
-    select: { id: true, firstName: true, lastName: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+    orderBy: {
+      firstName: 'asc',
+    },
   });
 
   return NextResponse.json(drivers);

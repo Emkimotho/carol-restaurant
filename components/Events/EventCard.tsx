@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
 import FaqModal from "@/components/Events/FaqModal";
 import { EventData } from "@/app/events/page";
 import styles from "./Events.module.css";
@@ -15,21 +16,29 @@ const resolveImagePath = (image?: string) => {
   return `/images/${image.replace(/^uploads\//, "")}`;
 };
 
+interface BookingInitResponse {
+  bookingId?: string;
+  message?: string;
+}
+interface RsvpResponse {
+  reserved?: { adultCount: number; kidCount: number };
+  message?: string;
+}
+
 export default function EventCard({ event }: { event: EventData }) {
+  const router = useRouter();
+
+  // Parse dates/times
   const datePart = event.date.split("T")[0];
-
-  // fallback to old `time` if startTime/endTime missing
   const startRaw = event.startTime ?? (event as any).time;
-  const endRaw   = event.endTime   ?? (event as any).time;
-
+  const endRaw = event.endTime ?? (event as any).time;
   const startDateTime = new Date(`${datePart}T${startRaw}`);
-  const endDateTime   = new Date(`${datePart}T${endRaw}`);
-  const now           = new Date();
-
+  const endDateTime = new Date(`${datePart}T${endRaw}`);
+  const now = new Date();
   const isPastEvent = endDateTime < now;
 
-  // Formatting
-  const formattedDate  = new Date(event.date).toLocaleDateString();
+  // Formatted strings
+  const formattedDate = new Date(event.date).toLocaleDateString();
   const formattedStart = startDateTime.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -41,103 +50,167 @@ export default function EventCard({ event }: { event: EventData }) {
     hour12: true,
   });
 
-  // Compute duration in hours to one decimal
-  const durationMs  = endDateTime.getTime() - startDateTime.getTime();
+  // Duration in hours
+  const durationMs = endDateTime.getTime() - startDateTime.getTime();
   const durationHrs = Math.round((durationMs / 3600000) * 10) / 10;
 
-  // Paid event booking state
-  const [adultCount, setAdultCount]     = useState<number>(0);
-  const [kidCount, setKidCount]         = useState<number>(0);
-  const [payerName, setPayerName]       = useState<string>("");
-  const [payerEmail, setPayerEmail]     = useState<string>("");
-  const [showSummary, setShowSummary]   = useState<boolean>(false);
+  // Paid booking state
+  const [adultCount, setAdultCount] = useState<number>(0);
+  const [kidCount, setKidCount] = useState<number>(0);
+  const [payerName, setPayerName] = useState<string>("");
+  const [payerEmail, setPayerEmail] = useState<string>("");
+  const [loadingBooking, setLoadingBooking] = useState<boolean>(false);
 
-  // Free event RSVP state
-  const [rsvpName, setRsvpName]         = useState<string>("");
-  const [rsvpEmail, setRsvpEmail]       = useState<string>("");
+  // Free-event RSVP state (no ticket codes)
+  const [rsvpName, setRsvpName] = useState<string>("");
+  const [rsvpEmail, setRsvpEmail] = useState<string>("");
   const [freeAdultCount, setFreeAdultCount] = useState<number>(0);
-  const [freeKidCount, setFreeKidCount]     = useState<number>(0);
+  const [freeKidCount, setFreeKidCount] = useState<number>(0);
+  // After successful RSVP, reserved counts:
+  const [reserved, setReserved] = useState<{ adultCount: number; kidCount: number } | null>(null);
+  const [loadingRsvp, setLoadingRsvp] = useState<boolean>(false);
 
   // FAQ modal state
-  const [showFaqs, setShowFaqs]         = useState<boolean>(false);
+  const [showFaqs, setShowFaqs] = useState<boolean>(false);
 
   const totalPrice = adultCount * event.adultPrice + kidCount * event.kidPrice;
+  const totalFreeTickets = freeAdultCount + freeKidCount;
 
-  // Handle RSVP for free events.
-const handleFreeRSVP = async () => {
-  if (!rsvpName || !rsvpEmail || freeAdultCount <= 0) {
-    toast.error("Please fill out your name, email, and enter at least one adult.");
-    return;
-  }
-  const payload = {
-    eventId:   event.id,
-    name:      rsvpName,
-    email:     rsvpEmail,
-    adultCount: freeAdultCount,
-    kidCount:   freeKidCount,
-  };
-  try {
-    const res = await fetch(`/api/events/${event.id}/rsvp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const errData = await res.json();
-      toast.error("RSVP failed: " + errData.message);
+  // Clamp helper
+  const clampNonNegative = (value: number) => (value >= 0 ? value : 0);
+
+  // Handle free-event RSVP
+  const handleFreeRSVP = async () => {
+    if (loadingRsvp) return;
+    const name = rsvpName.trim();
+    const email = rsvpEmail.trim();
+    if (!name || !email || totalFreeTickets <= 0) {
+      toast.error("Please fill out name, email, and select at least one ticket.");
       return;
     }
-    toast.success("RSVP confirmed! Check your email for details.");
-    // Clear RSVP form values
-    setRsvpName("");
-    setRsvpEmail("");
-    setFreeAdultCount(0);
-    setFreeKidCount(0);
-  } catch (error: any) {
-    console.error("Error submitting RSVP:", error);
-    toast.error("Error submitting RSVP.");
-  }
-};
-
-  // Handle paid event booking: validate inputs and show summary view.
-  const handleBook = () => {
-    if (adultCount === 0 || !payerName || !payerEmail) {
-      toast.error("Please select at least one adult ticket and fill in your name and email.");
+    if (isPastEvent) {
+      toast.error("This event has already passed; RSVP not allowed.");
       return;
     }
-    setShowSummary(true);
-  };
+    if (!event.isFree) {
+      toast.error("This event requires payment; RSVP not allowed.");
+      return;
+    }
+    // Optionally: check availableTickets before calling API
+    if (
+      typeof event.availableTickets === "number" &&
+      event.availableTickets < totalFreeTickets
+    ) {
+      toast.error("Not enough tickets available for RSVP.");
+      return;
+    }
 
-  // Confirm and pay for paid event booking.
-  const handleConfirmAndPay = async () => {
-    const payload = {
-      eventId:    event.id,
-      name:       payerName,
-      email:      payerEmail,
-      adultCount,
-      kidCount,
-      totalPrice,
-    };
+    setLoadingRsvp(true);
     try {
-      const res = await fetch("/api/booking", {
+      const res = await fetch(`/api/events/${event.id}/rsvp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name,
+          email,
+          adultCount: freeAdultCount,
+          kidCount: freeKidCount,
+        }),
       });
+      const data = (await res.json()) as RsvpResponse;
       if (!res.ok) {
-        const errData = await res.json();
-        toast.error("Booking failed: " + errData.message);
+        toast.error("RSVP failed: " + (data.message ?? "Unknown error"));
         return;
       }
-      toast.success("Booking confirmed! Redirecting to payment...");
-      setTimeout(() => {
-        window.location.href = "https://www.clover.com/mock-payment";
-      }, 1500);
+      // Expect data.reserved from backend; if missing, fall back to local counts
+      const reservedCounts = data.reserved
+        ? data.reserved
+        : { adultCount: freeAdultCount, kidCount: freeKidCount };
+      setReserved(reservedCounts);
+      toast.success("RSVP confirmed! Thank you.");
+      // Clear form fields
+      setRsvpName("");
+      setRsvpEmail("");
+      setFreeAdultCount(0);
+      setFreeKidCount(0);
     } catch (error: any) {
-      console.error("Error submitting booking:", error);
-      toast.error("Error submitting booking.");
+      console.error("Error submitting RSVP:", error);
+      toast.error("Error submitting RSVP.");
+    } finally {
+      setLoadingRsvp(false);
     }
   };
+
+  // Handle paid booking: send to booking-init then redirect to summary page
+  const handleBook = async () => {
+    if (loadingBooking) return;
+    const name = payerName.trim();
+    const email = payerEmail.trim();
+    if (!name || !email || adultCount + kidCount <= 0) {
+      toast.error("Please select tickets and fill in your name and email.");
+      return;
+    }
+    if (isPastEvent) {
+      toast.error("This event has already passed; booking not allowed.");
+      return;
+    }
+    if (
+      typeof event.availableTickets === "number" &&
+      event.availableTickets < adultCount + kidCount
+    ) {
+      toast.error("Not enough tickets available.");
+      return;
+    }
+
+    setLoadingBooking(true);
+    try {
+      // Call booking-init endpoint (create booking in PENDING_PAYMENT)
+      const res = await fetch(`/api/events/${event.id}/booking-init`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          adultCount,
+          kidCount,
+        }),
+      });
+      const data = (await res.json()) as BookingInitResponse;
+      if (!res.ok) {
+        toast.error("Booking failed: " + (data.message ?? "Unknown error"));
+        return;
+      }
+      if (data.bookingId) {
+        toast.success("Booking created! Redirecting to summary...");
+        // Redirect to summary page for confirmation / Stripe session
+        router.push(`/events/summary/${data.bookingId}`);
+      } else {
+        toast.error("Booking initialization did not return an ID.");
+      }
+    } catch (error: any) {
+      console.error("Error initializing booking:", error);
+      toast.error("Error initializing booking.");
+    } finally {
+      setLoadingBooking(false);
+    }
+  };
+
+  // If free RSVP completed, show inline thank-you panel with reserved counts
+  if (event.isFree && reserved) {
+    return (
+      <div className={styles.thankYouPanel}>
+        <h3>Thank you for RSVPing!</h3>
+        <p>
+          We have reserved {reserved.adultCount} adult ticket
+          {reserved.adultCount !== 1 ? "s" : ""}
+          {reserved.kidCount > 0 &&
+            ` and ${reserved.kidCount} kid ticket${reserved.kidCount !== 1 ? "s" : ""}`}
+          .
+        </p>
+        <p>Please check your email for details. No ticket codes are needed for free events.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.eventCard}>
@@ -199,7 +272,8 @@ const handleFreeRSVP = async () => {
           <p className={styles.adultsOnly}>Adults Only</p>
         )}
 
-        {event.faqs && event.faqs.length > 0 && (
+        {/* FAQs button */}
+        {event.faqs?.length ? (
           <>
             <button
               className={styles.faqButton}
@@ -211,13 +285,14 @@ const handleFreeRSVP = async () => {
               <FaqModal faqs={event.faqs} onClose={() => setShowFaqs(false)} />
             )}
           </>
-        )}
+        ) : null}
 
         {isPastEvent ? (
           <div className={styles.expiredMessage}>
             <p>This event has expired.</p>
           </div>
         ) : event.isFree ? (
+          // Free-event RSVP form
           <div className={styles.bookingForm}>
             <h3>RSVP for Free Event</h3>
             <div className={styles.formGroup}>
@@ -245,7 +320,7 @@ const handleFreeRSVP = async () => {
                 min="0"
                 value={freeAdultCount}
                 onChange={(e) =>
-                  setFreeAdultCount(parseInt(e.target.value) || 0)
+                  setFreeAdultCount(clampNonNegative(parseInt(e.target.value) || 0))
                 }
               />
             </div>
@@ -257,7 +332,7 @@ const handleFreeRSVP = async () => {
                   min="0"
                   value={freeKidCount}
                   onChange={(e) =>
-                    setFreeKidCount(parseInt(e.target.value) || 0)
+                    setFreeKidCount(clampNonNegative(parseInt(e.target.value) || 0))
                   }
                 />
               </div>
@@ -265,91 +340,68 @@ const handleFreeRSVP = async () => {
             <button
               onClick={handleFreeRSVP}
               className={styles.bookingButton}
+              disabled={loadingRsvp}
             >
-              RSVP
+              {loadingRsvp ? "Submitting…" : "RSVP"}
             </button>
           </div>
         ) : (
-          <>
-            {!showSummary ? (
-              <div className={styles.bookingForm}>
-                <h3>Book Your Tickets</h3>
-                <div className={styles.formGroup}>
-                  <label>Adult Tickets</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={adultCount}
-                    onChange={(e) =>
-                      setAdultCount(parseInt(e.target.value) || 0)
-                    }
-                  />
-                </div>
-                {!event.adultOnly && (
-                  <div className={styles.formGroup}>
-                    <label>Child Tickets</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={kidCount}
-                      onChange={(e) =>
-                        setKidCount(parseInt(e.target.value) || 0)
-                      }
-                    />
-                  </div>
-                )}
-                <div className={styles.formGroup}>
-                  <label>Your Name</label>
-                  <input
-                    type="text"
-                    placeholder="Your Name"
-                    value={payerName}
-                    onChange={(e) => setPayerName(e.target.value)}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Your Email</label>
-                  <input
-                    type="email"
-                    placeholder="Your Email"
-                    value={payerEmail}
-                    onChange={(e) => setPayerEmail(e.target.value)}
-                  />
-                </div>
-                <div className={styles.totalPrice}>
-                  Total: ${totalPrice.toFixed(2)}
-                </div>
-                <button onClick={handleBook} className={styles.bookingButton}>
-                  Book
-                </button>
-              </div>
-            ) : (
-              <div className={styles.bookingForm}>
-                <h3>Booking Summary</h3>
-                <p>
-                  <strong>Tickets:</strong> {adultCount} Adult
-                  {adultCount !== 1 ? "s" : ""}
-                  {!event.adultOnly &&
-                    `, ${kidCount} Child${kidCount !== 1 ? "ren" : ""}`}
-                </p>
-                <p>
-                  <strong>Total:</strong> ${totalPrice.toFixed(2)}
-                </p>
-                <p>
-                  <strong>Name:</strong> {payerName}
-                </p>
-                <p>
-                  <strong>Email:</strong> {payerEmail}
-                </p>
-                <button
-                  onClick={handleConfirmAndPay}
-                  className={styles.bookingButton}
-                >
-                  Confirm and Pay
-                </button>
+          // Paid booking form
+          <div className={styles.bookingForm}>
+            <h3>Book Your Tickets</h3>
+            <div className={styles.formGroup}>
+              <label>Adult Tickets</label>
+              <input
+                type="number"
+                min="0"
+                value={adultCount}
+                onChange={(e) =>
+                  setAdultCount(clampNonNegative(parseInt(e.target.value) || 0))
+                }
+              />
+            </div>
+            {!event.adultOnly && (
+              <div className={styles.formGroup}>
+                <label>Child Tickets</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={kidCount}
+                  onChange={(e) =>
+                    setKidCount(clampNonNegative(parseInt(e.target.value) || 0))
+                  }
+                />
               </div>
             )}
-          </>
+            <div className={styles.formGroup}>
+              <label>Your Name</label>
+              <input
+                type="text"
+                placeholder="Your Name"
+                value={payerName}
+                onChange={(e) => setPayerName(e.target.value)}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Your Email</label>
+              <input
+                type="email"
+                placeholder="Your Email"
+                value={payerEmail}
+                onChange={(e) => setPayerEmail(e.target.value)}
+              />
+            </div>
+            <div className={styles.totalPrice}>
+              Total: ${totalPrice.toFixed(2)}
+            </div>
+            <button
+              onClick={handleBook}
+              className={styles.bookingButton}
+              disabled={loadingBooking}
+            >
+              {loadingBooking ? "Submitting…" : "Book"}
+            </button>
+          </div>
         )}
       </div>
     </div>

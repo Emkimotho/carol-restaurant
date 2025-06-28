@@ -3,9 +3,10 @@
 .container {
   padding: 2rem;
   font-family: var(--font-body);
+  position: relative;
 }
 
-/* ───────── Letter-head styling ───────── */
+/* ───────── Letter-head styling (for print) ───────── */
 .printHeader {
   display: none;
 }
@@ -28,6 +29,115 @@
   border: 0;
   border-top: 1px solid #aaa;
   margin: 1rem 0 1.2rem;
+}
+
+/* ───────── Top bar (header + info icon) ───────── */
+.topBar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.header {
+  flex-shrink: 0;
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  margin: 0;
+}
+.infoButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.25rem;
+  margin-left: 0.5rem;
+  color: var(--primary-color);
+  transition: transform 0.2s ease;
+}
+.infoButton:hover {
+  transform: scale(1.1);
+}
+
+/* ───────── Info Modal / Pop-up ───────── */
+/* Overlay covering viewport */
+.infoModalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+/* Modal container */
+.infoModal {
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--box-shadow-primary);
+}
+/* Modal header: fixed inside modal to avoid scrolling away */
+.infoModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.infoModalHeader h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+}
+.infoModalCloseBtn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.infoModalCloseBtn:hover {
+  color: var(--black);
+}
+/* Modal body: scrollable if content too tall */
+.infoModalBody {
+  padding: 1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+  line-height: 1.4;
+  overflow-y: auto;
+}
+.infoModalBody p {
+  margin-bottom: 0.75rem;
+}
+.infoModalBody ul {
+  margin: 0.5rem 0 1rem 1.25rem;
+}
+.infoModalBody li {
+  margin-bottom: 0.5rem;
+}
+.infoModalBody table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+}
+.infoModalBody th,
+.infoModalBody td {
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  text-align: left;
+}
+.summaryRow td {
+  background-color: var(--light-gray);
 }
 
 /* ───────── Tabs ───────── */
@@ -65,9 +175,20 @@
 .rangeBar input {
   padding: 0.35rem 0.6rem;
   font: inherit;
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
 }
 .rangeBar button {
   padding: 0.45rem 1rem;
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.rangeBar button:hover {
+  background: var(--primary-color-hover);
 }
 
 /* ───────── KPI Cards ───────── */
@@ -112,6 +233,19 @@
 }
 .actions button {
   padding: 0.45rem 1rem;
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.actions button:hover:not(:disabled) {
+  background: var(--primary-color-hover);
+}
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ───────── Table ───────── */
@@ -146,4 +280,52 @@
   text-align: center;
   padding: 1rem 0;
   color: var(--text-muted);
+}
+
+/* ───────── Print styles ───────── */
+@media print {
+  .printHeader {
+    display: block;
+    margin-bottom: 1rem;
+  }
+  .topBar {
+    display: none; /* hide interactive header when printing */
+  }
+  .tabs,
+  .rangeBar,
+  .actions {
+    display: none !important;
+  }
+}
+
+/* ───────── Responsive adjustments ───────── */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  .topBar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .tabs {
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .rangeBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .cards {
+    grid-template-columns: 1fr;
+  }
+  .chartWrap {
+    padding-bottom: 1rem;
+  }
+  .table th,
+  .table td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
 }

@@ -213,6 +213,7 @@
 .spiceLevelRow label {
   font-weight: 500;
   font-size: 0.9rem;
+  color: var(--black);
 }
 
 .stepBtn {
@@ -230,7 +231,7 @@
 
 .stepBtn:hover {
   background-color: var(--border-color);
-  color: var(--white);
+  color: var(--black);
 }
 
 .quantityValue {
@@ -238,6 +239,7 @@
   text-align: center;
   font-weight: bold;
   font-size: 1rem;
+  color: var(--black);
 }
 
 .spiceButtons {
@@ -252,20 +254,24 @@
   cursor: pointer;
   border-radius: 4px;
   padding: 0.3rem 0.8rem;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, color 0.3s;
   line-height: 1.2;
   font-size: 0.8rem;
   white-space: nowrap;
+  color: var(--black);
 }
 
 .spiceBtn:hover {
   background-color: var(--light-gray);
+  color: var(--black);
 }
 
 .activeSpiceBtn {
   border-color: var(--primary-color);
-  background-color: #eafbee;
+  background-color: #009f53;
+  color: var(--black);
 }
+
 
 /***************************************
   Option Groups

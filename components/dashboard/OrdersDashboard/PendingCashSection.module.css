@@ -1,0 +1,49 @@
+/* File: components/dashboard/OrdersDashboard/PendingCashSection.module.css */
+
+.container {
+  background-color: var(--white);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: var(--box-shadow-primary);
+  margin-top: 1rem;
+}
+
+.heading {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  color: var(--dark-gray);
+  margin: 0 0 0.75rem 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color-dark);
+  text-align: left;
+}
+
+.cell {
+  font-family: var(--font-body);
+  color: var(--dark-gray);
+}
+
+.empty {
+  font-family: var(--font-body);
+  color: var(--gray-hover);
+  text-align: center;
+  padding: 1rem;
+}
+
+.total {
+  text-align: right;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--dark-gray);
+  margin: 0;
+}

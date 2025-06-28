@@ -1,0 +1,113 @@
+/* File: components/dashboard/OrdersDashboard/OrdersGrid.module.css */
+
+/* ─────────────────────────────────────────────────────────────────────
+   Component-specific styles for OrdersGrid & CashCollectModal
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Grid container for both server‐flow cards and generic OrderCard */
+.ordersGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* “No orders” empty state */
+.empty {
+  text-align: center;
+  font-style: italic;
+  color: var(--gray-hover);
+  margin: 2rem 0;
+}
+
+/* Modal backdrop covering the screen */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 2000;
+}
+
+/* Inner modal window */
+.modal {
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  max-width: 400px;
+  width: 100%;
+  padding: 1.5rem;
+  box-shadow: var(--box-shadow-primary);
+  color: var(--dark-gray);
+  font-family: var(--font-body);
+}
+
+/* Button row inside modal */
+.modalBtns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Primary modal button */
+.btn {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.btn:hover:not(:disabled) {
+  background-color: var(--primary-color-hover);
+}
+
+/* Secondary‐style modal button */
+.btn.secondary {
+  background-color: var(--secondary-color);
+}
+.btn.secondary:hover:not(:disabled) {
+  background-color: var(--secondary-color-hover);
+}
+
+/* ───────── Delivered‐orders card styling ───────── */
+
+/**
+ * Wrap each delivered‐order in a “card” container
+ * to prevent text overflow/overlap.
+ */
+.orderCard {
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  background: var(--white);
+  word-break: break-word;      /* break long strings */
+  overflow-wrap: break-word;   /* wrap overflowing text */
+}
+
+/* Header inside each card (order ID + status) */
+.orderHeader {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  white-space: normal;         /* allow wrapping */
+}
+
+/* Detail lines within a delivered‐order card */
+.orderDetail {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+}
+
+/* Icons + labels within each detail line */
+.orderDetail span {
+  display: inline-block;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}

@@ -60,6 +60,10 @@ const nextConfig = {
 
   /* 5 — Experimental flags (enable as you adopt them) */
   experimental: {
+    // ensure SWC transforms still run even though you have a custom .babelrc
+    forceSwcTransforms: true,
+
+    // existing experimental flags, uncomment as needed:
     // serverActions: true,
     // turbo: { /* … */ },
   },

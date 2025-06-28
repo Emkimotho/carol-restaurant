@@ -1,0 +1,166 @@
+/* File: components/Events/ThankYouContent.module.css */
+
+/* Wrapper: centers content, adds padding, border, shadow */
+.wrapper {
+  max-width: 600px;
+  margin: 2rem auto; /* vertical spacing, centered */
+  padding: 1.5rem;
+  background-color: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: var(--box-shadow-primary);
+  font-family: var(--font-body);
+}
+
+/* Primary message text */
+.primaryText {
+  font-size: 1rem;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+/* Secondary informational text */
+.subText {
+  font-size: 0.9rem;
+  color: var(--gray);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Box for the “verify email to view tickets” section */
+.verifyBox {
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background-color: var(--light-gray);
+  box-shadow: var(--box-shadow-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Heading inside verifyBox */
+.verifyHeading {
+  font-size: 1.25rem;
+  color: var(--foreground);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+/* Instruction text inside verifyBox */
+.verifyText {
+  font-size: 0.9rem;
+  color: var(--foreground);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+/* Email input field */
+.emailInput {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.emailInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  /* subtle focus ring */
+  box-shadow: 0 0 0 2px rgba(0, 191, 99, 0.2);
+}
+
+/* Verify & Show Tickets button */
+.verifyButton {
+  display: block;
+  width: 100%;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 0.6rem;
+  font-size: 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.verifyButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.verifyButton:not(:disabled):hover {
+  background-color: var(--primary-color-hover);
+  transform: translateY(-1px);
+}
+
+/* Error text */
+.errorText {
+  font-size: 0.9rem;
+  color: #dc2626; /* red */
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* Section showing tickets after verification */
+.ticketsSection {
+  margin-top: 1.5rem;
+}
+
+/* Heading for ticketsSection */
+.ticketsHeading {
+  font-size: 1.25rem;
+  color: var(--foreground);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Loading text */
+.loadingText {
+  font-size: 0.95rem;
+  color: var(--gray);
+  text-align: center;
+}
+
+/* List of tickets */
+.ticketList {
+  list-style-type: disc; /* override global none */
+  padding-left: 1.25rem;
+}
+
+/* Each ticket item */
+.ticketItem {
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--foreground);
+}
+
+/* Ticket code styling */
+.ticketCode {
+  background-color: var(--light-gray);
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.25rem;
+  font-family: monospace;
+}
+
+/* Status text next to code */
+.statusText {
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--gray);
+}
+
+/* Text when no tickets found */
+.noTicketsText {
+  font-size: 0.95rem;
+  color: var(--gray);
+  text-align: center;
+}
+
+/* Text when no bookingId is present */
+.noBookingInfo {
+  font-size: 0.95rem;
+  color: var(--foreground);
+  text-align: center;
+  margin-top: 1rem;
+}

@@ -1,7 +1,13 @@
 // File: app/dashboard/driver-dashboard/earnings/DriverEarnings.tsx
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactElement,
+} from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -11,12 +17,15 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import styles from './DriverEarnings.module.css';
 import { toast } from 'react-toastify';
+
+import styles       from './DriverEarnings.module.css';
+import PrintLayout  from '@/components/PrintLayout';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-/* ─── Types & helpers ─── */
+/* ────────── Types ────────────────────────────────────────────────────── */
+
 type CorePeriod = 'day' | 'week' | 'month' | 'year';
 type Period     = CorePeriod | 'custom' | 'payouts';
 
@@ -37,362 +46,399 @@ interface Row {
 }
 
 interface Payout {
-  id:       number;
-  amount:   number;
-  order?:   { orderId: string };
-  paidAt:   string;
+  id:        number;
+  amount:    number;
+  paidAt?:   string;
+  createdAt: string;
+  order?:    { orderId: string; totalDeliveryFee?: number };
 }
 
 interface Range { from: string; to: string; }
 
+interface DriverEarningsProps {
+  driverId: number;
+  /** server-mode flag (hide delivery-fee cols) */
+  showDeliveryFee?: boolean;
+}
+
+/* ────────── Helpers ──────────────────────────────────────────────────── */
+
 const money = (n?: number | null) =>
   (n ?? 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
-const pretty = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-US', {
-    dateStyle: 'medium',
-    timeZone: 'America/New_York',
-  });
+/** ‘MMM d, yyyy’ formatted in America/New_York */
+const pretty = (iso?: string | number) =>
+  iso
+    ? new Date(iso).toLocaleDateString('en-US', {
+        dateStyle: 'medium',
+        timeZone : 'America/New_York',
+      })
+    : '—';
 
-function getNYDateKey(dt: Date): string {
-  const [m, d, y] = dt
-    .toLocaleDateString('en-US', { timeZone: 'America/New_York' })
-    .split('/');
-  return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-}
+const nyDateKey = (d: Date) =>
+  d.toLocaleDateString('en-US', { timeZone: 'America/New_York' })
+    .split('/')
+    .reduce(
+      (acc, v, i) => (i === 0 ? `${acc}-${v.padStart(2, '0')}` : i === 1 ? `${v.padStart(2, '0')}${acc}` : v),
+      '',
+    ); // yyyy-mm-dd
 
-function getNYHourKey(dt: Date): string {
-  const hour = dt.toLocaleString('en-US', {
+const nyHourKey = (d: Date) =>
+  `${d.toLocaleString('en-US', {
     hour: '2-digit',
     hour12: false,
     timeZone: 'America/New_York',
-  });
-  return `${hour}:00`;
-}
+  })}:00`;
 
-const title: Record<CorePeriod, string> = {
+const PERIOD_LABEL: Record<CorePeriod, string> = {
   day: 'Daily',
   week: 'Weekly',
   month: 'Monthly',
   year: 'Annual',
 };
 
-type DriverEarningsProps = {
-  driverId: number;
-  /**
-   * When false, hide delivery-fee columns and only show tips (server mode).
-   */
-  showDeliveryFee?: boolean;
-};
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                            Component                                    */
+/* ═══════════════════════════════════════════════════════════════════════ */
 
 export default function DriverEarnings({
   driverId,
   showDeliveryFee = true,
-}: DriverEarningsProps) {
-  const [period, setPeriod]     = useState<Period>('day');
-  const [totals, setTotals]     = useState<Totals>({ totalDeliveryFee: 0, tipAmount: 0 });
-  const [rows, setRows]         = useState<Row[]>([]);
-  const [range, setRange]       = useState<Range | null>(null);
-  const [fromD, setFromD]       = useState('');
-  const [toD, setToD]           = useState('');
-  const [loading, setLoading]   = useState(false);
+}: DriverEarningsProps): ReactElement {
 
-  const [payouts, setPayouts]      = useState<Payout[]>([]);
+  /* ─── State ────────────────────────────────────────────────────────── */
+  const [period, setPeriod]   = useState<Period>('day');
+  const [rows,   setRows]     = useState<Row[]>([]);
+  const [totals, setTotals]   = useState<Totals>({ totalDeliveryFee: 0, tipAmount: 0 });
+  const [range,  setRange]    = useState<Range | null>(null);
+
+  /* custom range */
+  const [fromD, setFromD] = useState('');
+  const [toD,   setToD]   = useState('');
+
+  /* loading flags */
+  const [loading,    setLoading]    = useState(false);
   const [payLoading, setPayLoading] = useState(false);
 
-  /* — fetch earnings or tips — */
-  const load = async (p: CorePeriod | 'custom', f?: string, t?: string) => {
-    setLoading(true);
-    const qs = p === 'custom' ? `from=${f}&to=${t}` : `period=${p}`;
-    try {
-      const endpoint = showDeliveryFee
-        ? `/api/drivers/earnings?driverId=${driverId}&${qs}&orders=true`
-        : `/api/servers/earnings?staffId=${driverId}&${qs}&orders=true`;
-      const data = await fetch(endpoint).then(r => r.json());
+  /* payouts */
+  const [unpaidPayouts, setUnpaidPayouts] = useState<Payout[]>([]);
+  const [paidPayouts,   setPaidPayouts]   = useState<Payout[]>([]);
 
-      const {
-        totals: newTotals = {},
-        orders: fetchedOrders = [],
-        range:  newRange = null,
-      } = data as { totals?: Totals; orders?: Row[]; range?: Range | null };
+  /* ─── Fetch earnings/orders ─────────────────────────────────────────── */
 
-      let filtered: Row[] = [];
+  const load = useCallback(
+    async (p: CorePeriod | 'custom', f?: string, t?: string) => {
+      setLoading(true);
+      const qs = p === 'custom' && f && t ? `from=${f}&to=${t}` : `period=${p}`;
 
-      if (showDeliveryFee) {
-        filtered = fetchedOrders.filter(r =>
-          (r.driverPayout ?? 0) > 0 && r.deliveredAt != null
+      try {
+        const url = showDeliveryFee
+          ? `/api/drivers/earnings?driverId=${driverId}&${qs}&orders=true`
+          : `/api/servers/earnings?staffId=${driverId}&${qs}&orders=true`;
+
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Failed to load earnings');
+
+        const { totals: newTotals = {}, orders = [], range: newRange = null } = data;
+
+        /* mode-specific filtering */
+        const filtered: Row[] = orders.filter((r: Row) =>
+          !r.deliveredAt ? false
+          : showDeliveryFee
+              ? (r.totalDeliveryFee ?? 0) > 0
+              : r.deliveryType !== 'DELIVERY' && r.tipRecipientId === driverId
         );
-      } else {
-        filtered = fetchedOrders.filter(r =>
-          r.deliveryType !== 'DELIVERY' &&
-          r.tipRecipientId === driverId &&
-          r.deliveredAt != null
-        );
+
+        setTotals({
+          totalDeliveryFee: filtered.reduce((s, r) => s + (r.totalDeliveryFee ?? 0), 0),
+          tipAmount:        filtered.reduce((s, r) => s + (r.tipAmount        ?? 0), 0),
+        });
+        setRows(filtered);
+        setRange(newRange);
+      } catch (err: any) {
+        console.error(err);
+        toast.error(err.message || 'Failed to load earnings');
+      } finally {
+        setLoading(false);
       }
+    },
+    [driverId, showDeliveryFee],
+  );
 
-      const tipSum = filtered.reduce((sum, r) => sum + (r.tipAmount ?? 0), 0);
-      const feeSum = showDeliveryFee
-        ? filtered.reduce((sum, r) => sum + (r.totalDeliveryFee ?? 0), 0)
-        : 0;
+  /* ─── Fetch payouts ─────────────────────────────────────────────────── */
 
-      setTotals({ totalDeliveryFee: feeSum, tipAmount: tipSum });
-      setRows(filtered);
-      setRange(newRange);
-    } catch {
-      toast.error('Failed to load earnings');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadPayouts = useCallback(
+    async (f?: string, t?: string) => {
+      setPayLoading(true);
+      try {
+        const mode = showDeliveryFee ? 'driver' : 'server';
+        const build = (paid: boolean) =>
+          `/api/payouts?paid=${paid}&userId=${driverId}&mode=${mode}` +
+          (f ? `&from=${f}` : '') +
+          (t ? `&to=${t}`  : '');
 
-  /* — fetch payouts — */
-  const loadPayouts = async () => {
-    setPayLoading(true);
-    try {
-      const data: Payout[] = await fetch(
-        `/api/payouts?paid=true&userId=${driverId}`
-      ).then(r => r.json());
-      setPayouts(data);
-    } catch {
-      toast.error('Failed to load payouts');
-    } finally {
-      setPayLoading(false);
-    }
-  };
+        const [unpaidJson, paidJson] = await Promise.all([
+          fetch(build(false)).then(r => r.json()),
+          fetch(build(true)).then(r => r.json()),
+        ]);
+
+        if (!Array.isArray(unpaidJson) || !Array.isArray(paidJson))
+          throw new Error('Bad payouts response');
+
+        const filter = (arr: Payout[], wantFee: boolean) =>
+          arr.filter(p =>
+            wantFee
+              ? (p.order?.totalDeliveryFee ?? 0) > 0
+              : (p.order?.totalDeliveryFee ?? 0) === 0,
+          );
+
+        setUnpaidPayouts(filter(unpaidJson, showDeliveryFee));
+        setPaidPayouts  (filter(paidJson,   showDeliveryFee));
+
+      } catch (err: any) {
+        console.error(err);
+        toast.error(err.message || 'Failed to load payouts');
+      } finally {
+        setPayLoading(false);
+      }
+    },
+    [driverId, showDeliveryFee],
+  );
+
+  /* ─── Effect orchestration ──────────────────────────────────────────── */
+  useEffect(() => {
+    if (period === 'payouts') loadPayouts(fromD, toD);
+    else if (period !== 'custom') load(period);
+  }, [period, load, loadPayouts]);
 
   useEffect(() => {
-    if (period !== 'custom' && period !== 'payouts') {
-      load(period);
-    } else if (period === 'payouts') {
-      loadPayouts();
-    }
-  }, [period, showDeliveryFee]);
+    if (period === 'payouts') loadPayouts(fromD, toD);
+  }, [fromD, toD, period, loadPayouts]);
 
-  /* — chart data — */
+  /* ─── Chart data (memoised) ─────────────────────────────────────────── */
   const chart = useMemo(() => {
-    if (period === 'payouts' || !rows.length) return null;
-    const valid = rows.filter(r => r.deliveredAt);
-    if (!valid.length) return null;
+    if (period === 'payouts' || rows.length === 0) return null;
 
-    const m = new Map<string, number>();
-    valid.forEach(r => {
-      const dt = new Date(r.deliveredAt!);
-      const key = (period === 'day')
-        ? getNYHourKey(dt)
-        : getNYDateKey(dt);
-      const amount = showDeliveryFee
-        ? (r.totalDeliveryFee ?? 0) + (r.tipAmount ?? 0)
-        : (r.tipAmount ?? 0);
-      m.set(key, (m.get(key) ?? 0) + amount);
+    const bucket = new Map<string, number>();
+    rows.forEach(r => {
+      if (!r.deliveredAt) return;
+      const d   = new Date(r.deliveredAt);
+      const key = period === 'day' ? nyHourKey(d) : nyDateKey(d);
+      const amt = (r.tipAmount ?? 0) + (showDeliveryFee ? (r.totalDeliveryFee ?? 0) : 0);
+      bucket.set(key, (bucket.get(key) ?? 0) + amt);
     });
 
-    const labels = [...m.keys()].sort();
+    const labels = [...bucket.keys()].sort();
+
     return {
       labels,
-      datasets: [{ label: 'Earnings ($)', data: labels.map(l => m.get(l)!), borderWidth: 1 }],
+      datasets: [
+        {
+          label: 'Earnings ($)',
+          data : labels.map(l => bucket.get(l)!),
+          borderWidth: 1,
+        },
+      ],
     };
   }, [rows, period, showDeliveryFee]);
 
-  /* — CSV export — */
-  const exportCSV = () => {
+  /* ─── CSV export (memoised) ─────────────────────────────────────────── */
+  const exportCSV = useCallback(() => {
     if (period === 'payouts') return;
-    const valid = rows.filter(r => r.deliveredAt);
-    if (!valid.length) { toast.warn('No data'); return; }
 
-    const headParts = ['Delivered','Order ID'];
-    if (showDeliveryFee) headParts.push('Del.Fee');
-    headParts.push('Tips','Total');
-    const head = headParts.join(',');
+    const delivered = rows.filter(r => r.deliveredAt);
+    if (!delivered.length) {
+      toast.warn('No data');
+      return;
+    }
 
-    const body = valid.map(r => {
-      const dt = new Date(r.deliveredAt!);
-      const delivered = dt.toLocaleDateString('en-US',{ dateStyle:'medium', timeZone:'America/New_York' });
-      const parts: Array<string | number> = [delivered, r.orderId];
-      if (showDeliveryFee) parts.push(r.totalDeliveryFee ?? 0);
-      parts.push(r.tipAmount ?? 0);
-      parts.push(showDeliveryFee
-        ? (r.totalDeliveryFee ?? 0) + (r.tipAmount ?? 0)
-        : (r.tipAmount ?? 0)
-      );
-      return parts.join(',');
-    }).join('\n');
+    const head = [
+      'Delivered',
+      'Order ID',
+      ...(showDeliveryFee ? ['Del.Fee'] : []),
+      'Tips',
+      'Total',
+    ].join(',');
 
-    const blob = new Blob([head + '\n' + body], { type: 'text/csv' });
+    const body = delivered
+      .map(r => {
+        const cols: (string | number)[] = [
+          pretty(r.deliveredAt!),
+          r.orderId,
+          ...(showDeliveryFee ? [r.totalDeliveryFee ?? 0] : []),
+          r.tipAmount ?? 0,
+          (showDeliveryFee ? (r.totalDeliveryFee ?? 0) : 0) + (r.tipAmount ?? 0),
+        ];
+        return cols.join(',');
+      })
+      .join('\n');
+
+    const blob = new Blob([head, '\n', body], { type: 'text/csv' });
     const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `earnings-${period}.csv`;
+    const a    = Object.assign(document.createElement('a'), {
+      href: url,
+      download: `earnings-${period}.csv`,
+    });
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [period, rows, showDeliveryFee]);
 
-  const rangeLabel = range
-    ? range.from === range.to
-      ? pretty(range.from)
-      : `${pretty(range.from)} – ${pretty(range.to)}`
-    : '';
+  /* ─── UI helpers ────────────────────────────────────────────────────── */
+  const rangeLabel =
+    range && period !== 'payouts'
+      ? `${pretty(range.from)} – ${pretty(range.to)}`
+      : undefined;
 
-  const core: CorePeriod[] = ['day','week','month','year'];
-
+  /* ─── Render ────────────────────────────────────────────────────────── */
   return (
-    <div className={styles.container}>
-      {range && period !== 'payouts' && (
-        <div className={styles.printHeader}>
-          <h1>{ showDeliveryFee ? 'Driver' : 'Server' } Earnings Statement</h1>
-          <div className={styles.rangeLine}>
-            Range: <strong>{rangeLabel}</strong>
-          </div>
-          <hr/>
-        </div>
-      )}
+    <div className="earnings-print-zone">
+      <PrintLayout rangeLabel={rangeLabel}>
+        <div className={styles.container}>
 
-      {/* Period tabs */}
-      <nav className={styles.tabs}>
-        {core.map(p => (
-          <button
-            key={p}
-            className={`${styles.tab} ${period===p?styles.active:''}`}
-            onClick={()=>setPeriod(p)}
-          >
-            {title[p]}
-          </button>
-        ))}
-        <button
-          className={`${styles.tab} ${period==='custom'?styles.active:''}`}
-          onClick={()=>setPeriod('custom')}
-        >
-          Custom
-        </button>
-        <button
-          className={`${styles.tab} ${period==='payouts'?styles.active:''}`}
-          onClick={()=>setPeriod('payouts')}
-        >
-          Payouts
-        </button>
-      </nav>
-
-      {/* Custom date inputs */}
-      {period==='custom' && (
-        <div className={styles.rangeBar}>
-          <label>
-            From <input type="date" value={fromD} onChange={e=>setFromD(e.target.value)} />
-          </label>
-          <label>
-            To   <input type="date" value={toD} onChange={e=>setToD(e.target.value)} />
-          </label>
-          <button onClick={()=>load('custom',fromD,toD)}>Apply</button>
-        </div>
-      )}
-
-      {/* Payouts table */}
-      {period==='payouts' ? (
-        payLoading ? (
-          <p>Loading payouts…</p>
-        ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr><th>Paid At</th><th>Order #</th><th>Amount</th></tr>
-              </thead>
-              <tbody>
-                {payouts.map(p => (
-                  <tr key={p.id}>
-                    <td>{new Date(p.paidAt).toLocaleDateString('en-US',{timeZone:'America/New_York'})}</td>
-                    <td>{p.order?.orderId||'—'}</td>
-                    <td>{money(p.amount)}</td>
-                  </tr>
-                ))}
-                {!payouts.length && (
-                  <tr><td colSpan={3} className={styles.empty}>No payouts yet.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )
-      ) : (
-        <>
-          {/* Totals cards */}
-          <div className={styles.cards}>
-            {showDeliveryFee && <Card label="Delivery Fees" val={money(totals.totalDeliveryFee)} />}
-            <Card label="Tips" val={money(totals.tipAmount)} />
-            <Card
-              label="Total"
-              val={money(
-                (showDeliveryFee ? (totals.totalDeliveryFee ?? 0) : 0) +
-                (totals.tipAmount ?? 0)
-              )}
-            />
-          </div>
-
-          {/* Earnings chart */}
-          {chart && (
-            <div className={styles.chartWrap}>
-              <Bar data={chart} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+          {rangeLabel && (
+            <div className={styles.printHeader}>
+              <h1>{showDeliveryFee ? 'Driver' : 'Server'} Earnings Statement</h1>
+              <div className={styles.rangeLine}>
+                Range: <strong>{rangeLabel}</strong>
+              </div>
+              <hr />
             </div>
           )}
 
-          {/* Actions */}
-          <div className={styles.actions}>
-            <button onClick={exportCSV} disabled={!rows.some(r => r.deliveredAt)}>Export CSV</button>
-            <button onClick={() => window.print()}>Print</button>
-          </div>
+          {/* ─ Tabs ─ */}
+          <nav className={`${styles.tabs} no-print`}>
+            {(['day', 'week', 'month', 'year'] as CorePeriod[]).map(p => (
+              <button
+                key={p}
+                className={`${styles.tab} ${period === p ? styles.active : ''}`}
+                onClick={() => setPeriod(p)}
+              >
+                {PERIOD_LABEL[p]}
+              </button>
+            ))}
+            <button
+              className={`${styles.tab} ${period === 'custom'  ? styles.active : ''}`}
+              onClick={() => setPeriod('custom')}
+            >
+              Custom
+            </button>
+            <button
+              className={`${styles.tab} ${period === 'payouts' ? styles.active : ''}`}
+              onClick={() => setPeriod('payouts')}
+            >
+              Payouts
+            </button>
+          </nav>
 
-          {/* Orders table */}
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Delivered</th>
-                  <th>Order #</th>
-                  {showDeliveryFee && <th>Del.Fee</th>}
-                  <th>Tips</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.filter(r => r.deliveredAt).map(r => (
-                  <tr key={r.orderId + r.deliveredAt}>
-                    <td>{pretty(r.deliveredAt!)}</td>
-                    <td>{r.orderId}</td>
-                    {showDeliveryFee && <td>{money(r.totalDeliveryFee)}</td>}
-                    <td>{money(r.tipAmount)}</td>
-                    <td>{showDeliveryFee
-                      ? money((r.totalDeliveryFee ?? 0) + (r.tipAmount ?? 0))
-                      : money(r.tipAmount)
-                    }</td>
-                  </tr>
-                ))}
-                {!rows.filter(r => r.deliveredAt).length && (
-                  <tr>
-                    <td colSpan={showDeliveryFee ? 5 : 4} className={styles.empty}>No data.</td>
-                  </tr>
+          {/* ─ Custom range inputs ─ */}
+          {period === 'custom' && (
+            <div className={`${styles.rangeBar} no-print`}>
+              <label>
+                From{' '}
+                <input type="date" value={fromD} onChange={e => setFromD(e.target.value)} />
+              </label>
+              <label>
+                To{' '}
+                <input type="date" value={toD} onChange={e => setToD(e.target.value)} />
+              </label>
+              <button onClick={() => load('custom', fromD, toD)}>Apply</button>
+            </div>
+          )}
+
+          {/* ─ Payouts view ─ */}
+          {period === 'payouts' ? (
+            payLoading ? (
+              <p aria-live="polite">Loading payouts…</p>
+            ) : (
+              <>
+                {/* Range bar inside payouts (for filtering) */}
+                <div className={`${styles.rangeBar} no-print`}>
+                  <label>
+                    From{' '}
+                    <input type="date" value={fromD} onChange={e => setFromD(e.target.value)} />
+                  </label>
+                  <label>
+                    To{' '}
+                    <input type="date" value={toD} onChange={e => setToD(e.target.value)} />
+                  </label>
+                  <button onClick={() => loadPayouts(fromD, toD)}>Apply</button>
+                </div>
+
+                {/* Unpaid */}
+                <PayoutTable
+                  caption="Unpaid"
+                  rows={unpaidPayouts}
+                  emptyMsg="No unpaid payouts."
+                />
+
+                {/* Paid */}
+                <PayoutTable
+                  caption="Paid"
+                  rows={paidPayouts}
+                  emptyMsg="No paid payouts."
+                />
+              </>
+            )
+          ) : (
+            <>
+              {/* KPI cards */}
+              <div className={styles.cards}>
+                {showDeliveryFee && (
+                  <Card label="Delivery Fees" val={money(totals.totalDeliveryFee)} />
                 )}
-              </tbody>
-              {rows.filter(r => r.deliveredAt).length > 0 && (
-                <tfoot>
-                  <tr>
-                    <th className={styles.footerCell}>Totals</th><th></th>
-                    {showDeliveryFee && <th className={styles.footerCell}>{money(totals.totalDeliveryFee)}</th>}
-                    <th className={styles.footerCell}>{money(totals.tipAmount)}</th>
-                    <th className={styles.footerCell}>
-                      {money(
-                        (showDeliveryFee ? (totals.totalDeliveryFee ?? 0) : 0) +
-                        (totals.tipAmount ?? 0)
-                      )}
-                    </th>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>
-        </>
-      )}
+                <Card label="Tips"  val={money(totals.tipAmount)} />
+                <Card
+                  label="Total"
+                  val={money(
+                    (showDeliveryFee ? totals.totalDeliveryFee ?? 0 : 0) +
+                    (totals.tipAmount ?? 0),
+                  )}
+                />
+              </div>
 
-      {/* Loading state */}
-      {loading && period !== 'payouts' && <p>Loading…</p>}
+              {/* Chart */}
+              {chart && (
+                <div className={styles.chartWrap}>
+                  <Bar
+                    data={chart}
+                    options={{ responsive: true, plugins: { legend: { display: false } } }}
+                  />
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className={`${styles.actions} no-print`}>
+                <button
+                  onClick={exportCSV}
+                  disabled={!rows.some(r => r.deliveredAt)}
+                >
+                  Export CSV
+                </button>
+                <button onClick={() => window.print()}>Print</button>
+              </div>
+
+              {/* Orders table */}
+              <OrdersTable
+                rows={rows}
+                showDeliveryFee={showDeliveryFee}
+                totals={totals}
+              />
+            </>
+          )}
+
+          {loading && period !== 'payouts' && (
+            <p aria-live="polite">Loading…</p>
+          )}
+        </div>
+      </PrintLayout>
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/*                                Sub-components                           */
+/* ═══════════════════════════════════════════════════════════════════════ */
 
 function Card({ label, val }: { label: string; val: string }) {
   return (
@@ -400,5 +446,109 @@ function Card({ label, val }: { label: string; val: string }) {
       <span className={styles.cardLabel}>{label}</span>
       <span className={styles.cardVal}>{val}</span>
     </div>
+  );
+}
+
+function OrdersTable({
+  rows,
+  showDeliveryFee,
+  totals,
+}: {
+  rows: Row[];
+  showDeliveryFee: boolean;
+  totals: Totals;
+}) {
+  if (!rows.length)
+    return <p className={styles.noData}>No data.</p>;
+
+  const delivered = rows.filter(r => r.deliveredAt);
+
+  return (
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Delivered</th>
+            <th>Order&nbsp;#</th>
+            {showDeliveryFee && <th>Del.Fee</th>}
+            <th>Tips</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {delivered.map(r => (
+            <tr key={r.orderId + r.deliveredAt}>
+              <td>{pretty(r.deliveredAt!)}</td>
+              <td>{r.orderId}</td>
+              {showDeliveryFee && <td>{money(r.totalDeliveryFee)}</td>}
+              <td>{money(r.tipAmount)}</td>
+              <td>{money(
+                (showDeliveryFee ? r.totalDeliveryFee ?? 0 : 0) +
+                (r.tipAmount ?? 0),
+              )}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th className={styles.footerCell}>Totals</th>
+            <th></th>
+            {showDeliveryFee && (
+              <th className={styles.footerCell}>{money(totals.totalDeliveryFee)}</th>
+            )}
+            <th className={styles.footerCell}>{money(totals.tipAmount)}</th>
+            <th className={styles.footerCell}>{money(
+              (showDeliveryFee ? totals.totalDeliveryFee ?? 0 : 0) +
+              (totals.tipAmount ?? 0),
+            )}</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+function PayoutTable({
+  caption,
+  rows,
+  emptyMsg,
+}: {
+  caption: string;
+  rows: Payout[];
+  emptyMsg: string;
+}) {
+  return (
+    <section style={{ marginBottom: '2rem' }}>
+      <h2>
+        {caption} ({rows.length})
+      </h2>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>{caption === 'Paid' ? 'Paid&nbsp;At' : 'Created'}</th>
+              <th>Order&nbsp;#</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(p => (
+              <tr key={p.id}>
+                <td>{pretty(p.paidAt ?? p.createdAt)}</td>
+                <td>{p.order?.orderId ?? '—'}</td>
+                <td>{money(p.amount)}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={3} className={styles.empty}>
+                  {emptyMsg}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

@@ -1,0 +1,82 @@
+/* File: components/dashboard/OrdersDashboard/PaginationControls.module.css */
+
+/* ───────── Layout container ───────── */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* ───────── Pagination buttons ───────── */
+.button {
+  padding: 0.5rem 1.25rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+
+  /* default – green background, white text  */
+  background-color: var(--primary-color);
+  color: var(--white);
+
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+
+  transition:
+    background-color 0.25s ease,
+    color            0.25s ease,
+    transform        0.15s ease,
+    box-shadow       0.15s ease;
+}
+
+/* Hover / focus: switch to the secondary palette  */
+.button:hover:not(:disabled),
+.button:focus-visible:not(:disabled) {
+  background-color: var(--secondary-color);
+  color: var(--black);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Optional “current page” styling
+   (e.g. <button aria-current="page">) */
+.button[aria-current='page'] {
+  background-color: var(--secondary-color-hover);
+  color: var(--black);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Disabled state */
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+  .button:hover:not(:disabled),
+  .button:focus-visible:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ───────── Page indicator text ───────── */
+.info {
+  font-family: var(--font-body);
+  color: var(--dark-gray);
+  font-size: 0.9rem;
+}
+
+/* ───────── Print – don’t show the controls ───────── */
+@media print {
+  .container {
+    display: none !important;
+  }
+}

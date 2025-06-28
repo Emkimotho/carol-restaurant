@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession }         from "next-auth/next";
 import { authOptions }              from "@/lib/auth";
-import { prisma }                   from "@/lib/prisma";
+import prisma                       from "@/lib/prisma";     // ← default import
 
 export async function PATCH(
   req: NextRequest,
@@ -20,10 +20,10 @@ export async function PATCH(
       );
     }
 
-    // 2. Authorization: only ADMIN role
+    // 2. Authorization: only ADMIN role (case-insensitive)
     const rawRoles = (session.user as any).roles;
     const roles: string[] = Array.isArray(rawRoles) ? rawRoles : [];
-    if (!roles.includes("ADMIN")) {
+    if (!roles.some(r => r.toLowerCase() === "admin")) {
       return NextResponse.json(
         { error: "Forbidden" },
         { status: 403 }

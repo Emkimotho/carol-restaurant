@@ -1,445 +1,348 @@
 // File: components/dashboard/OrdersDashboard/OrdersDashboard.tsx
-// ───────────────────────────────────────────────────────────────────────
-// Shared Orders Dashboard for Admin, Staff, Server, and Cashier
-// ───────────────────────────────────────────────────────────────────────
-
 'use client';
 
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, Dispatch, SetStateAction } from 'react';
 import useSWR from 'swr';
 import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
-import styles from './orders.module.css';
-import type { DeliveryAddress } from '@/contexts/OrderContext';
 
+import styles from './OrdersDashboard.module.css';
+import DashboardHeader from './DashboardHeader';
+import SearchAndFilter from './SearchAndFilter';
+import OnlineDrivers from './OnlineDrivers';
+import PendingCashSection from './PendingCashSection';
+import CashReconciliationSection from './CashReconciliationSection';
+import ReconciledHistorySection from './ReconciledHistorySection';
+import OrdersGridWrapper from './OrdersGridWrapper';
+import PaginationControls from './PaginationControls';
 import OrdersTabs, { TabKey, Tab } from './OrdersTabs';
-import OrdersGrid from './OrdersGrid';
 import DetailModal from './DetailModal';
 import AgeCheckModal from './AgeCheckModal';
+import StatementView from './StatementView';
+
+
+import { fetcher, useDebounce } from './utils';
+import { useOrders } from './hooks/useOrders';
+import { useCashCollections } from './hooks/useCashCollections';
+import { useReconciledRecords } from './hooks/useReconciledRecords';
+
+
+import type {
+  Order,
+  CashCollectionRecord,
+  ServerAgg,
+  OrdersListResponse,
+} from './types';
 import type { Driver } from './DriverAssigner';
+import type { KeyedMutator } from 'swr';
+
 
 export interface OrdersDashboardProps {
-  role:    'admin' | 'staff' | 'server' | 'cashier';
+  role: 'admin' | 'staff' | 'server' | 'cashier';
   userId?: string | number;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Order shape sent down by our GET /api/orders controller            */
-/* ------------------------------------------------------------------ */
-export interface Order {
-  id:               string;
-  orderId:          string;
-  status:           string;
-  schedule:         string | null;
-  createdAt:        string;
-  orderType?:       string | null;
-  deliveryType:     string;
-  holeNumber?:      number | null;
-  totalAmount:      number;
-  tipAmount?:       number;
-  tipRecipientId?:  number;
-  paymentMethod:    'CARD' | 'CASH';
-  containsAlcohol:  boolean;
-  cashCollection?: {
-    status: 'PENDING' | 'SETTLED';
-    amount?: number;
-    server?: { firstName: string; lastName: string } | null;
-  };
 
-  items:            Array<Record<string, any>>;
-  lineItems:        Array<Record<string, any>>;
-  statusHistory:    Array<Record<string, any>>;
+const PAGE_SIZE = 20;
 
-  guestName?:       string | null;
-  customer?:        { firstName: string; lastName: string } | null;
-  driver?:          { id: number; firstName: string; lastName: string; isOnline: boolean } | null;
-  staff?:           { firstName: string; lastName: string } | null;
-  deliveryAddress?: DeliveryAddress | null;
-
-  driverPayout?:    number;
-  deliveryInstructions?: string | null;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Cash-collection aggregate used for the server filter (cashier)     */
-/* ------------------------------------------------------------------ */
-interface ServerAgg {
-  server: { id: number; firstName: string; lastName: string };
-  pendingOrders: number;
-  totalAmount:   number;
-}
-
-interface CashCollectionRecord {
-  id:          string;
-  orderId:     string;
-  amount:      number;
-  collectedAt: string | null;
-}
-
-interface OrdersListResponse {
-  orders:     Order[];
-  page:       number;
-  totalPages: number;
-}
-
-const fetcher = (url: string) =>
-  fetch(url, { credentials: 'include' }).then(r => r.json());
-
-function useDebounce<T>(value: T, delay = 300): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
 
 export default function OrdersDashboard({
   role,
   userId,
 }: OrdersDashboardProps) {
-  // Search & pagination
-  const [query, setQuery]       = useState('');
-  const debouncedQuery          = useDebounce(query, 300);
-  const [page, setPage]         = useState(1);
-  const limit                   = 20;
+  // Search & filter state
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 300);
+  const [serverFilter, setServerFilter] = useState('');
 
-  /* ---------------- Cashier server filter ---------------- */
-  const [serverFilter, setServerFilter] = useState<string>(''); // '' = all servers
-  const { data: serverAgg = [] } =
-    useSWR<ServerAgg[]>(
-      role === 'cashier' ? '/api/orders/cash-collections?groupBy=server' : null,
-      fetcher,
-      { refreshInterval: 10000 }
-    );
 
-  // Modals state
-  const [detail, setDetail] = useState<Order | null>(null);
-  const [agePatch, setAgePatch] = useState<{ order: Order; nextStatus: string; msg: string } | null>(null);
-
-  // Build SWR key
-  let ordersKey = `/api/orders?page=${page}&limit=${limit}`;
-
-  // Only admins & staff search by q=…
-  if ((role === 'admin' || role === 'staff') && debouncedQuery) {
-    ordersKey += `&q=${encodeURIComponent(debouncedQuery)}`;
-  }
-
-  // Staff sees only their own (staffId)
-  if (role === 'staff' && userId) {
-    ordersKey += `&staffId=${userId}`;
-  }
-
-  // Servers: do NOT append any `role=` filter. The backend will simply return all orders,
-  // and the front end will split them into “Ready / En Route / Delivered / Pending Cash.”
-  // (In particular, we DO NOT pass &role=server or &role=driver here.)
-  // Cashiers:
-  if (role === 'cashier') {
-    ordersKey += `&reconciled=false`;
-    if (serverFilter) ordersKey += `&serverId=${serverFilter}`;
-  }
-
-  const { data = { orders: [], page: 1, totalPages: 1 }, mutate } =
-    useSWR<OrdersListResponse>(ordersKey, fetcher, { refreshInterval: 5000 });
-  const { orders, totalPages } = data;
-
-  // Poll online drivers for admin/staff
-  const { data: drivers = [] } =
-    useSWR<Driver[]>(
-      (role === 'admin' || role === 'staff') ? '/api/drivers?status=online' : null,
-      fetcher,
-      { refreshInterval: 30000 }
-    );
-
-  // Precompute filtered sets
-  const received    = orders.filter(o => o.status === 'ORDER_RECEIVED');
-  const inPrep      = orders.filter(o => o.status === 'IN_PROGRESS');
-  const ready       = orders.filter(o => o.status === 'ORDER_READY');
-  const enRoute     = orders.filter(o => o.status === 'PICKED_UP_BY_DRIVER');
-  const delivered   = orders.filter(o => o.status === 'DELIVERED');
-  const pending     = orders.filter(o => o.status === 'PENDING_PAYMENT');
-  const active      = orders.filter(o =>
-    !['PENDING_PAYMENT', 'ORDER_READY', 'DELIVERED', 'CANCELLED'].includes(o.status)
+  // Tab & pagination state
+  const [tab, setTab] = useState<TabKey>(
+    role === 'cashier'
+      ? 'toReconcile'
+      : role === 'staff'
+      ? 'received'
+      : role === 'server'
+      ? 'ready'
+      : 'active'
   );
-  const completed   = delivered;
-  const cancelled   = orders.filter(o => o.status === 'CANCELLED');
-  const toReconcile = orders.filter(o => o.cashCollection?.status === 'PENDING');
-  const reconciled  = orders.filter(o => o.cashCollection?.status === 'SETTLED');
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [tab, debouncedQuery, serverFilter]);
 
-  // Server: fetch pending cash‐collection records
-  const { data: pendingCashData = [] } = useSWR<CashCollectionRecord[]>(
-    role === 'server' && userId
-      ? `/api/orders/cash-collections?serverId=${userId}&status=PENDING`
+
+  // Detail / modals state
+  const [detail, setDetail] = useState<Order | null>(null);
+  const [agePatch, setAgePatch] = useState<{
+    order: Order;
+    nextStatus: string;
+    msg: string;
+  } | null>(null);
+  const [cashInput, setCashInput] = useState('');
+
+
+  // Cashier’s server dropdown
+  const { data: serverAgg = [] } = useSWR<ServerAgg[]>(
+    role === 'cashier'
+      ? '/api/orders/cash-collections?groupBy=server'
       : null,
     fetcher,
-    { refreshInterval: 5000 }
+    { refreshInterval: 10000 }
   );
 
-  // Remap pendingCashData for rendering
-  const pendingCash = pendingCashData.map(c => ({
-    cashId:      c.id,
-    orderId:     c.orderId,
-    amount:      c.amount,
-    collectedAt: c.collectedAt,
-  }));
 
-  // Tabs & defaults by role (including “Pending Cash” for Server)
-  let tabs: Tab[]           = [];
-  let defaultTab: TabKey    = 'active';
+  // Paginated orders fetch
+  const { orders, totalPages, mutate } = useOrders({
+    role,
+    userId,
+    page,
+    limit: PAGE_SIZE,
+    query: debouncedQuery,
+    serverFilter,
+    reconciledFlag: tab === 'reconciled',
+  });
 
-  switch (role) {
-    case 'staff':
-      tabs = [
-        { key: 'received',  label: 'Received',      count: received.length  },
-        { key: 'inPrep',    label: 'In Prep',       count: inPrep.length    },
-        { key: 'ready',     label: 'Ready',         count: ready.length     },
-        { key: 'completed', label: 'Completed',     count: completed.length },
-      ];
-      defaultTab = 'received';
-      break;
 
-    case 'server':
-      tabs = [
-        { key: 'ready',       label: 'Ready to Serve',  count: ready.length       },
-        { key: 'enRoute',     label: 'En Route to Tee', count: enRoute.length     },
-        { key: 'delivered',   label: 'Delivered',       count: delivered.length   },
-        { key: 'pendingCash', label: 'Pending Cash',    count: pendingCash.length },
-      ];
-      defaultTab = 'ready';
-      break;
+  // Live driver & cash data
+  const { data: drivers = [] } = useSWR<Driver[]>(
+    role === 'admin' || role === 'staff'
+      ? '/api/drivers?status=online'
+      : null,
+    fetcher,
+    { refreshInterval: 30000 }
+  );
+  const { records: pendingCash } = useCashCollections({
+    serverId: role === 'server' ? userId : undefined,
+    status: 'PENDING',
+  });
+  const { records: reconciledRecords } = useReconciledRecords({
+    cashierId: role === 'cashier' ? userId : undefined,
+  });
 
-    case 'cashier':
-      tabs = [
-        { key: 'toReconcile', label: 'To Reconcile', count: toReconcile.length },
-        { key: 'reconciled',  label: 'Reconciled',   count: reconciled.length  },
-      ];
-      defaultTab = 'toReconcile';
-      break;
 
-    case 'admin':
-    default:
-      tabs = [
-        { key: 'active',    label: 'Active',          count: active.length    },
-        { key: 'pending',   label: 'Pending Payment', count: pending.length   },
-        { key: 'ready',     label: 'Ready',           count: ready.length     },
-        { key: 'completed', label: 'Completed',       count: completed.length },
-        { key: 'cancelled', label: 'Cancelled',       count: cancelled.length },
-      ];
-      defaultTab = 'active';
-  }
+  // Buckets & totals
+  const filterBy = (statuses: Order['status'][]) =>
+    orders.filter((o) => statuses.includes(o.status));
 
-  const [tab, setTab] = useState<TabKey>(defaultTab);
 
-  // Select list for current tab
-  let listToShow: Order[] = [];
-  switch (tab) {
-    case 'received':     listToShow = received;     break;
-    case 'inPrep':       listToShow = inPrep;       break;
-    case 'ready':        listToShow = ready;        break;
-    case 'enRoute':      listToShow = enRoute;      break;
-    case 'delivered':    listToShow = delivered;    break;
-    case 'pendingCash':  listToShow = [];           break; // rendered separately
-    case 'toReconcile':  listToShow = toReconcile;  break;
-    case 'reconciled':   listToShow = reconciled;   break;
-    case 'active':       listToShow = active;       break;
-    case 'pending':      listToShow = pending;      break;
-    case 'completed':    listToShow = completed;    break;
-    case 'cancelled':    listToShow = cancelled;    break;
-  }
+  const received  = filterBy(['ORDER_RECEIVED']);
+  const inPrep    = filterBy(['IN_PROGRESS']);
+  const ready     = filterBy(['ORDER_READY']);
+  const enRoute   = filterBy(['PICKED_UP_BY_DRIVER']);
+  const delivered = filterBy(['DELIVERED']);
+  const pending   = filterBy(['PENDING_PAYMENT']);
+  const cancelled = filterBy(['CANCELLED']);
+  const active    = orders.filter(
+    (o) =>
+      !['PENDING_PAYMENT', 'ORDER_READY', 'DELIVERED', 'CANCELLED'].includes(
+        o.status
+      )
+  );
+  const completed   = delivered;
+  const toReconcile = orders.filter(
+    (o) => o.cashCollection?.status === 'PENDING'
+  );
 
-  // Cashier reconciliation
-  const [cashInput, setCashInput] = useState('');
-  const handleReconcile = async () => {
-    const ids = listToShow.map(o => o.id);
-    const t   = toast.loading('Reconciling cash…');
-    try {
-      const res = await fetch('/api/orders/reconcile', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderIds: ids, cashReceived: Number(cashInput) }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      await mutate();
-      toast.update(t, { render: 'Reconciled', type: 'success', isLoading: false, autoClose: 1200 });
-      setCashInput('');
-    } catch (e: any) {
-      toast.update(t, { render: e.message, type: 'error', isLoading: false });
-    }
-  };
 
-  // Staff tip total: only from golf orders, where driverPayout ≠ 0 and deliveryInstructions is not null
+  const expectedTotal = toReconcile.reduce((sum, o) => sum + o.totalAmount, 0);
+  const diff = Number(cashInput) - expectedTotal;
+
+
   const tipTotal = orders
-    .filter(o =>
-      o.tipRecipientId === Number(userId) &&
-      o.deliveryType !== 'DELIVERY' &&
-      (o.driverPayout ?? 0) !== 0 &&
-      o.deliveryInstructions != null
+    .filter(
+      (o) =>
+        o.tipRecipientId === Number(userId) &&
+        o.deliveryType !== 'DELIVERY' &&
+        (o.driverPayout ?? 0) !== 0 &&
+        o.deliveryInstructions != null
     )
     .reduce((sum, o) => sum + (o.tipAmount ?? 0), 0);
 
+
+  // Tabs metadata
+  const tabs: Tab[] =
+    role === 'staff'
+      ? [
+          { key: 'received',  label: 'Received',  count: received.length  },
+          { key: 'inPrep',    label: 'In Prep',   count: inPrep.length    },
+          { key: 'ready',     label: 'Ready',     count: ready.length     },
+          { key: 'completed', label: 'Completed', count: completed.length },
+        ]
+      : role === 'server'
+      ? [
+          { key: 'ready',      label: 'Ready to Serve', count: ready.length    },
+          { key: 'enRoute',    label: 'En Route',       count: enRoute.length  },
+          { key: 'delivered',  label: 'Delivered',      count: delivered.length},
+          { key: 'pendingCash',label: 'Pending Cash',   count: pendingCash.length },
+        ]
+      : role === 'cashier'
+      ? [
+          { key: 'toReconcile', label: 'To Reconcile', count: toReconcile.length    },
+          { key: 'reconciled',  label: 'Reconciled',   count: reconciledRecords.length },
+        ]
+      : [
+          { key: 'active',    label: 'Active',   count: active.length    },
+          { key: 'pending',   label: 'Pending',  count: pending.length   },
+          { key: 'ready',     label: 'Ready',    count: ready.length     },
+          { key: 'completed', label: 'Completed',count: completed.length },
+          { key: 'cancelled', label: 'Cancelled',count: cancelled.length },
+        ];
+
+
+  // Map for current tab’s list
+  const listMap: Record<TabKey, Order[]> = {
+    received,
+    inPrep,
+    ready,
+    enRoute,
+    delivered,
+    active,
+    pending,
+    completed,
+    cancelled,
+    toReconcile,
+    reconciled: [],   // handled by ReconciledHistorySection
+    pendingCash: [],  // handled by PendingCashSection
+  };
+  const listToShow = listMap[tab] ?? [];
+
+
+  // Cashier reconciliation handler
+  const handleReconcile = async () => {
+    if (diff < 0) {
+      toast.error(
+        `Mismatch: expected $${expectedTotal.toFixed(2)} but you entered $${cashInput}`,
+        { autoClose: 3000 }
+      );
+      return;
+    }
+    const t = toast.loading('Reconciling cash…');
+    try {
+      const res = await fetch('/api/orders/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderIds:     listToShow.map((o) => o.orderId),
+          cashReceived: Number(cashInput),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      const msg =
+        diff > 0
+          ? `Reconciled • change due $${diff.toFixed(2)}`
+          : 'Reconciled';
+      toast.update(t, { render: msg, type: 'success', isLoading: false, autoClose: 1800 });
+      setCashInput('');
+      mutate();
+    } catch (err: any) {
+      toast.update(t, { render: err.message, type: 'error', isLoading: false });
+    }
+  };
+
+
   return (
     <>
-      <ToastContainer position="top-right" />
+      <ToastContainer position="top-right" theme="colored" />
+
 
       <div className={styles.container}>
-        <h1 className={styles.header}>
-          {role === 'admin'   && 'Kitchen / Admin'}
-          {role === 'staff'   && 'Kitchen / Staff'}
-          {role === 'server'  && 'Server Dashboard'}
-          {role === 'cashier' && 'Cashier Panel'}
-        </h1>
+        {/* Header */}
+        <DashboardHeader role={role} tipTotal={tipTotal} />
 
-        {role === 'staff' && (
-          <div className={styles.tipsWidget}>
-            <strong>Your Tips:</strong> ${tipTotal.toFixed(2)}
-          </div>
-        )}
 
-        {(role === 'admin' || role === 'staff') && (
-          <div className={styles.searchRow}>
-            <input
-              className={styles.searchInput}
-              placeholder="Search Order ID or Name…"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
-          </div>
-        )}
+        {/* Search & Filters */}
+        <SearchAndFilter
+          role={role}
+          query={query}
+          onQueryChange={setQuery}
+          serverFilter={serverFilter}
+          onServerFilterChange={setServerFilter}
+          serverAgg={serverAgg}
+        />
 
-        {/* ---------- Cashier server filter ---------- */}
-        {role === 'cashier' && (
-          <div className={styles.searchRow}>
-            <label style={{ marginRight: 8 }}>
-              Server&nbsp;
-              <select
-                value={serverFilter}
-                onChange={(e) => { setServerFilter(e.target.value); setPage(1); }}
-                className={styles.searchInput}
-              >
-                <option value="">All servers</option>
-                {serverAgg.map((s) => (
-                  <option key={s.server.id} value={s.server.id}>
-                    {s.server.firstName} {s.server.lastName} &nbsp;({s.pendingOrders})
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        )}
 
+        {/* Tabs */}
         <OrdersTabs tabs={tabs} current={tab} onChange={setTab} />
 
-        {/* ---------- Pending Cash Tab for Server ---------- */}
+
+        {/* Inline widgets */}
+        {(role === 'admin' || role === 'staff') && (
+          <OnlineDrivers drivers={drivers} />
+        )}
         {role === 'server' && tab === 'pendingCash' && (
-          <div className={styles.cashTab}>
-            <h2>Your Pending Cash Orders</h2>
-            <table className={styles.cashTable}>
-              <thead>
-                <tr>
-                  <th>Order #</th>
-                  <th>Amount ($)</th>
-                  <th>Collected At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingCash.map((c) => (
-                  <tr key={c.cashId}>
-                    <td>{c.orderId}</td>
-                    <td>{c.amount.toFixed(2)}</td>
-                    <td>
-                      {c.collectedAt
-                        ? new Date(c.collectedAt).toLocaleString()
-                        : '—'}
-                    </td>
-                  </tr>
-                ))}
-                {pendingCash.length === 0 && (
-                  <tr>
-                    <td colSpan={3}>No pending cash orders to reconcile.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            <p className={styles.cashTotal}>
-              <strong>Total Pending:</strong> $
-              {pendingCash.reduce((sum, c) => sum + c.amount, 0).toFixed(2)}
-            </p>
-          </div>
+          <PendingCashSection pendingCash={pendingCash as CashCollectionRecord[]} />
         )}
-
-        {/* ---------- Cashier reconciliation section ---------- */}
         {role === 'cashier' && tab === 'toReconcile' && (
-          <div className={styles.reconcileSection}>
-            <h2>Cash Reconciliation</h2>
-            <p>Pending orders: {listToShow.length}</p>
-            <p>
-              Total cash amount: $
-              {listToShow.reduce((sum, o) => sum + o.totalAmount, 0).toFixed(2)}
-            </p>
-            <label>
-              Enter cash received:
-              <input
-                type="number"
-                value={cashInput}
-                onChange={e => setCashInput(e.target.value)}
-                className={styles.reconcileInput}
-              />
-            </label>
-            <button
-              onClick={handleReconcile}
-              disabled={!cashInput}
-              className={styles.reconcileBtn}
-            >
-              Reconcile
-            </button>
-          </div>
+          <CashReconciliationSection
+            toReconcile={toReconcile}
+            cashInput={cashInput}
+            onCashInputChange={setCashInput}
+            diff={diff}
+            expectedTotal={expectedTotal}
+            onReconcile={handleReconcile}
+          />
+        )}
+        {role === 'cashier' && tab === 'reconciled' && (
+          <ReconciledHistorySection reconciledRecords={reconciledRecords} />
         )}
 
-        {/* ---------- Orders Grid for all other tabs ---------- */}
-        {!(
-          (role === 'server' && tab === 'pendingCash') ||
-          (role === 'cashier' && tab === 'toReconcile')
-        ) && (
-          <OrdersGrid
+
+        {/* Delivered/Completed → StatementView; else → OrdersGridWrapper */}
+        {(tab === 'delivered' || tab === 'completed') ? (
+          <StatementView
             list={listToShow}
+            onShowDetail={setDetail as Dispatch<SetStateAction<Order>>}
+          />
+        ) : (
+          <OrdersGridWrapper
             role={role}
+            tab={tab}
+            list={listToShow}
             drivers={drivers}
-            // Pass serverId so that OrdersGrid can include it if needed for "claim" / "pick up"
             serverId={role === 'server' ? Number(userId) : undefined}
-            mutate={mutate}
-            onShowDetail={o => setDetail(o)}
-            onShowAgePatch={patch => setAgePatch(patch)}
+            mutate={mutate as unknown as () => Promise<any>}
+            onShowDetail={setDetail as Dispatch<SetStateAction<Order>>}
+            onShowAgePatch={setAgePatch}
           />
         )}
 
+
+        {/* Pagination */}
         {totalPages > 1 && (
-          <div className={styles.pagination}>
-            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              Prev
-            </button>
-            <span>Page {page} of {totalPages}</span>
-            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-              Next
-            </button>
-          </div>
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         )}
       </div>
 
-      <AgeCheckModal
-        isOpen={!!agePatch}
-        patch={agePatch!}
-        onClose={() => setAgePatch(null)}
-        onDone={() => { mutate(); setAgePatch(null); }}
-      />
 
+      {/* Detail Modal */}
       <DetailModal
-        isOpen={!!detail}
-        order={detail as any}
+        isOpen={Boolean(detail)}
+        order={detail}
         role={role}
         onClose={() => setDetail(null)}
+      />
+
+
+      {/* Age-Check Modal */}
+      <AgeCheckModal
+        isOpen={Boolean(agePatch)}
+        patch={agePatch}
+        onClose={() => setAgePatch(null)}
+        onDone={() => {
+          mutate();
+          setAgePatch(null);
+        }}
       />
     </>
   );
 }
+
+
+

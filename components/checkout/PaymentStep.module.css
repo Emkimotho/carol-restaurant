@@ -1,33 +1,155 @@
-/* File: app/checkout/PaymentStep.module.css */
+/* File: components/checkout/PaymentStep.module.css
+   -------------------------------------------------------------------
+   “DeliveryAddressStep” look-and-feel applied to PaymentStep
+   • Matches class names referenced in PaymentStep.tsx
+   • Keeps fade-in, but follows your secondary box-shadow palette
+   • Buttons & inputs share the same visual language
+   ------------------------------------------------------------------ */
 
+/* ========== Container & Heading ========== */
 .checkoutSection {
   background-color: var(--white);
   border-radius: 12px;
-  box-shadow: var(--box-shadow-primary);
+  box-shadow: var(--box-shadow-secondary);
   padding: 2rem;
   margin-bottom: 2rem;
   animation: fadeIn 0.5s ease;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .checkoutSection { animation: none; }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.checkoutSection h4 {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.checkoutSection h4::after {
+  content: "";
+  width: 60px;
+  height: 3px;
+  background-color: var(--secondary-color);
+  display: block;
+  margin-top: 0.5rem;
+  border-radius: 2px;
+}
+
+/* ========== Payment Options (radio row) ========== */
+.paymentOptions {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  color: var(--dark-gray);
+}
+
+.paymentOptions label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.paymentOptions input {
+  margin-right: 0.5rem;
+}
+
+/* ========== Cash Amount Input (golf) ========== */
+.cashAmountInput {
+  margin-bottom: 1.5rem;
+}
+
+.cashAmountInput label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--dark-gray);
+}
+
+.cashAmountInput input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.cashAmountInput input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* ========== Generic Form Helpers ========== */
+.formGroup { margin-bottom: 1.5rem; }
+
+.checkboxLabel {
+  font-size: 1rem;
+  margin-left: 0.5rem;
+  color: var(--dark-gray);
+}
+
+.billingAddressToggle {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: var(--dark-gray);
+}
+
+.billingAddressForm {
+  margin-top: 1rem;
+}
+
+.billingAddressForm label {
+  display: block;
+  margin: 0.5rem 0 0.25rem;
+  font-weight: 500;
+  color: var(--dark-gray);
+}
+
+.billingAddressForm input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.billingAddressForm input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* ========== Buttons ========== */
 .navigationButtons {
   display: flex;
   gap: 1rem;
+  justify-content: space-between;
   margin-top: 2rem;
+}
+
+@media (max-width: 480px) {
+  .navigationButtons { flex-direction: column; }
 }
 
 .btn {
   flex: 1;
-  padding: 0.9rem 1.5rem;
+  padding: 0.9rem;
   font-size: 1rem;
+  font-family: var(--font-body);
   border-radius: 8px;
-  cursor: pointer;
   border: none;
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
 }
 
 .btnPrimary {
@@ -40,80 +162,19 @@
   color: var(--white);
 }
 
-.btnSweepWave {
-  margin-top: 1rem;
-}
-
-/* Input Field Styles */
-.inputField {
-  width: 100%;
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  transition: border-color 0.3s ease;
-  font-family: var(--font-body);
-}
-
-.inputField:focus {
-  outline: none;
-  border-color: var(--primary-color);
-}
-
-/* Cash Payment Section */
-.cashPaymentDetails {
-  margin-top: 2rem;
-}
-
-.cashPaymentDetails h5 {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.cashAmount {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-top: 1rem;
-  color: var(--primary-color);
-}
-
-.paymentNote {
-  font-size: 1rem;
-  color: var(--dark-gray);
-  margin-top: 1rem;
-  font-style: italic;
-}
-
-.paymentDetailsSection {
-  margin-top: 1.5rem;
-  font-size: 1rem;
-  color: var(--dark-gray);
-}
-
-.navigation {
-  margin-top: 2rem;
-}
-
-.navigationButtons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.navButton {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  border: none;
-  border-radius: 5px;
-  background-color: var(--secondary-color);
-  color: var(--white);
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.navButton:hover {
-  background-color: var(--secondary-color-hover);
+.btn:hover:not(:disabled),
+.btn:focus-visible:not(:disabled) {
   transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0 0 0 / 0.12);
 }
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnSweepWave { margin-top: 0.5rem; }

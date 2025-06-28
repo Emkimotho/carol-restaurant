@@ -1,6 +1,33 @@
 /* File: app/dashboard/driver-dashboard/driver.module.css */
 /* Driver console styles + Payouts table */
 
+/* ===== Online Toggle ===== */
+.toggleButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border-color-dark, #444);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  margin-bottom: 1rem;
+}
+.toggleButton.online {
+  background: var(--primary-color, #00bf63);
+  color: var(--white, #fff);
+}
+.toggleButton.offline {
+  background: var(--secondary-color, #dc3545);
+  color: var(--white, #fff);
+}
+.toggleButton.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* ===== Container & Title ===== */
 .wrapper {
   padding: 2rem;
@@ -14,6 +41,33 @@
   font-size: 2rem;
   text-align: center;
   margin-bottom: 1rem;
+}
+
+/* ===== Offline Banner ===== */
+.offlineBanner {
+  background: var(--secondary-color, #dc3545);
+  color: var(--white, #fff);
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+.linkButton {
+  background: transparent;
+  border: none;
+  color: var(--white, #fff);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.linkButtonInline {
+  background: transparent;
+  border: none;
+  color: var(--primary-color, #00bf63);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 0.5rem;
 }
 
 /* ===== Tabs ===== */
@@ -123,6 +177,11 @@
 .btn:focus-visible {
   background: var(--primary-color-hover, #009f53);
 }
+.btn:disabled {
+  background: var(--gray, #c0c0c0);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .btnOutline {
   background: var(--white);
   border: 1px solid var(--gray, #6c757d);
@@ -148,15 +207,12 @@
 .payouts {
   margin-top: 1.5rem;
 }
-
-/* Totals above tables */
 .total {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
   color: var(--foreground);
 }
-
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -166,23 +222,19 @@
   border-radius: 6px;
   overflow: hidden;
 }
-
 .table th,
 .table td {
   padding: 0.75rem 1rem;
   text-align: left;
 }
-
 .table th {
   background: var(--light-gray, #f8f9fa);
   font-weight: 600;
   border-bottom: 1px solid var(--border-color, #ececec);
 }
-
 .table tr:not(:last-child) td {
   border-bottom: 1px solid var(--border-color, #ececec);
 }
-
 .table tr:hover td {
   background: var(--light-gray, #f8f9fa);
 }

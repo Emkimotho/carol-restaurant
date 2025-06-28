@@ -1,0 +1,23 @@
+/* File: app/dashboard/staff-dashboard/StaffDashboard.module.css */
+/* ─────────────────────────────────────────────────────────────────────
+   Styles for the Staff Dashboard page wrapper
+   ──────────────────────────────────────────────────────────────────── */
+
+.container {
+  padding: 2rem;
+  background-color: var(--light-gray);
+  min-height: 100vh;
+}
+
+.loading,
+.error {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  text-align: center;
+  margin-top: 2rem;
+  color: var(--dark-gray);
+}
+
+.error {
+  color: var(--danger-color, #c62828);
+}

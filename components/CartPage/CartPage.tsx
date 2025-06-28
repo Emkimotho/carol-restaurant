@@ -1,232 +1,51 @@
-// File: components/CartPage.tsx
 /* eslint-disable react/jsx-key */
 "use client";
 
-import React, { useContext, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+/* ------------------------------------------------------------------ *
+ *  IMPORTS                                                           *
+ * ------------------------------------------------------------------ */
+import React from "react";
 import Image from "next/image";
-import { toast } from "react-toastify";
-import { CartContext } from "@/contexts/CartContext";
-import type {
-  CartItem,
-  MenuItemOptionGroup,
-  MenuOptionChoice,
-  SelectedOptions,
-} from "@/utils/types";
 import styles from "./CartPage.module.css";
 
-/* ------------------------------------------------------------------
- * CONSTANTS
+import { useCartPage, MAX_RECS } from "./useCartPage";
+import type { CartItem, MenuItem as MenuItemType } from "@/utils/types";
+
+/* ------------------------------------------------------------------ *
+ *  PROPS                                                             *
  * ------------------------------------------------------------------ */
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
-const MAX_RECS           = 6;              // max unique recs shown
-
-/* ------------------------------------------------------------------
- * HELPERS
- * ------------------------------------------------------------------ */
-const shuffle = <T,>(arr: T[]) => [...arr].sort(() => 0.5 - Math.random());
-
-const uniqBy = <T, K>(array: T[], keyFn: (t: T) => K): T[] =>
-  [...new Map(array.map((item) => [keyFn(item), item])).values()];
-
-/** Deep‑safe scaffold for selectedOptions[groupId] */
-function ensureGroupState(
-  prev: SelectedOptions | undefined,
-  groupId: string
-): SelectedOptions {
-  const next: SelectedOptions = prev ? { ...prev } : {};
-  if (next[groupId]) {
-    const g = next[groupId];
-    next[groupId] = {
-      selectedChoiceIds: [...g.selectedChoiceIds],
-      nestedSelections: { ...g.nestedSelections },
-    };
-  } else {
-    next[groupId] = { selectedChoiceIds: [], nestedSelections: {} };
-  }
-  return next;
+interface CartPageProps {
+  cart: CartItem[];            // current cart (supplied by route, not used directly)
+  crossSell: MenuItemType[];   // server-side cross-sell suggestions
 }
 
-function cartSection(items: CartItem[]) {
-  if (!items.length) return "Unknown";
-  const allMain = items.every(
-    (c) => (c.category?.type ?? "MainMenu") === "MainMenu" && !c.showInGolfMenu
-  );
-  if (allMain) return "MainMenu";
-  const allGolf = items.every(
-    (c) => c.category?.type === "GolfMenu" || c.showInGolfMenu
-  );
-  if (allGolf) return "GolfMenu";
-  return "Mixed";
-}
-
-/* ------------------------------------------------------------------
- * COMPONENT
+/* ------------------------------------------------------------------ *
+ *  COMPONENT                                                         *
  * ------------------------------------------------------------------ */
-export default function CartPage() {
+export default function CartPage({ cart, crossSell }: CartPageProps) {
   const {
-    cartItems,
-    savedItems,
+    router,
+    cleared,
+    cartTotal,
+    uniqCart,
+    uniqSaved,
+    recs,
+    priceOf,
+    changeQty,
+    changeNote,
+    changeLvl,
+    updateChoice,
+    updateNested,
     removeFromCart,
-    updateCartItem,
     moveToSaved,
     moveBackToCart,
     removeFromSaved,
-    clearCart,
-  } = useContext(CartContext)!;
+  } = useCartPage(crossSell);
 
-  const router                       = useRouter();
-  const inactivityTimer              = useRef<NodeJS.Timeout | null>(null);
-  const [recs, setRecs]              = useState<CartItem[]>([]);
-  const [cleared, setCleared]        = useState(false);
-
-  /* -------- price helper -------- */
-  const priceOf = (item: CartItem) => {
-    let total = item.price;
-    (item.optionGroups ?? []).forEach((g) => {
-      const s = item.selectedOptions?.[g.id];
-      if (!s) return;
-      g.choices.forEach((c) => {
-        if (!s.selectedChoiceIds.includes(c.id)) return;
-        if (c.nestedOptionGroup) {
-          const nestSel = s.nestedSelections?.[c.id] ?? [];
-          c.nestedOptionGroup.choices.forEach(
-            (n) => nestSel.includes(n.id) && n.priceAdjustment && (total += n.priceAdjustment)
-          );
-        } else if (c.priceAdjustment) total += c.priceAdjustment;
-      });
-    });
-    return total * (item.quantity || 1);
-  };
-
-  const cartTotal = parseFloat(
-    cartItems.reduce((sum, it) => sum + priceOf(it), 0).toFixed(2)
-  );
-
-  /* -------- recommendations fetch -------- */
-  useEffect(() => {
-    (async () => {
-      try {
-        const r  = await fetch("/api/recommendations");
-        if (!r.ok) throw new Error("fetch fail");
-        const all: CartItem[] = await r.json();
-
-        const section      = cartSection(cartItems);
-        const idsInCartSet = new Set(cartItems.map((c) => c.id));
-
-        const eligible = all.filter((rec) => {
-          if (idsInCartSet.has(rec.id)) return false;
-          if (section === "MainMenu")
-            return rec.category?.type === "MainMenu" && !rec.showInGolfMenu;
-          if (section === "GolfMenu")
-            return rec.category?.type === "GolfMenu" || rec.showInGolfMenu;
-          return true; // Mixed / Unknown
-        });
-
-        /* diversity: round‑robin by sub‑category */
-        const buckets = new Map<string, CartItem[]>();
-        eligible.forEach((rec) => {
-          if (!rec.category?.id) return;
-          (buckets.get(rec.category.id) ?? buckets.set(rec.category.id, []).get(rec.category.id)!).push(rec);
-        });
-
-        const order = shuffle([...buckets.keys()]);
-        const picks: CartItem[] = [];
-        while (picks.length < MAX_RECS && order.length) {
-          for (let i = 0; i < order.length && picks.length < MAX_RECS; i++) {
-            const id   = order[i];
-            const pile = buckets.get(id)!;
-            if (!pile.length) { order.splice(i, 1); i--; continue; }
-            picks.push(pile.shift()!);
-          }
-        }
-
-        setRecs(picks);
-      } catch (err) {
-        console.error("rec error:", err);
-      }
-    })();
-  }, [cartItems]);
-
-  /* -------- inactivity timer -------- */
-  const resetTimer = () => {
-    if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-    inactivityTimer.current = setTimeout(() => {
-      clearCart();
-      setCleared(true);
-      toast.info("Cart cleared after 15 min of inactivity.");
-    }, INACTIVITY_TIMEOUT);
-  };
-
-  useEffect(() => {
-    resetTimer();
-    ["click", "keydown", "mousemove", "touchstart"].forEach((ev) =>
-      window.addEventListener(ev, resetTimer)
-    );
-    return () => {
-      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-      ["click", "keydown", "mousemove", "touchstart"].forEach((ev) =>
-        window.removeEventListener(ev, resetTimer)
-      );
-    };
-  }, []);
-
-  /* -------- cart item helper actions -------- */
-  const changeQty  = (ci: CartItem, q: number) => q > 0 && updateCartItem({ ...ci, quantity: q });
-  const changeNote = (ci: CartItem, v: string) => updateCartItem({ ...ci, specialInstructions: v });
-  const changeLvl  = (ci: CartItem, v: string) => updateCartItem({ ...ci, spiceLevel: v });
-
-  const updateChoice = (
-    ci: CartItem,
-    g: MenuItemOptionGroup,
-    c: MenuOptionChoice,
-    checked: boolean
-  ) => {
-    const sel = ensureGroupState(ci.selectedOptions, g.id);
-    const pg  = sel[g.id];
-    let ids   = [...pg.selectedChoiceIds];
-    if (g.optionType === "single-select" || g.optionType === "dropdown") {
-      ids = checked ? [c.id] : [];
-    } else {
-      ids = checked ? [...new Set([...ids, c.id])] : ids.filter((x) => x !== c.id);
-    }
-    updateCartItem({ ...ci, selectedOptions: { ...sel, [g.id]: { ...pg, selectedChoiceIds: ids } } });
-  };
-
-  const updateNested = (
-    ci: CartItem,
-    g: MenuItemOptionGroup,
-    parentId: string,
-    nId: string,
-    checked: boolean,
-    max?: number
-  ) => {
-    const sel   = ensureGroupState(ci.selectedOptions, g.id);
-    const pg    = sel[g.id];
-    const curr  = (pg.nestedSelections ?? {})[parentId] ?? [];
-    let nextArr = checked ? [...new Set([...curr, nId])] : curr.filter((x) => x !== nId);
-    if (checked && max && nextArr.length > max) {
-      toast.error(`Only ${max} allowed`);
-      return;
-    }
-    updateCartItem({
-      ...ci,
-      selectedOptions: {
-        ...sel,
-        [g.id]: {
-          ...pg,
-          nestedSelections: { ...pg.nestedSelections, [parentId]: nextArr },
-        },
-      },
-    });
-  };
-
-  /* -------- dedup lists to avoid double‑render bug -------- */
-  const uniqCart  = uniqBy(cartItems,  (c) => c.cartItemId);
-  const uniqSaved = uniqBy(savedItems, (s) => s.cartItemId);
-
-  /* -------- empty view -------- */
-  if (!uniqCart.length && !uniqSaved.length)
+  /* ----------------------------------------------------------------
+   *  EMPTY CART VIEW
+   * ---------------------------------------------------------------- */
+  if (!uniqCart.length && !uniqSaved.length) {
     return (
       <div className={styles.cartContainer}>
         {cleared && (
@@ -240,12 +59,16 @@ export default function CartPage() {
           <p className={styles.emptySubtitle}>
             Looks like you haven’t added anything yet.
           </p>
-          <button onClick={() => router.push("/menu")} className={styles.menuBtn}>
+          <button
+            onClick={() => router.push("/menu")}
+            className={styles.menuBtn}
+          >
             Back to Menu
           </button>
         </div>
       </div>
     );
+  }
 
   /* ----------------------------------------------------------------
    *  MAIN RENDER
@@ -266,12 +89,16 @@ export default function CartPage() {
         <div className={styles.cartItemsContainer}>
           {uniqCart.map((item, idx) => {
             const groups = item.optionGroups ?? [];
-            const alreadySaved = uniqSaved.some((s) => s.cartItemId === item.cartItemId);
+            const alreadySaved = uniqSaved.some(
+              (s) => s.cartItemId === item.cartItemId
+            );
+
             return (
               <div key={item.cartItemId} className={`${styles.cartItem} fade-in`}>
                 {/* --- header row --- */}
                 <div className={styles.itemHeader}>
                   <div className={styles.itemNumber}>{idx + 1}.</div>
+
                   {item.image && (
                     <div className={styles.thumbnail}>
                       <Image
@@ -284,12 +111,14 @@ export default function CartPage() {
                       />
                     </div>
                   )}
+
                   <div className={styles.itemInfo}>
                     <h3 className={styles.itemTitle}>{item.title}</h3>
                     {item.description && (
                       <p className={styles.itemDesc}>{item.description}</p>
                     )}
                   </div>
+
                   <div className={styles.actionButtons}>
                     <button
                       onClick={() => removeFromCart(item.cartItemId)}
@@ -298,7 +127,9 @@ export default function CartPage() {
                       Remove
                     </button>
                     <button
-                      onClick={() => !alreadySaved && moveToSaved(item.cartItemId)}
+                      onClick={() =>
+                        !alreadySaved && moveToSaved(item.cartItemId)
+                      }
                       className={styles.saveLaterBtn}
                       disabled={alreadySaved}
                       title={alreadySaved ? "Already saved" : "Save for later"}
@@ -357,12 +188,14 @@ export default function CartPage() {
                           selectedChoiceIds: [],
                           nestedSelections: {},
                         };
+
                       return (
                         <div key={g.id} className={styles.optionGroup}>
                           <h4 className={styles.optionGroupTitle}>
                             {g.title} (Select {g.minRequired}
                             {g.maxAllowed ? ` - ${g.maxAllowed}` : ""})
                           </h4>
+
                           {g.optionType === "dropdown" ? (
                             <select
                               className={styles.dropdownSelect}
@@ -387,16 +220,27 @@ export default function CartPage() {
                           ) : (
                             <div className={styles.optionList}>
                               {g.choices.map((c) => {
-                                const checked = state.selectedChoiceIds.includes(c.id);
+                                const checked =
+                                  state.selectedChoiceIds.includes(c.id);
+
                                 return (
                                   <div key={c.id} className={styles.choiceRow}>
                                     <label>
                                       <input
-                                        type={g.optionType === "single-select" ? "radio" : "checkbox"}
+                                        type={
+                                          g.optionType === "single-select"
+                                            ? "radio"
+                                            : "checkbox"
+                                        }
                                         checked={checked}
                                         name={`g-${g.id}`}
                                         onChange={(e) =>
-                                          updateChoice(item, g, c, e.target.checked)
+                                          updateChoice(
+                                            item,
+                                            g,
+                                            c,
+                                            e.target.checked
+                                          )
                                         }
                                       />
                                       {c.label}
@@ -415,38 +259,49 @@ export default function CartPage() {
                                             : ""}
                                           )
                                         </h5>
-                                        {c.nestedOptionGroup.choices.map((n) => {
-                                          const nSel =
-                                            state.nestedSelections?.[c.id] ?? [];
-                                          const nChecked = nSel.includes(n.id);
-                                          return (
-                                            <div
-                                              key={n.id}
-                                              className={styles.nestedChoiceRow}
-                                            >
-                                              <label>
-                                                <input
-                                                  type="checkbox"
-                                                  checked={nChecked}
-                                                  onChange={(e) =>
-                                                    updateNested(
-                                                      item,
-                                                      g,
-                                                      c.id,
-                                                      n.id,
-                                                      e.target.checked,
-                                                      c.nestedOptionGroup?.maxAllowed
-                                                    )
-                                                  }
-                                                />
-                                                {n.label}
-                                                {n.priceAdjustment
-                                                  ? ` (+$${n.priceAdjustment.toFixed(2)})`
-                                                  : ""}
-                                              </label>
-                                            </div>
-                                          );
-                                        })}
+                                        {c.nestedOptionGroup.choices.map(
+                                          (n) => {
+                                            const nSel =
+                                              state.nestedSelections?.[
+                                                c.id
+                                              ] ?? [];
+                                            const nChecked =
+                                              nSel.includes(n.id);
+
+                                            return (
+                                              <div
+                                                key={n.id}
+                                                className={
+                                                  styles.nestedChoiceRow
+                                                }
+                                              >
+                                                <label>
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={nChecked}
+                                                    onChange={(e) =>
+                                                      updateNested(
+                                                        item,
+                                                        g,
+                                                        c.id,
+                                                        n.id,
+                                                        e.target.checked,
+                                                        c.nestedOptionGroup
+                                                          ?.maxAllowed
+                                                      )
+                                                    }
+                                                  />
+                                                  {n.label}
+                                                  {n.priceAdjustment
+                                                    ? ` (+$${n.priceAdjustment.toFixed(
+                                                        2
+                                                      )})`
+                                                    : ""}
+                                                </label>
+                                              </div>
+                                            );
+                                          }
+                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -537,7 +392,6 @@ export default function CartPage() {
                   onClick={() => router.push(`/menuitem/${rec.id}`)}
                 >
                   <div className={styles.recommendImageContainer}>
-                    {/* fallback prevents layout shift if no img */}
                     <Image
                       src={rec.image || "/placeholder.png"}
                       alt={rec.title}
@@ -573,10 +427,10 @@ export default function CartPage() {
             >
               Proceed to Checkout
             </button>
-            <button onClick={clearCart} className={styles.clearBtn}>
-              Clear Cart
-            </button>
-            <button onClick={() => router.push("/menu")} className={styles.menuBtn}>
+            <button
+              onClick={() => router.push("/menu")}
+              className={styles.menuBtn}
+            >
               Back to Menu
             </button>
           </div>

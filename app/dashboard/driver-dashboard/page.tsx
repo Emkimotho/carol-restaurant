@@ -6,31 +6,31 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSession }       from 'next-auth/react';
-import { useRouter }        from 'next/navigation';
-import useSWR               from 'swr';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
 
-import styles               from './driver.module.css';
-import DriverEarnings       from './earnings/DriverEarnings';
+import styles from './driver.module.css';
+import OnlineToggle from '@/components/dashboard/DriverConsole/OnlineToggle';
+import { useDriverStatus } from '@/components/dashboard/DriverConsole/useDriverStatus';
+import DriverEarnings from './earnings/DriverEarnings';
 import { Order as BaseOrder } from '@/contexts/OrderContext';
 
-/* ───────────────────────── Types ───────────────────────── */
-
 interface DriverOrder extends Omit<BaseOrder, 'deliveryAddress' | 'orderType'> {
-  orderType:               string | null;
-  driverId?:               number | null;
+  orderType: string | null;
+  driverId?: number | null;
   deliveryAddress?: {
-    street:  string;
-    city:    string;
-    state:   string;
+    street: string;
+    city:   string;
+    state:  string;
     zipCode: string;
   };
-  subtotal:                number;
-  totalDeliveryFee:        number;
-  driverPayout:            number;
-  tipAmount:               number;
-  deliveryDistanceMiles:   number;
-  deliveryTimeMinutes:     number;
+  subtotal: number;
+  totalDeliveryFee:   number;
+  driverPayout:      number;
+  tipAmount:         number;
+  deliveryDistanceMiles: number;
+  deliveryTimeMinutes:   number;
 }
 
 interface Payout {
@@ -43,42 +43,42 @@ interface Payout {
 }
 
 interface Paginated<T> {
-  orders:     T[];
-  page:       number;
-  totalPages: number;
+  orders:      T[];
+  page:        number;
+  totalPages:  number;
 }
 
 type Tab = 'available' | 'mine' | 'delivered' | 'earnings' | 'payouts';
 
-/* ───────────────────────── SWR fetcher ───────────────────────── */
-
 const fetcher = (url: string) =>
-  fetch(url, { credentials: 'include' }).then((r) => r.json());
-
-/* ───────────────────────── Component ───────────────────────── */
+  fetch(url, { credentials: 'include' }).then(r => r.json());
 
 export default function DriverConsole() {
-  const router                     = useRouter();
-  const { data: session, status }  = useSession();
-  const driverId                   = session?.user?.id
-                                       ? Number(session.user.id)
-                                       : null;
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const driverId = session?.user?.id ? Number(session.user.id) : null;
 
-  const [tab, setTab]              = useState<Tab>('available');
-  const [from, setFrom]            = useState<string>('');
-  const [to,   setTo]              = useState<string>('');
+  // 1) Pull online state and toggle function from our hook
+  const { online, isValidating: statusLoading, error: statusError, toggleOnline } =
+    useDriverStatus(driverId!);
 
-  /* ---------- 1) All driver‐related orders ---------- */
-  const { data: allData, mutate: mutateAll } =
+  // tabs, date filters
+  const [tab, setTab] = useState<Tab>('available');
+  const [from, setFrom] = useState('');
+  const [to, setTo]   = useState('');
+
+  // SWR for orders
+  const { data: allData = { orders: [] as DriverOrder[] }, mutate: mutateAll } =
     useSWR<Paginated<DriverOrder>>(
-      () => (driverId !== null ? `/api/orders?role=driver` : null),
+      () =>
+        driverId !== null
+          ? `/api/orders?role=driver&driverId=${driverId}`
+          : null,
       fetcher,
       { refreshInterval: 5000 }
     );
-  const allOrders = allData?.orders ?? [];
 
-  /* ---------- 2) Delivered orders only ---------- */
-  const { data: deliveredData, mutate: mutateDelivered } =
+  const { data: deliveredData = { orders: [] as DriverOrder[] } } =
     useSWR<Paginated<DriverOrder>>(
       () =>
         driverId !== null
@@ -87,58 +87,43 @@ export default function DriverConsole() {
       fetcher,
       { refreshInterval: 5000 }
     );
-  const deliveredList = deliveredData?.orders ?? [];
 
-  /* ---------- 3) Filter Available / My / Delivered ---------- */
-  const notCancelledOrDelivered = allOrders.filter(
-    (o) => o.status !== 'CANCELLED' && o.status !== 'DELIVERED'
-  );
   const isDriverOrder = (o: DriverOrder) =>
-    o.orderType === 'delivery' || o.totalDeliveryFee > 0 || o.driverPayout > 0;
-  const qualified = notCancelledOrDelivered.filter(isDriverOrder);
+    o.orderType === 'delivery' ||
+    o.totalDeliveryFee > 0 ||
+    o.driverPayout > 0;
 
-  // Only orders unassigned AND at least ORDER_RECEIVED
+  const qualified = allData.orders.filter(
+    o => o.status !== 'CANCELLED' && o.status !== 'DELIVERED' && isDriverOrder(o)
+  );
   const available = qualified.filter(
-    (o) =>
+    o =>
       o.driverId == null &&
-      o.status   === 'ORDER_RECEIVED'
+      ['ORDER_RECEIVED', 'IN_PROGRESS', 'ORDER_READY'].includes(o.status)
   );
+  const mine      = qualified.filter(o => o.driverId === driverId);
+  const delivered = deliveredData.orders.filter(isDriverOrder);
 
-  const mine = qualified.filter(
-    (o) =>
-      o.driverId === driverId &&
-      o.status   !== 'CANCELLED' &&
-      o.status   !== 'DELIVERED'
-  );
-
-  const delivered = deliveredList.filter(isDriverOrder);
-
-  /* ---------- 4) Payouts (unpaid + paid) ---------- */
-  const unpaidKey =
-    driverId !== null
-      ? `/api/payouts?paid=false&userId=${driverId}` +
+  // payouts
+  const makePayoutKey = (paid: boolean) =>
+    driverId === null
+      ? null
+      : `/api/payouts?paid=${paid}&userId=${driverId}&mode=driver` +
         (from ? `&from=${from}` : '') +
-        (to   ? `&to=${to}`   : '')
-      : null;
+        (to   ? `&to=${to}`   : '');
 
-  const paidKey =
-    driverId !== null
-      ? `/api/payouts?paid=true&userId=${driverId}` +
-        (from ? `&from=${from}` : '') +
-        (to   ? `&to=${to}`   : '')
-      : null;
+  const { data: unpaid = [] as Payout[], mutate: mutateUnpaid } =
+    useSWR<Payout[]>(makePayoutKey(false), fetcher);
+  const { data: paid = [] as Payout[], mutate: mutatePaid  } =
+    useSWR<Payout[]>(makePayoutKey(true),  fetcher);
 
-  const { data: unpaid = [], mutate: mutateUnpaid } =
-    useSWR<Payout[]>(unpaidKey, fetcher);
-  const { data: paid   = [], mutate: mutatePaid   } =
-    useSWR<Payout[]>(paidKey,   fetcher);
+  const totalUnpaid = unpaid.reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalPaid   = paid.reduce((sum, p) => sum + Number(p.amount),   0);
 
-  const totalUnpaid = unpaid.reduce((s, p) => s + Number(p.amount), 0);
-  const totalPaid   = paid.reduce((s, p) => s + Number(p.amount), 0);
-
-  /* ---------- 5) Helpers ---------- */
+  // claim order via dedicated driver route; disabled when offline
   const claimOrder = async (o: DriverOrder) => {
-    await fetch(`/api/orders/${o.id}`, {
+    if (!driverId || !online) return;
+    await fetch(`/api/orders/${o.id}/driver`, {
       method:      'PATCH',
       credentials: 'include',
       headers:     { 'Content-Type': 'application/json' },
@@ -147,14 +132,15 @@ export default function DriverConsole() {
     await mutateAll();
   };
 
+  // CSV / PDF exports unchanged...
   const exportCSV = () => {
     const head = 'Date,Order ID,Amount,Paid';
     const rows = [
-      ...unpaid.map((p) =>
+      ...unpaid.map(p =>
         [p.createdAt.slice(0, 10), p.order?.orderId || '', p.amount, 'false'].join(',')
       ),
-      ...paid.map((p) =>
-        [(p.paidAt?.slice(0, 10) ?? ''), p.order?.orderId || '', p.amount, 'true'].join(',')
+      ...paid.map(p =>
+        [p.paidAt?.slice(0, 10) || '', p.order?.orderId || '', p.amount, 'true'].join(',')
       ),
     ];
     const blob = new Blob([head + '\n' + rows.join('\n')], { type: 'text/csv' });
@@ -174,7 +160,7 @@ export default function DriverConsole() {
     if (from) qs.set('from', from);
     if (to)   qs.set('to',   to);
 
-    const res  = await fetch(`/api/payouts/pdf?${qs.toString()}`, { method: 'GET' });
+    const res = await fetch(`/api/payouts/pdf?${qs}`);
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -184,24 +170,40 @@ export default function DriverConsole() {
     URL.revokeObjectURL(url);
   };
 
-  /* ---------- 6) Loading ---------- */
   if (status === 'loading' || driverId === null) {
-    return <div className={styles.wrapper}>Loading…</div>;
+    return <div className={styles.loading}>Loading…</div>;
   }
 
-  /* ---------- 7) Select list to render ---------- */
-  let listToShow: DriverOrder[] = [];
-  if (tab === 'available')      listToShow = available;
-  else if (tab === 'mine')      listToShow = mine;
-  else if (tab === 'delivered') listToShow = delivered;
+  const listToShow =
+    tab === 'available'
+      ? available
+      : tab === 'mine'
+      ? mine
+      : tab === 'delivered'
+      ? delivered
+      : [];
 
   return (
     <div className={styles.wrapper}>
       <h1 className={styles.title}>Driver Console</h1>
 
-      {/* ——— Tabs ——— */}
+      <OnlineToggle driverId={driverId} onStatusChange={() => {}} />
+
+      {!online && (
+        <div className={styles.offlineBanner}>
+          You’re currently offline.&nbsp;
+          <button
+            onClick={toggleOnline}
+            disabled={statusLoading}
+            className={styles.linkButtonInline}
+          >
+            Go Online →
+          </button>
+        </div>
+      )}
+
       <nav className={styles.tabs}>
-        {(['available', 'mine', 'delivered', 'earnings', 'payouts'] as Tab[]).map((t) => (
+        {(['available','mine','delivered','earnings','payouts'] as Tab[]).map(t => (
           <button
             key={t}
             className={tab === t ? styles.active : ''}
@@ -220,21 +222,24 @@ export default function DriverConsole() {
         ))}
       </nav>
 
-      {/* ——— Orders List ——— */}
       {tab !== 'earnings' && tab !== 'payouts' && (
         <div className={styles.list}>
-          {listToShow.map((o) => (
+          {listToShow.map(o => (
             <div key={o.id} className={styles.card}>
               <div className={styles.cardHeader}>
                 <span className={styles.orderId}>#{o.orderId}</span>
-                <span className={styles.badge}>{o.status.replace(/_/g, ' ')}</span>
+                <span className={styles.badge}>{o.status.replace(/_/g,' ')}</span>
               </div>
               <div className={styles.cardBody}>
-                <p><strong>Main:</strong> {o.items?.[0]?.title ?? '—'}</p>
+                <p><strong>Main:</strong> {o.items?.[0]?.title || '—'}</p>
                 <p><small>💰 Delivery Fee: ${o.totalDeliveryFee.toFixed(2)}</small></p>
-                <p><small>💵 Tip:          ${o.tipAmount.toFixed(2)}</small></p>
-                <p><small>🏆 Payout:       ${o.driverPayout.toFixed(2)}</small></p>
-                <p><small>⏱ {o.deliveryTimeMinutes} min | 🛣️ {o.deliveryDistanceMiles.toFixed(1)} miles</small></p>
+                <p><small>💵 Tip: ${o.tipAmount.toFixed(2)}</small></p>
+                <p><small>🏆 Payout: ${o.driverPayout.toFixed(2)}</small></p>
+                <p>
+                  <small>
+                    ⏱ {o.deliveryTimeMinutes} min | 🛣️ {o.deliveryDistanceMiles.toFixed(1)} mi
+                  </small>
+                </p>
                 {tab !== 'delivered' && o.deliveryAddress && (
                   <p className={styles.addr}>
                     <small>
@@ -245,13 +250,17 @@ export default function DriverConsole() {
               </div>
               <div className={styles.cardFooter}>
                 {tab === 'available' && (
-                  <button className={styles.btn} onClick={() => claimOrder(o)}>
+                  <button
+                    className={styles.btn}
+                    onClick={() => claimOrder(o)}
+                    disabled={!online}
+                  >
                     Claim Order
                   </button>
                 )}
                 {tab === 'mine' && (
                   <button
-                    className={styles.btnOutline}
+                    className={styles.btn}
                     onClick={() =>
                       router.push(`/dashboard/driver-dashboard/order/${o.id}`)
                     }
@@ -262,7 +271,7 @@ export default function DriverConsole() {
               </div>
             </div>
           ))}
-          {!listToShow.length && (
+          {listToShow.length === 0 && (
             <p className={styles.empty}>
               {tab === 'available'
                 ? 'No orders available.'
@@ -274,10 +283,8 @@ export default function DriverConsole() {
         </div>
       )}
 
-      {/* ——— Earnings ——— */}
       {tab === 'earnings' && <DriverEarnings driverId={driverId} />}
 
-      {/* ——— Payouts ——— */}
       {tab === 'payouts' && (
         <div className={styles.payouts}>
           <h2>Unpaid ({unpaid.length})</h2>
@@ -287,7 +294,7 @@ export default function DriverConsole() {
               <input
                 type="date"
                 value={from}
-                onChange={(e) => setFrom(e.target.value)}
+                onChange={e => setFrom(e.target.value)}
                 className={styles.searchInput}
               />
             </label>
@@ -296,30 +303,36 @@ export default function DriverConsole() {
               <input
                 type="date"
                 value={to}
-                onChange={(e) => setTo(e.target.value)}
+                onChange={e => setTo(e.target.value)}
                 className={styles.searchInput}
               />
             </label>
-            <button className={styles.button} onClick={() => { mutateUnpaid(); mutatePaid(); }}>
+            <button className={styles.btnOutline} onClick={() => { mutateUnpaid(); mutatePaid(); }}>
               Apply
             </button>
           </div>
+
           <p className={styles.total}>Total Unpaid: ${totalUnpaid.toFixed(2)}</p>
-          <button className={styles.button} onClick={exportCSV}>Download CSV</button>
-          <button className={styles.button} onClick={downloadPDF}>Download PDF</button>
+          <button className={styles.btn} onClick={exportCSV}>Download CSV</button>
+          <button className={styles.btn} onClick={downloadPDF}>Download PDF</button>
+
           <table className={styles.table}>
             <thead>
-              <tr><th>Created</th><th>Order #</th><th>Amount</th></tr>
+              <tr>
+                <th>Created</th>
+                <th>Order #</th>
+                <th>Amount</th>
+              </tr>
             </thead>
             <tbody>
-              {unpaid.map((p) => (
+              {unpaid.map(p => (
                 <tr key={p.id}>
                   <td>{new Date(p.createdAt).toLocaleDateString()}</td>
                   <td>{p.order?.orderId ?? '—'}</td>
                   <td>${Number(p.amount).toFixed(2)}</td>
                 </tr>
               ))}
-              {!unpaid.length && (
+              {unpaid.length === 0 && (
                 <tr><td colSpan={3}>None pending.</td></tr>
               )}
             </tbody>
@@ -327,25 +340,32 @@ export default function DriverConsole() {
 
           <h2>Paid ({paid.length})</h2>
           <p className={styles.total}>Total Paid: ${totalPaid.toFixed(2)}</p>
-          <button className={styles.button} onClick={exportCSV}>Download CSV</button>
-          <button className={styles.button} onClick={downloadPDF}>Download PDF</button>
+          <button className={styles.btn} onClick={exportCSV}>Download CSV</button>
+          <button className={styles.btn} onClick={downloadPDF}>Download PDF</button>
+
           <table className={styles.table}>
             <thead>
-              <tr><th>Paid At</th><th>Order #</th><th>Amount</th></tr>
+              <tr>
+                <th>Paid At</th>
+                <th>Order #</th>
+                <th>Amount</th>
+              </tr>
             </thead>
             <tbody>
-              {paid.map((p) => (
+              {paid.map(p => (
                 <tr key={p.id}>
                   <td>
                     {p.paidAt
-                      ? new Date(p.paidAt).toLocaleDateString('en-US', { timeZone: 'America/New_York' })
+                      ? new Date(p.paidAt).toLocaleDateString('en-US', {
+                          timeZone: 'America/New_York',
+                        })
                       : '—'}
                   </td>
                   <td>{p.order?.orderId ?? '—'}</td>
                   <td>${Number(p.amount).toFixed(2)}</td>
                 </tr>
               ))}
-              {!paid.length && (
+              {paid.length === 0 && (
                 <tr><td colSpan={3}>No payouts yet.</td></tr>
               )}
             </tbody>

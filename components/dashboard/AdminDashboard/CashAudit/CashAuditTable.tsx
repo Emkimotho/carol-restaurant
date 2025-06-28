@@ -1,11 +1,11 @@
 /* =======================================================================
  * File: components/dashboard/AdminDashboard/CashAudit/CashAuditTable.tsx
  * -----------------------------------------------------------------------
- * Admin Cash‑Audit view:
- *   – Lists every cash‑collection record
+ * Admin Cash-Audit view:
+ *   – Lists every cash-collection record
  *   – Filters by status / server / cashier
  *   – Inline settle / unsettle / delete actions
- *   – Clickable Order # opens existing DetailModal
+ *   – Clickable Order # opens existing DetailModal
  * ---------------------------------------------------------------------*/
 
 'use client';
@@ -16,7 +16,8 @@ import { toast }             from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import styles                from './CashAuditTable.module.css';
 import DetailModal           from '../../OrdersDashboard/DetailModal';
-import type { Order }        from '../../OrdersDashboard/OrdersDashboard';
+// **FIXED**: import the Order type from your shared context where it's actually exported
+import type { Order }        from '@/contexts/OrderContext';
 
 /* ------------------------------------------------------------------ */
 /*                              Types                                 */
@@ -148,12 +149,12 @@ export default function CashAuditTable() {
         <table className={styles.auditTable}>
           <thead>
             <tr>
-              <th>Order #</th>
+              <th>Order #</th>
               <th>Server</th>
               <th>Cashier</th>
               <th>Amount</th>
-              <th>Collected At</th>
-              <th>Settled At</th>
+              <th>Collected At</th>
+              <th>Settled At</th>
               <th>Status</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
@@ -172,8 +173,8 @@ export default function CashAuditTable() {
                     {r.order.orderId}
                   </button>
                 </td>
-                <td>{r.server.firstName} {r.server.lastName}</td>
-                <td>{r.settledBy ? `${r.settledBy.firstName} ${r.settledBy.lastName}` : '—'}</td>
+                <td>{r.server.firstName} {r.server.lastName}</td>
+                <td>{r.settledBy ? `${r.settledBy.firstName} ${r.settledBy.lastName}` : '—'}</td>
                 <td>${r.amount.toFixed(2)}</td>
                 <td>{new Date(r.collectedAt).toLocaleString()}</td>
                 <td>{r.settledAt ? new Date(r.settledAt).toLocaleString() : '—'}</td>

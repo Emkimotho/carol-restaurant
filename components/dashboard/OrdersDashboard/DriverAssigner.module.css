@@ -10,14 +10,6 @@
   margin-top: 0.5rem;
 }
 
-.label {
-  /* text label before select (if you add one) */
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--dark-gray);
-}
-
 .select {
   font-family: var(--font-body);
   font-size: 0.9rem;

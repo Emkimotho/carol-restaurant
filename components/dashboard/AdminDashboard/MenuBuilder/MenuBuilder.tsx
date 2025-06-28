@@ -246,7 +246,7 @@ const MenuBuilder: React.FC = () => {
         <div className={styles.previewModal}>
           <div className={styles.previewContent}>
             <ItemDetailPage item={previewItem} isPreview />
-            <button onClick={() => setPreviewItem(null)}>Close Preview</button>
+             <button onClick={() => setPreviewItem(null)}>Close Preview</button>
           </div>
         </div>
       )}

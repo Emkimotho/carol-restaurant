@@ -1,0 +1,21 @@
+/* File: components/dashboard/OrdersDashboard/OrdersDashboard.module.css */
+
+/* Top-level container for the dashboard */
+.container {
+  background-color: var(--light-gray);
+  color: var(--dark-gray);
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+/* Ensure any direct child sections stack nicely */
+.container > * + * {
+  margin-top: 1.5rem;
+}
+
+/* Responsive spacing tweak */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+}

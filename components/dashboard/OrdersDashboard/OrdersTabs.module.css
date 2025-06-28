@@ -1,0 +1,33 @@
+/* File: components/dashboard/OrdersDashboard/OrdersTabs.module.css */
+/* ─────────────────────────────────────────────────────────────────────
+   Styles for the OrdersTabs component
+   ──────────────────────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-body);
+  background-color: var(--secondary-color);
+  color: var(--black);
+  border: 1px solid var(--border-color-dark);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.tab:hover {
+  background-color: var(--secondary-color-hover);
+  color: var(--white);
+}
+
+.activeTab {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border-color: var(--primary-color);
+}

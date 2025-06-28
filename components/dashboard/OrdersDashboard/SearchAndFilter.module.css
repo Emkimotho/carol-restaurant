@@ -1,0 +1,35 @@
+/* File: components/dashboard/OrdersDashboard/SearchAndFilter.module.css */
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.searchInput {
+  width: 50%;
+  max-width: 400px;
+  padding: 0.75rem;
+  font-family: var(--font-body);
+  border: 1px solid var(--border-color-dark);
+  border-radius: 0.5rem;
+}
+
+.filterLabel {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-body);
+  color: var(--dark-gray);
+}
+
+.filterSelect {
+  margin-left: 0.5rem;
+  padding: 0.75rem;
+  font-family: var(--font-body);
+  border: 1px solid var(--border-color-dark);
+  border-radius: 0.5rem;
+  background-color: var(--white);
+  color: var(--dark-gray);
+}

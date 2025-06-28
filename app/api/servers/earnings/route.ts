@@ -1,103 +1,84 @@
 // File: app/api/servers/earnings/route.ts
 /* ======================================================================
-   Endpoint  : GET /api/servers/earnings
-   Purpose   : Tip-earnings for on-course servers (staff)
-   Query     :
-     • staffId=<id>                     (optional → defaults to session user)
-     • period=day|week|month|year       (default=day)
-     • from=YYYY-MM-DD&to=YYYY-MM-DD    (custom range overrides period)
-     • &orders=true                     (include per-order rows)
-   Response  : { range:{ from, to }, totals:{ tipAmount }, orders:[ … ] }
+   GET /api/servers/earnings
+   Tip earnings for on-course servers (golf orders, totalDeliveryFee = 0)
    ====================================================================== */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession }          from 'next-auth/next';
 import { authOptions }               from '@/lib/auth';
 import prisma                        from '@/lib/prisma';
-import { OrderStatus, DeliveryType } from '@prisma/client';
+import { OrderStatus }               from '@prisma/client';
 import { DateTime }                  from 'luxon';
 
 type Period = 'day' | 'week' | 'month' | 'year';
 
-/* ──────────────────────────── Helpers ──────────────────────────── */
+/* ───────── utilities ───────── */
 
-/** Case-insensitive check that the user has a server/staff role */
-function isServer(sess: any): boolean {
-  const roles: string[] = Array.isArray(sess?.user?.roles) ? sess.user.roles : [];
-  return roles.some(r => ['server', 'staff'].includes(r.toLowerCase()));
-}
+const inServerRole = (s: any) =>
+  (Array.isArray(s?.user?.roles) ? s.user.roles : [])
+    .some((r: string) => ['server', 'staff'].includes(r.toLowerCase()));
 
-/** Parse a YYYY-MM-DD string to numeric parts for Luxon */
 const parseYMD = (s: string) => {
-  const [y, m, d] = s.split('-').map(Number);
+  const [y,m,d] = s.split('-').map(Number);
   return { year: y, month: m, day: d };
 };
 
-/** Build local-NY [start, end) JS Dates for a given period, then convert to UTC */
-function buildNYRange(period: Period): { start: Date; end: Date } {
-  const now     = DateTime.now().setZone('America/New_York');
-  let startDT   = now.startOf('day');
-  if (period === 'week')  startDT = now.minus({ days: 6 }).startOf('day');
-  if (period === 'month') startDT = now.minus({ months: 1 }).startOf('day');
-  if (period === 'year')  startDT = now.minus({ years: 1 }).startOf('day');
-  const endDT = startDT.plus({ days: 1 });
-  return {
-    start: startDT.toUTC().toJSDate(),
-    end:   endDT.toUTC().toJSDate(),
-  };
+function nyRange(p: Period) {
+  const ny = DateTime.now().setZone('America/New_York');
+  const start = (
+    p === 'week'  ? ny.minus({ days: 6 }) :
+    p === 'month' ? ny.minus({ months: 1 }) :
+    p === 'year'  ? ny.minus({ years: 1 }) :
+    ny
+  ).startOf('day');
+  const end = ny.endOf('day');               // always include today
+  return { start: start.toUTC().toJSDate(), end: end.toUTC().toJSDate() };
 }
 
-/* ─────────────────────────── Handler ─────────────────────────── */
+/* ───────── handler ───────── */
 
 export async function GET(req: NextRequest) {
-  // 1) Authenticate & authorize
-  const session = await getServerSession(authOptions);
-  if (!session?.user)           return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  if (!isServer(session))       return NextResponse.json({ error: 'Forbidden'    }, { status: 403 });
+  /* 1 ─ auth */
+  const sess = await getServerSession(authOptions);
+  if (!sess?.user)            return NextResponse.json({ error:'Unauthorized' }, { status:401 });
+  if (!inServerRole(sess))    return NextResponse.json({ error:'Forbidden'    }, { status:403 });
 
-  // 2) Determine staffId
-  const qs      = req.nextUrl.searchParams;
-  const staffId = Number(qs.get('staffId')) || Number(session.user.id);
+  /* 2 ─ params */
+  const q       = req.nextUrl.searchParams;
+  const staffId = Number(q.get('staffId')) || Number(sess.user.id);
+  const wantRows = q.get('orders') === 'true';
 
-  // 3) Compute NY-local date range → UTC
-  let start: Date, end: Date;
-  if (qs.has('from') && qs.has('to')) {
-    const fromDT = DateTime.fromObject(parseYMD(qs.get('from')!), { zone: 'America/New_York' }).startOf('day');
-    const toDT   = DateTime.fromObject(parseYMD(qs.get('to')!),   { zone: 'America/New_York' }).startOf('day').plus({ days: 1 });
-    start = fromDT.toUTC().toJSDate();
-    end   = toDT.toUTC().toJSDate();
+  /* 3 ─ range */
+  let from: Date, to: Date;
+  if (q.has('from') && q.has('to')) {
+    const f = DateTime.fromObject(parseYMD(q.get('from')!), { zone:'America/New_York' }).startOf('day');
+    const t = DateTime.fromObject(parseYMD(q.get('to')!),   { zone:'America/New_York' }).endOf('day');
+    from = f.toUTC().toJSDate();
+    to   = t.toUTC().toJSDate();
   } else {
-    const period = (qs.get('period') as Period) ?? 'day';
-    ({ start, end } = buildNYRange(period));
+    ({ start: from, end: to } = nyRange((q.get('period') as Period) ?? 'day'));
   }
 
-  // 4) Core filter: delivered, on-course orders for this staff
-  const filter = {
+  /* 4 ─ golf-order filter */
+  const where = {
     staffId,
-    status:       OrderStatus.DELIVERED,
-    deliveryType: { not: DeliveryType.DELIVERY },
-    deliveredAt:  { gte: start, lt: end },
+    status:           OrderStatus.DELIVERED,
+    totalDeliveryFee: 0,                       // golf
+    deliveredAt:      { gte: from, lte: to },
   };
 
-  // 5) Aggregate totals (tips only)
-  const { _sum: totals } = await prisma.order.aggregate({
-    where: filter,
-    _sum:  { tipAmount: true },
+  /* 5 ─ totals */
+  const { _sum } = await prisma.order.aggregate({
+    where,
+    _sum: { tipAmount: true },
   });
 
-  // 6) Optional per-order rows
-  interface Row {
-    orderId:        string;
-    deliveredAt:    Date | null;
-    tipAmount:      number;
-    deliveryType:   DeliveryType;
-    tipRecipientId: number | null;
-  }
-
-  let orders: Row[] = [];
-  if (qs.get('orders') === 'true') {
+  /* 6 ─ rows (optional) */
+  let orders: any[] = [];
+  if (wantRows) {
     const raw = await prisma.order.findMany({
-      where:   filter,
+      where,
       select: {
         orderId:      true,
         deliveredAt:  true,
@@ -110,20 +91,17 @@ export async function GET(req: NextRequest) {
 
     orders = raw.map(o => ({
       orderId:        o.orderId,
-      deliveredAt:    o.deliveredAt,
+      deliveredAt:    o.deliveredAt?.toISOString() ?? null,
       tipAmount:      o.tipAmount ?? 0,
       deliveryType:   o.deliveryType,
-      tipRecipientId: o.staffId ?? null,
+      tipRecipientId: o.staffId,
     }));
   }
 
-  // 7) Respond
+  /* 7 ─ response */
   return NextResponse.json({
-    range: {
-      from: start.toISOString(),
-      to:   new Date(end.getTime() - 1).toISOString(),
-    },
-    totals,
+    range:  { from: from.toISOString(), to: to.toISOString() },
+    totals: { tipAmount: _sum.tipAmount ?? 0 },
     orders,
   });
 }

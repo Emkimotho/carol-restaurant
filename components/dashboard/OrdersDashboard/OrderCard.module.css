@@ -1,0 +1,110 @@
+/* File: components/dashboard/OrdersDashboard/OrderCard.module.css */
+/* ─────────────────────────────────────────────────────────────────────
+   Styles for individual OrderCard components
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Card container */
+.card {
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--box-shadow-primary);
+  color: var(--dark-gray);
+  font-family: var(--font-body);
+}
+
+/* Header */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.orderId {
+  font-weight: bold;
+  color: var(--dark-gray);
+}
+
+/* ScheduleBadge is inserted here by its own component */
+
+/* Golf badge */
+.golfBadge {
+  background-color: var(--info-color, #e0f7fa);
+  color: var(--info-text-color, #006064);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Cash badge */
+.cashBadge {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Alcohol badge */
+.alcoholBadge {
+  background-color: #ffe6e6;
+  color: #c62828;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  animation: beerPulse 1.5s ease-in-out infinite;
+}
+@keyframes beerPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Status badge */
+.badge {
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--white);
+  pointer-events: none;
+}
+.badge.ORDER_RECEIVED      { background-color: var(--secondary-color); color: var(--black); }
+.badge.IN_PROGRESS         { background-color: var(--primary-color); }
+.badge.ORDER_READY         { background-color: var(--secondary-color-hover); color: var(--black); }
+.badge.PICKED_UP_BY_DRIVER { background-color: var(--gray); }
+.badge.DELIVERED           { background-color: var(--gray-hover); }
+.badge.CANCELLED           { background-color: var(--secondary-color); }
+
+/* Body */
+.cardBody {
+  flex: 1;
+}
+.itemDesc {
+  margin: 0.25rem 0;
+  color: var(--gray-hover);
+  font-size: 0.9rem;
+}
+
+/* Delivery destination line and guest/driver/staff tags */
+.driverTag {
+  font-style: italic;
+  color: var(--gray-hover);
+  font-size: 0.9rem;
+}
+
+/* DriverAssigner and OrderActions sit below, no extra spacing needed here */

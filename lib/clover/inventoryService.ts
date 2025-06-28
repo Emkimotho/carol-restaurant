@@ -1,15 +1,14 @@
-/* ------------------------------------------------------------------ */
-/*  File: lib/clover/inventoryService.ts                               */
-/* ------------------------------------------------------------------ 
-   • pushStockToClover(menuItemId, newQuantity) – read the given 
-     MenuItem (including its cloverItemId) from Prisma, then send a 
-     POST to Clover’s /stock_levels endpoint to create/update its 
-     inventory level.
-   • pullStockFromClover() – fetch all inventory levels from Clover, 
-     match each stock record’s item.id to your local menuItem.cloverItemId, 
-     update local Prisma menuItem.stock if it differs, and return how many 
-     rows were updated.
-   ------------------------------------------------------------------ */
+// File: lib/clover/inventoryService.ts
+// ------------------------------------------------------------------
+// • pushStockToClover(menuItemId, newQuantity) – read the given
+//   MenuItem (including its cloverItemId) from Prisma, then send a
+//   POST to Clover’s /stock_levels endpoint to create/update its
+//   inventory level. If that returns 405, fall back to /item_stocks.
+// • pullStockFromClover() – fetch all inventory levels from Clover,
+//   match each stock record’s item.id to your local menuItem.cloverItemId,
+//   update local Prisma menuItem.stock if it differs, and return how many
+//   rows were updated.
+// ------------------------------------------------------------------
 
 import { PrismaClient } from "@prisma/client";
 import { cloverFetch, getCloverConfig } from "../cloverClient";
@@ -21,9 +20,11 @@ const { merchantId } = getCloverConfig();
  * pushStockToClover
  *
  * Reads the specified menuItemId from Prisma (including its cloverItemId).
- * Then sends a POST to Clover’s /v3/merchants/{mId}/stock_levels endpoint
- * with a payload to set the inventory level to newQuantity. If the item
- * has no cloverItemId, throws an error.
+ * Then attempts to POST to Clover’s /stock_levels endpoint with a payload
+ * to set the inventory level to newQuantity. If Clover returns 405 (stock
+ * tracking not enabled for the item), this function will:
+ *  • POST /item_stocks/{itemId} with { quantity: newQuantity }
+ *    which both creates/updates the stock record and enables tracking.
  *
  * @param menuItemId  The local Prisma MenuItem.id
  * @param newQuantity The desired stock quantity to push to Clover
@@ -39,7 +40,9 @@ export async function pushStockToClover(
   });
 
   if (!menuItem) {
-    throw new Error(`Cannot push stock: MenuItem with id="${menuItemId}" not found.`);
+    throw new Error(
+      `Cannot push stock: MenuItem with id="${menuItemId}" not found.`
+    );
   }
   if (!menuItem.cloverItemId) {
     throw new Error(
@@ -48,16 +51,7 @@ export async function pushStockToClover(
   }
 
   // 2) Build the “stock_levels” payload
-  //    Clover’s V3 stock_levels endpoint expects a JSON body like:
-  //    {
-  //      "elements": [
-  //        {
-  //          "item": { "id": "<cloverItemId>" },
-  //          "stock": { "quantity": <newQuantity> }
-  //        }
-  //      ]
-  //    }
-  const payload = {
+  const stockLevelsPayload = {
     elements: [
       {
         item: { id: menuItem.cloverItemId },
@@ -66,23 +60,38 @@ export async function pushStockToClover(
     ],
   };
 
-  // 3) Send POST to /v3/merchants/{mId}/stock_levels
-  //    If Clover returns a “stockLevelId” or similar, you could choose to
-  //    store it in Prisma for future PUT requests. For most cases,
-  //    repeatedly POSTing with the same cloverItemId will update the same record.
-  await cloverFetch(`/v3/merchants/${merchantId}/stock_levels`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  // 3) Attempt POST to /stock_levels, fallback on 405
+  try {
+    await cloverFetch(`/v3/merchants/${merchantId}/stock_levels`, {
+      method: "POST",
+      body: JSON.stringify(stockLevelsPayload),
+    });
+  } catch (err: any) {
+    const msg = String(err.message || "");
+    if (msg.includes("405")) {
+      // Fallback: use /item_stocks endpoint to create/update the stock record
+      // This also implicitly enables per-item tracking if not yet active
+      await cloverFetch(
+        `/v3/merchants/${merchantId}/item_stocks/${menuItem.cloverItemId}`,
+        {
+          method: "POST",
+          body: JSON.stringify({ quantity: newQuantity }),
+        }
+      );
+    } else {
+      // Propagate all other errors
+      throw err;
+    }
+  }
 }
 
 /**
  * pullStockFromClover
  *
- * Fetches all inventory levels from Clover’s /v3/merchants/{mId}/stock_levels
- * endpoint (paginated if necessary). For each returned stock record, it finds
- * the matching local MenuItem by cloverItemId. If the stock quantity from
- * Clover differs from menuItem.stock in Prisma, it updates the local row.
+ * Fetches all inventory levels from Clover’s /stock_levels endpoint
+ * (paginated if necessary). For each returned stock record, finds
+ * the matching local MenuItem by cloverItemId. If the stock quantity
+ * from Clover differs from menuItem.stock in Prisma, updates the local row.
  *
  * @returns An object containing updatedCount (how many menuItem.stock fields changed)
  */
@@ -107,26 +116,23 @@ export async function pullStockFromClover(): Promise<{ updatedCount: number }> {
       const cloverQuantity = record.stock.quantity;
 
       // Find the local MenuItem that matches this cloverItemId
-      // Use findFirst if cloverItemId is not unique
-      const menuItem = await prisma.menuItem.findFirst({
+      const local = await prisma.menuItem.findFirst({
         where: { cloverItemId },
         select: { id: true, stock: true },
       });
-      if (!menuItem) {
-        continue; // No local record for this cloverItemId
-      }
+      if (!local) continue;
 
-      // If local stock differs, update it
-      if (menuItem.stock !== cloverQuantity) {
+      // 3) If local stock differs, update it
+      if (local.stock !== cloverQuantity) {
         await prisma.menuItem.update({
-          where: { id: menuItem.id },
+          where: { id: local.id },
           data: { stock: cloverQuantity },
         });
         updatedCount++;
       }
     }
 
-    // 3) Determine if there are more pages
+    // 4) Determine if there are more pages
     if (response.count < limit) {
       hasMore = false;
     } else {

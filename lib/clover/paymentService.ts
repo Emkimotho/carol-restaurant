@@ -1,28 +1,35 @@
-// File: lib/clover/paymentService.ts
-import { cloverFetch, getCloverConfig } from "../cloverClient";
-const { merchantId } = getCloverConfig();
+// -----------------------------------------------------------------------------
+// Builds a Clover *Hosted-Checkout* (Invoicing V3) session.
+//
+// • Every taxable catalogue item is tagged with your sales-tax UUID so Clover
+//   charges tax during checkout.
+// • Delivery-fee and Tip remain non-taxable rows.
+// • The checkout is tied to your own orderId via externalPaymentContext.
+// -----------------------------------------------------------------------------
 
-/**
- * CartItem:
- *   • cloverItemId: string   — the Clover catalog item UUID
- *   • quantity: number
- *   • priceOverride?: number — in dollars; if provided, we send this in cents
- */
+import { cloverFetch, getCloverConfig } from "@/lib/cloverClient";
+
+const { merchantId: locationId } = getCloverConfig();
+
+/* ─────────── env ─────────── */
+const SALES_TAX_ID = process.env.CLOVER_TAX_RATE_UUID;
+if (!SALES_TAX_ID?.trim()) {
+  throw new Error("Missing CLOVER_TAX_RATE_UUID in .env(.local)");
+}
+
+/* ─────────── types ─────────── */
 export interface CartItem {
-  cloverItemId:  string;
-  quantity:      number;
+  cloverItemId:   string;
+  quantity:       number;
+  /** unit-price override (in dollars) – optional */
   priceOverride?: number;
 }
 
-/**
- * PaymentSessionParams:
- *  … (omitted for brevity) …
- */
 export interface PaymentSessionParams {
-  ourOrderId:    string;
-  cartItems:     CartItem[];
-  deliveryFee:   number; // in dollars
-  tip:           number; // in dollars
+  ourOrderId:  string;
+  cartItems:   CartItem[];
+  deliveryFee: number;     // dollars
+  tip:         number;     // dollars
   customer?: {
     firstName?:   string;
     lastName?:    string;
@@ -31,29 +38,28 @@ export interface PaymentSessionParams {
   };
 }
 
-/**
- * Creates a Clover V1 Hosted‐Checkout session for the given order.
- * Returns an object containing { checkoutId, checkoutUrl }.
- */
-export async function createCloverPaymentSession(
-  params: PaymentSessionParams
-): Promise<{ checkoutId: string; checkoutUrl: string }> {
-  const toCents = (d: number) => Math.round(d * 100);
+/* ───────── helper ─────────── */
+const toCents = (d: number) => Math.round(d * 100);
 
-  // 1) Build lineItems, overriding any price as unitPrice if needed
-  const lineItems: any[] = params.cartItems.map((ci) => {
-    const entry: any = {
+/* ───────── main fn ────────── */
+export async function createCloverPaymentSession(
+  params: PaymentSessionParams,
+): Promise<{ checkoutId: string; checkoutUrl: string }> {
+  /* 1 ── build catalogue rows (taxable) */
+  const lineItems = params.cartItems.map((ci) => {
+    const itm: Record<string, any> = {
       itemRefUuid: ci.cloverItemId,
       unitQty:     ci.quantity,
       taxable:     true,
+      taxRates:    [{ id: SALES_TAX_ID }],
     };
     if (ci.priceOverride != null) {
-      entry.unitPrice = toCents(ci.priceOverride);
+      itm.unitPrice = toCents(ci.priceOverride);
     }
-    return entry;
+    return itm;
   });
 
-  // 2) Add “Delivery Fee” row (non‐taxable)
+  /* 2 ── loose rows (non-taxable) */
   if (params.deliveryFee > 0) {
     lineItems.push({
       name:    "Delivery Fee",
@@ -62,8 +68,6 @@ export async function createCloverPaymentSession(
       taxable: false,
     });
   }
-
-  // 3) Add “Tip” row (non‐taxable)
   if (params.tip > 0) {
     lineItems.push({
       name:    "Tip",
@@ -73,41 +77,41 @@ export async function createCloverPaymentSession(
     });
   }
 
-  // 4) Build and log the V1 payload
-  const payload: any = {
-    merchantId,
-    externalPaymentContext: { ourOrderId: params.ourOrderId },
+  /* 3 ── payload */
+  const payload = {
+    merchantId: locationId,
+    externalPaymentContext: {
+      /* human-readable for staff & customer                           */
+      /* will surface on the order list once “Show external reference” */
+      ourOrderId: params.ourOrderId,
+    },
     redirectUrls: {
       success: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-confirmation/card?id=${params.ourOrderId}`,
       failure: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed?id=${params.ourOrderId}`,
       cancel:  `${process.env.NEXT_PUBLIC_BASE_URL}/payment-cancelled?id=${params.ourOrderId}`,
     },
     shoppingCart: { lineItems },
-    customer:     params.customer || {},
+    customer: params.customer ?? {},
   };
-  console.log("→ Clover payload (sent):", JSON.stringify(payload, null, 2));
 
-  // 5) Call Clover’s V1 endpoint
-  const response = await cloverFetch<{
-    href:              string;
+  console.log("→ Clover checkout payload:", JSON.stringify(payload, null, 2));
+
+  /* 4 ── fire request */
+  const endpoint = `/invoicingcheckoutservice/v3/locations/${locationId}/checkouts`;
+
+  const res = await cloverFetch<{
+    href: string;
     checkoutSessionId: string;
-    expirationTime?:   string;
-    createdTime?:      string;
-  }>(
-    "/invoicingcheckoutservice/v1/checkouts",
-    {
-      method:  "POST",
-      headers: { "X-Clover-Merchant-Id": merchantId },
-      body:    JSON.stringify(payload),
-    }
-  );
+  }>(endpoint, {
+    method:  "POST",
+    headers: { "X-Clover-Merchant-Id": locationId },
+    body:    JSON.stringify(payload),
+  });
 
-  console.log("← Clover returned (raw):", response);
+  console.log("← Clover checkout response:", res);
 
-  // 6) Normalize returned fields
-  const checkoutId  = response.checkoutSessionId;
-  const checkoutUrl = response.href;
-  console.log("↓↓↓↓ createCloverPaymentSession returning:", { checkoutId, checkoutUrl });
-
-  return { checkoutId, checkoutUrl };
+  return {
+    checkoutId:  res.checkoutSessionId,
+    checkoutUrl: res.href,
+  };
 }

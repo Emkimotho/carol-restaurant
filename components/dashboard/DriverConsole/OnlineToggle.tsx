@@ -1,71 +1,42 @@
 // File: components/dashboard/DriverConsole/OnlineToggle.tsx
-// ─ A small toggle button for drivers to mark themselves online/offline
-//    by PATCHing /api/drivers/:id/status
-
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import styles from '@/app/dashboard/driver-dashboard/driver.module.css';
+import { useDriverStatus } from './useDriverStatus';
 
-interface OnlineToggleProps {
-  /** The numeric ID of the current driver */
+interface Props {
   driverId: number;
-  /** Initial “online” state, e.g. fetched from server */
-  initialOnline: boolean;
-  /**
-   * Optional callback if you need to refresh parent state
-   * when the driver’s status changes.
-   */
   onStatusChange?: (online: boolean) => void;
 }
 
-export default function OnlineToggle({
-  driverId,
-  initialOnline,
-  onStatusChange,
-}: OnlineToggleProps) {
-  const [online, setOnline] = useState(initialOnline);
-  const [loading, setLoading] = useState(false);
+export default function OnlineToggle({ driverId, onStatusChange }: Props) {
+  const { online, isValidating, error, toggleOnline } = useDriverStatus(driverId);
 
-  const handleToggle = async () => {
-    const newStatus = !online;
-    setLoading(true);
+  if (error) return <div className={styles.error}>Error loading status</div>;
+
+  const handleClick = async () => {
     try {
-      const res = await fetch(`/api/drivers/${driverId}/status`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus ? 'online' : 'offline' }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setOnline(newStatus);
+      const newStatus = await toggleOnline();
       onStatusChange?.(newStatus);
-    } catch (err) {
-      console.error('Failed to update driver status', err);
+    } catch {
       alert('Could not update your status. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <button
-      onClick={handleToggle}
-      disabled={loading}
-      style={{
-        padding: '0.5rem 1rem',
-        borderRadius: '0.25rem',
-        border: '1px solid var(--border-color-dark)',
-        backgroundColor: online ? 'var(--primary-color)' : 'var(--secondary-color)',
-        color: 'var(--white)',
-        cursor: loading ? 'not-allowed' : 'pointer',
-        opacity: loading ? 0.7 : 1,
-      }}
+      onClick={handleClick}
+      disabled={isValidating}
+      className={[
+        styles.toggleButton,
+        online ? styles.online : styles.offline,
+        isValidating ? styles.loading : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
-      {loading
-        ? '…'
-        : online
-        ? 'Go Offline'
-        : 'Go Online'}
+      {isValidating ? '…' : online ? 'Go Offline' : 'Go Online'}
     </button>
   );
 }

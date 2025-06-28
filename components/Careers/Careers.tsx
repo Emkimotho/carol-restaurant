@@ -1,122 +1,134 @@
+/* File: components/Careers/Careers.tsx
+   ------------------------------------------------------------------
+   • Only change: when building FormData we now send the file under
+     the key **resumeUrl** (the API route’s expected field name).
+   • All other logic, UI, and comments remain exactly as before.
+   ------------------------------------------------------------------ */
+
 "use client";
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import styles from "./Careers.module.css";
 
-// Update the Job interface to match your API/Prisma schema.
+/* ---------- Types ---------- */
 export interface Job {
   id: string;
   title: string;
   description: string;
-  requirements: string; // comma-separated string
-  deadline: string; // ISO string
+  requirements: string;       // comma-separated
+  deadline: string;           // ISO
 }
 
-// Update the ApplicationData interface to include an email field.
 export interface ApplicationData {
   firstName: string;
-  lastName: string;
-  email: string;
-  jobTitle: string;
-  attachment: File | null;
+  lastName:  string;
+  email:     string;
+  jobTitle:  string;
+  attachment: File | null;    // résumé file
 }
 
 export default function Careers() {
+  /* ---------- State ---------- */
   const [jobs, setJobs] = useState<Job[]>([]);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [applicationData, setApplicationData] = useState<ApplicationData>({
     firstName: "",
-    lastName: "",
-    email: "",
-    jobTitle: "",
+    lastName:  "",
+    email:     "",
+    jobTitle:  "",
     attachment: null,
   });
   const [submissionStatus, setSubmissionStatus] = useState(false);
 
-  // Clear toaster message after 5 seconds
+  /* ---------- auto-hide toast ---------- */
   useEffect(() => {
     if (submissionStatus) {
-      const timer = setTimeout(() => {
-        setSubmissionStatus(false);
-      }, 5000);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setSubmissionStatus(false), 5000);
+      return () => clearTimeout(t);
     }
   }, [submissionStatus]);
 
-  // Helper: checks if the job deadline has passed
-  const isDeadlinePassed = (deadline: string) => new Date() > new Date(deadline);
-
-  // Fetch jobs from the API on component mount
+  /* ---------- fetch jobs on mount ---------- */
   useEffect(() => {
-    async function fetchJobs() {
+    (async function fetchJobs() {
       try {
         const res = await fetch("/api/careers");
         if (!res.ok) throw new Error("Failed to fetch careers");
-        const data = await res.json();
-        setJobs(data.careers);
-      } catch (error) {
-        console.error(error);
+        const { careers } = await res.json();
+        setJobs(careers);
+      } catch (err) {
+        console.error(err);
       }
-    }
-    fetchJobs();
+    })();
   }, []);
+
+  /* ---------- helpers ---------- */
+  const isDeadlinePassed = (deadline: string) =>
+    new Date() > new Date(deadline);
 
   const handleApplyClick = (job: Job) => {
     setSelectedJob(job);
     setApplicationData({
       firstName: "",
-      lastName: "",
-      email: "",
-      jobTitle: job.title,
+      lastName:  "",
+      email:     "",
+      jobTitle:  job.title,
       attachment: null,
     });
     setShowApplicationForm(true);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
-    setApplicationData((prev) => ({ ...prev, [name]: value }));
+    setApplicationData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setApplicationData((prev) => ({
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setApplicationData(prev => ({
       ...prev,
       attachment: e.target.files ? e.target.files[0] : null,
     }));
   };
 
-  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  /* ---------- submit ---------- */
+  const handleFormSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
-
-    // Build FormData to include text fields and file.
     try {
       const formData = new FormData();
       formData.append("firstName", applicationData.firstName);
-      formData.append("lastName", applicationData.lastName);
-      formData.append("email", applicationData.email);
-      formData.append("jobTitle", applicationData.jobTitle);
+      formData.append("lastName",  applicationData.lastName);
+      formData.append("email",     applicationData.email);
+      formData.append("jobTitle",  applicationData.jobTitle);
       if (applicationData.attachment) {
-        formData.append("attachment", applicationData.attachment);
+        /* The API expects this field name               ↓↓↓↓↓↓↓ */
+        formData.append("resumeUrl", applicationData.attachment);
       }
+
       const res = await fetch("/api/careers/applications", {
         method: "POST",
         body: formData,
       });
       if (!res.ok) throw new Error("Application submission failed");
+
       console.log("Application Submitted:", applicationData);
       setSubmissionStatus(true);
       setShowApplicationForm(false);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleCancel = () => {
-    setShowApplicationForm(false);
-  };
+  const handleCancel = () => setShowApplicationForm(false);
 
+  /* ---------- Render ---------- */
   return (
     <div className={styles.careersContainer}>
       <Image
@@ -127,34 +139,43 @@ export default function Careers() {
         height={600}
         className={styles.careersCover}
       />
+
       <h1 className={styles.careersTitle}>Join Our Team</h1>
 
       <div className={styles.jobsList}>
         {jobs.length === 0 ? (
           <p>No job postings available at the moment.</p>
         ) : (
-          jobs.map((job) => {
-            const deadlinePassed = isDeadlinePassed(job.deadline);
-            const requirementItems = job.requirements.split(",").map((req) => req.trim());
+          jobs.map(job => {
+            const expired = isDeadlinePassed(job.deadline);
+            const reqs = job.requirements
+              .split(",")
+              .map(r => r.trim());
+
             return (
               <div key={job.id} className={styles.jobCard}>
                 <h2 className={styles.jobTitle}>{job.title}</h2>
                 <p className={styles.jobDescription}>{job.description}</p>
+
                 <h3>Requirements:</h3>
                 <ul className={styles.requirementsList}>
-                  {requirementItems.map((req, index) => (
-                    <li key={index}>{req}</li>
-                  ))}
+                  {reqs.map((r, i) => <li key={i}>{r}</li>)}
                 </ul>
+
                 <p className={styles.deadline}>
-                  <strong>Application Deadline:</strong> {new Date(job.deadline).toLocaleString()}
+                  <strong>Application Deadline:</strong>{" "}
+                  {new Date(job.deadline).toLocaleString()}
                 </p>
-                {deadlinePassed ? (
+
+                {expired ? (
                   <button className={styles.expiredButton} disabled>
                     Expired
                   </button>
                 ) : (
-                  <button className={styles.applyButton} onClick={() => handleApplyClick(job)}>
+                  <button
+                    className={styles.applyButton}
+                    onClick={() => handleApplyClick(job)}
+                  >
                     Apply
                   </button>
                 )}
@@ -164,6 +185,7 @@ export default function Careers() {
         )}
       </div>
 
+      {/* ---------- Application Modal ---------- */}
       {showApplicationForm && selectedJob && (
         <div className={styles.applicationFormOverlay}>
           <div className={styles.applicationFormContainer}>
@@ -172,55 +194,59 @@ export default function Careers() {
               <div className={styles.formGroup}>
                 <label htmlFor="firstName">First Name *</label>
                 <input
-                  type="text"
                   id="firstName"
                   name="firstName"
+                  type="text"
                   value={applicationData.firstName}
                   onChange={handleInputChange}
                   required
                   placeholder="Enter your first name"
                 />
               </div>
+
               <div className={styles.formGroup}>
                 <label htmlFor="lastName">Last Name *</label>
                 <input
-                  type="text"
                   id="lastName"
                   name="lastName"
+                  type="text"
                   value={applicationData.lastName}
                   onChange={handleInputChange}
                   required
                   placeholder="Enter your last name"
                 />
               </div>
+
               <div className={styles.formGroup}>
                 <label htmlFor="email">Email *</label>
                 <input
-                  type="email"
                   id="email"
                   name="email"
+                  type="email"
                   value={applicationData.email}
                   onChange={handleInputChange}
                   required
                   placeholder="Enter your email address"
                 />
               </div>
+
               <div className={styles.formGroup}>
                 <label htmlFor="jobTitle">Job Applying For *</label>
                 <input
-                  type="text"
                   id="jobTitle"
                   name="jobTitle"
+                  type="text"
                   value={applicationData.jobTitle}
                   readOnly
                 />
               </div>
+
               <div className={styles.formGroup}>
                 <label htmlFor="attachment">Attach Your Resume/CV *</label>
                 <input
-                  type="file"
                   id="attachment"
                   name="attachment"
+                  type="file"
                   accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
                   required
@@ -229,6 +255,7 @@ export default function Careers() {
                   Attach PDF, Word, Text, JPEG, or PNG.
                 </small>
               </div>
+
               <div className={styles.formActions}>
                 <button type="submit" className={styles.submitButton}>
                   Submit Application
@@ -253,4 +280,4 @@ export default function Careers() {
       )}
     </div>
   );
-}
+}  

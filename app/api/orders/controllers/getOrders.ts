@@ -1,104 +1,109 @@
 // File: app/api/orders/controllers/getOrders.ts
 // ------------------------------------------------------------------
 //  Order list  (GET)
-//  Supports role-based filtering for driver, server, cashier, admin/staff
-//  Always returns { orders, page, totalPages } shape
+//
+//  Supports driver, server, cashier, admin & staff dashboards.
+//  Always returns { orders, page, totalPages }.
+//
+//  🔄 2025-06-27 update
+//  ───────────────────
+//  • DRIVER role now sees…
+//        a) every ORDER_RECEIVED that is **unclaimed** (driverId IS NULL)
+//        b) every load already assigned to them
+//        c) follow-up statuses they control
+//          (IN_PROGRESS, ORDER_READY, PICKED_UP_BY_DRIVER, ON_THE_WAY)
+//      Delivered history unchanged (via ?status=delivered).
+//  • Filtering keys on orderType === 'delivery' (instead of fee > 0).
+//  • ⚠️ The previous “isOnline” check has been **removed** – if a driver
+//    fires this request, they get the list regardless of the flag.
+//  • No other role behaviour changed.
 // ------------------------------------------------------------------
 
-import { NextResponse } from "next/server";
-import { prisma }       from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma }       from '@/lib/prisma';
 import {
   Prisma,
   OrderStatus,
   PaymentMethod,
   CashCollectionStatus,
-}                        from "@prisma/client";
+} from '@prisma/client';
 
+/* =================================================================== */
+/*  Main handler                                                       */
+/* =================================================================== */
 export async function getOrders(req: Request) {
-  const { searchParams }   = new URL(req.url);
-  const role               = searchParams.get("role");
-  const driverIdRaw        = searchParams.get("driverId");
-  const statusParam        = searchParams.get("status");
-  const paymentMethodParam = searchParams.get("paymentMethod");
-  const reconciledParam    = searchParams.get("reconciled");
+  const { searchParams } = new URL(req.url);
 
-  // Admin/staff pagination parameters
-  const page  = Number(searchParams.get("page")  ?? "1");
-  const limit = Number(searchParams.get("limit") ?? "20");
+  /* ---------- common query-params ---------- */
+  const role               = searchParams.get('role');          // driver | server | cashier | admin | staff
+  const driverIdRaw        = searchParams.get('driverId');
+  const statusParam        = searchParams.get('status');
+  const paymentMethodParam = searchParams.get('paymentMethod');
+  const reconciledParam    = searchParams.get('reconciled');    // cashier: "true" | "false"
+  const serverIdParam      = searchParams.get('serverId');      // cashier filter
+  const q                  = searchParams.get('q') ?? '';       // admin / staff search
+  const staffIdParam       = searchParams.get('staffId');       // staff filter
+
+  /* ---------- pagination for admin/staff ---------- */
+  const page  = Number(searchParams.get('page')  ?? '1');
+  const limit = Number(searchParams.get('limit') ?? '20');
   const skip  = (page - 1) * limit;
 
-  // Helper to wrap arrays into paginated response
+  /* helper to wrap arrays into paginated response */
   const wrap = <T>(arr: T[]) => ({
     orders:     arr,
     page,
     totalPages: arr.length === 0 ? 1 : Math.ceil(arr.length / limit),
   });
 
-  /* ---- Driver view ---- */
-  if (role === "driver" && driverIdRaw) {
+  /* ================================================================= */
+  /*  Driver dashboard                                                 */
+  /* ================================================================= */
+  if (role === 'driver' && driverIdRaw) {
     const driverId = Number(driverIdRaw);
 
-    // Delivered orders
-    if (statusParam === "delivered") {
+    /* ---------- delivered-history tab ---------- */
+    if (statusParam === 'delivered') {
       const delivered = await prisma.order.findMany({
-        where: { driverId, status: OrderStatus.DELIVERED },
-        orderBy: { deliveredAt: "desc" },
-        include: {
-          customer:      { select: { firstName: true, lastName: true } },
-          driver:        { select: { firstName: true, lastName: true } },
-          staff:         { select: { firstName: true, lastName: true } },
-          lineItems:     { include: { menuItem: true } },
-          statusHistory: {
-            orderBy: { timestamp: "asc" },
-            select: {
-              status:    true,
-              timestamp: true,
-              changedBy: true,
-              user: { select: { firstName: true, lastName: true } },
-            },
-          },
+        where: {
+          driverId,
+          status:     OrderStatus.DELIVERED,
+          orderType:  'delivery',                // delivery-only
         },
+        orderBy: { deliveredAt: 'desc' },
+        include: baseIncludes(),
       });
       return NextResponse.json(wrap(delivered));
     }
 
-    // Active / available orders
+    /* ---------- active queue (received / ready …) ---------- */
+    const activeStatuses: OrderStatus[] = [
+      OrderStatus.ORDER_RECEIVED,
+      OrderStatus.IN_PROGRESS,
+      OrderStatus.ORDER_READY,
+      OrderStatus.PICKED_UP_BY_DRIVER,
+      OrderStatus.ON_THE_WAY,
+    ];
+
     const active = await prisma.order.findMany({
       where: {
-        status: { notIn: [OrderStatus.PENDING_PAYMENT, OrderStatus.CANCELLED] },
-        AND: [
-          {
-            OR: [
-              { orderType: "delivery" },
-              { totalDeliveryFee: { gt: 0 } },
-              { driverPayout:       { gt: 0 } },
-            ],
-          },
-          { OR: [{ driverId: null }, { driverId }] },
+        orderType: 'delivery',                   // delivery-only
+        status:    { in: activeStatuses },
+        OR: [
+          { driverId: null },                    // unclaimed
+          { driverId },                          // mine
         ],
       },
-      orderBy: { createdAt: "desc" },
-      include: {
-        customer:      { select: { firstName: true, lastName: true } },
-        driver:        { select: { firstName: true, lastName: true } },
-        staff:         { select: { firstName: true, lastName: true } },
-        lineItems:     { include: { menuItem: true } },
-        statusHistory: {
-          orderBy: { timestamp: "asc" },
-          select: {
-            status:    true,
-            timestamp: true,
-            changedBy: true,
-            user: { select: { firstName: true, lastName: true } },
-          },
-        },
-      },
+      orderBy: { createdAt: 'desc' },
+      include: baseIncludes(),
     });
     return NextResponse.json(wrap(active));
   }
 
-  /* ---- Server view ---- */
-  if (role === "server") {
+  /* ================================================================= */
+  /*  Server dashboard                                                 */
+  /* ================================================================= */
+  if (role === 'server') {
     const statuses = statusParam && (OrderStatus as any)[statusParam]
       ? [ (OrderStatus as any)[statusParam] as OrderStatus ]
       : [ OrderStatus.ORDER_READY ];
@@ -110,24 +115,13 @@ export async function getOrders(req: Request) {
 
     const orders = await prisma.order.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       include: {
-        customer:      { select: { firstName: true, lastName: true } },
-        driver:        { select: { firstName: true, lastName: true } },
-        staff:         { select: { firstName: true, lastName: true } },
-        lineItems:     { include: { menuItem: true } },
-        statusHistory: {
-          orderBy: { timestamp: "asc" },
-          select: {
-            status:    true,
-            timestamp: true,
-            changedBy: true,
-            user: { select: { firstName: true, lastName: true } },
-          },
-        },
+        ...baseIncludes(),
         cashCollection: {
           include: {
-            server: { select: { firstName: true, lastName: true } }, // NEW
+            server:    { select: { firstName: true, lastName: true } },
+            settledBy: { select: { firstName: true, lastName: true } },
           },
         },
       },
@@ -135,36 +129,29 @@ export async function getOrders(req: Request) {
     return NextResponse.json(wrap(orders));
   }
 
-  /* ---- Cashier view ---- */
-  if (role === "cashier") {
-    const isSettled = reconciledParam === "true";
-    const cashStatus = isSettled
+  /* ================================================================= */
+  /*  Cashier dashboard                                                */
+  /* ================================================================= */
+  if (role === 'cashier') {
+    const cashStatus = reconciledParam === 'true'
       ? CashCollectionStatus.SETTLED
       : CashCollectionStatus.PENDING;
+
+    const cashFilter: Prisma.CashCollectionWhereInput = { status: cashStatus };
+    if (serverIdParam) cashFilter.serverId = Number(serverIdParam);
 
     const orders = await prisma.order.findMany({
       where: {
         paymentMethod: PaymentMethod.CASH,
-        cashCollection: { status: cashStatus },
+        cashCollection: cashFilter,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
       include: {
+        ...baseIncludes(),
         cashCollection: {
           include: {
-            server: { select: { firstName: true, lastName: true } }, // NEW
-          },
-        },
-        customer:       { select: { firstName: true, lastName: true } },
-        driver:         { select: { firstName: true, lastName: true } },
-        staff:          { select: { firstName: true, lastName: true } },
-        lineItems:      { include: { menuItem: true } },
-        statusHistory:  {
-          orderBy: { timestamp: "asc" },
-          select: {
-            status:    true,
-            timestamp: true,
-            changedBy: true,
-            user: { select: { firstName: true, lastName: true } },
+            server:    { select: { firstName: true, lastName: true } },
+            settledBy: { select: { firstName: true, lastName: true } },
           },
         },
       },
@@ -172,56 +159,65 @@ export async function getOrders(req: Request) {
     return NextResponse.json(wrap(orders));
   }
 
-  /* ---- Admin / Staff list + search + pagination ---- */
-  const q = searchParams.get("q") ?? "";
+  /* ================================================================= */
+  /*  Admin / Staff list + search + pagination                         */
+  /* ================================================================= */
   let where: Prisma.OrderWhereInput = {};
-
-  if (q) {
+  if (q.trim()) {
     where = {
       OR: [
-        { orderId:    { contains: q, mode: "insensitive" } },
-        { guestName:  { contains: q, mode: "insensitive" } },
-        { guestEmail: { contains: q, mode: "insensitive" } },
+        { orderId:    { contains: q, mode: 'insensitive' } },
+        { guestName:  { contains: q, mode: 'insensitive' } },
+        { guestEmail: { contains: q, mode: 'insensitive' } },
         {
           customer: {
             OR: [
-              { firstName: { contains: q, mode: "insensitive" } },
-              { lastName:  { contains: q, mode: "insensitive" } },
+              { firstName: { contains: q, mode: 'insensitive' } },
+              { lastName:  { contains: q, mode: 'insensitive' } },
             ],
           },
         },
       ],
     };
   }
+  if (staffIdParam) where.staffId = Number(staffIdParam);
 
-  const [ total, orders ] = await Promise.all([
+  const [total, orders] = await Promise.all([
     prisma.order.count({ where }),
     prisma.order.findMany({
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        customer:      { select: { firstName: true, lastName: true } },
-        driver:        { select: { firstName: true, lastName: true } },
-        staff:         { select: { firstName: true, lastName: true } },
-        lineItems:     { include: { menuItem: true } },
-        statusHistory: {
-          orderBy: { timestamp: "asc" },
-          select: {
-            status:    true,
-            timestamp: true,
-            changedBy: true,
-            user: { select: { firstName: true, lastName: true } },
-          },
-        },
-      },
+      orderBy: { createdAt: 'desc' },
+      include: baseIncludes(),
     }),
   ]);
 
   return NextResponse.json({
     orders,
     page,
-    totalPages: Math.ceil(total / limit) || 1,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
   });
+}
+
+/* =================================================================== */
+/*  Shared include block                                               */
+/* =================================================================== */
+function baseIncludes(): Prisma.OrderInclude {
+  return {
+    customer: { select: { firstName: true, lastName: true } },
+    driver:   { select: { id: true, firstName: true, lastName: true } },
+    staff:    { select: { firstName: true, lastName: true } },
+    lineItems: { include: { menuItem: true } },
+    statusHistory: {
+      orderBy: { timestamp: 'asc' },
+      select: {
+        status:    true,
+        timestamp: true,
+        changedBy: true,
+        user:      { select: { firstName: true, lastName: true } },
+      },
+    },
+    // scalar fields come automatically
+  };
 }

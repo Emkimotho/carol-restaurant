@@ -1,46 +1,64 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import OrdersDashboard from '@/components/dashboard/OrdersDashboard/OrdersDashboard';
 import styles from './ServerDashboard.module.css';
 
-export default function ServerDashboardPage() {
-  const { data: session } = useSession();
-  const pathname = usePathname();
-  const router = useRouter();
-  const userId = session?.user?.id ? Number(session.user.id) : null;
+const TABS = [
+  { label: 'Orders',       href: '/dashboard/server-dashboard' },
+  { label: 'Tip Earnings', href: '/dashboard/server-dashboard/earnings' },
+] as const;
 
-  if (userId === null) return <p>Loading…</p>;
+export default function ServerDashboardPage() {
+  const { data: session, status } = useSession();
+  const router   = useRouter();
+  const pathname = usePathname();
+
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/api/auth/signin');
+    }
+  }, [status, router]);
+
+  // Loading state
+  if (status === 'loading') {
+    return <div className={styles.loading}>Loading…</div>;
+  }
+
+  // Extract numeric user ID
+  const rawId = session?.user?.id;
+  const userId = typeof rawId === 'string' ? Number(rawId) : rawId;
+  if (!userId) {
+    return <div className={styles.error}>Unable to determine your account. Please sign in again.</div>;
+  }
 
   return (
-    <>
-      <div className={styles.topBar}>
-        <button
-          className={
-            pathname === '/dashboard/server-dashboard'
-              ? styles.activeTabButton
-              : styles.tabButton
-          }
-          onClick={() => router.push('/dashboard/server-dashboard')}
-        >
-          Orders
-        </button>
+    <div className={styles.container}>
+      <nav className={styles.tabNav} role="tablist" aria-label="Server dashboard sections">
+        {TABS.map(({ label, href }) => {
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              role="tab"
+              aria-selected={isActive}
+              className={isActive ? styles.activeTab : styles.tab}
+              prefetch={false}
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
 
-        <button
-          className={
-            pathname === '/dashboard/server-dashboard/earnings'
-              ? styles.activeTabButton
-              : styles.tabButton
-          }
-          onClick={() => router.push('/dashboard/server-dashboard/earnings')}
-        >
-          Tip Earnings
-        </button>
-      </div>
-
-      <OrdersDashboard role="server" userId={userId} />
-    </>
+      <main className={styles.main} role="region" aria-labelledby="server-dashboard">
+        <OrdersDashboard role="server" userId={userId} />
+      </main>
+    </div>
   );
 }

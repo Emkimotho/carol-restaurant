@@ -1,0 +1,126 @@
+/* File: components/dashboard/AdminDashboard/CalculationInfoModal.module.css */
+
+/* Overlay covers the viewport */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-bg, rgba(0, 0, 0, 0.5));
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+/* Modal container: flex column, capped height, so header+content share space */
+.modal {
+  background: var(--modal-bg, var(--white, #fff));
+  border-radius: var(--modal-border-radius, 0.5rem);
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh; /* cap height */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* prevent modal itself from scrolling; content will scroll */
+  box-shadow: var(--modal-shadow, 0 4px 12px rgba(0, 0, 0, 0.2));
+}
+
+/* Header stays visible when content scrolls */
+.header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--modal-header-bg, var(--primary-color, #1bce47));
+  color: var(--modal-header-text, var(--white, #fff));
+  border-bottom: 1px solid var(--modal-header-border, var(--border-color, #ddd));
+  z-index: 1; /* ensure it sits above scrolling content */
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+/* Close button */
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--modal-close-color, var(--white, #fff));
+}
+
+.closeButton:hover {
+  opacity: 0.8;
+}
+
+/* Content area: scrollable */
+.content {
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-color, #333);
+  overflow-y: auto;
+  /* flex: 1 ensures it expands to fill remaining space under header */
+  flex: 1 1 auto;
+}
+
+.content ul {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.content ul li {
+  margin-bottom: 0.25rem;
+}
+
+/* Example table styling */
+.exampleTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+}
+
+.exampleTable th,
+.exampleTable td {
+  border: 1px solid var(--table-border-color, var(--border-color, #ddd));
+  padding: 0.5rem;
+  text-align: left;
+}
+
+/* Summary rows: distinct background */
+.summaryRow td {
+  background-color: var(--table-summary-bg, var(--light-gray, #f5f5f5));
+  font-weight: 600;
+}
+
+/* Info button that triggers the modal */
+.infoButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.25rem;
+  margin-left: 0.5rem;
+  color: var(--info-button-color, var(--primary-color, #8af300));
+}
+
+.infoButton:hover {
+  opacity: 0.8;
+}
+
+/* Optional: scrollbar styling inside modal content */
+.content::-webkit-scrollbar {
+  width: 8px;
+}
+.content::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb, rgba(0, 0, 0, 0.2));
+  border-radius: 4px;
+}
+.content::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, transparent);
+}

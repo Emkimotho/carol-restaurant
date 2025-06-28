@@ -11,7 +11,6 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_DATABASE_URL")
 }
-
 /* ============================================================================ */
 /* 1.  Users, Authentication & Roles                                            */
 /* ============================================================================ */
@@ -34,38 +33,47 @@ enum AccountStatus {
 }
 
 model User {
-  id                        Int       @id @default(autoincrement())
-  email                     String    @unique @db.VarChar(255)
+  id                        Int             @id @default(autoincrement())
+  email                     String          @unique @db.VarChar(255)
   password                  String
-  firstName                 String    @db.VarChar(100)
-  lastName                  String    @db.VarChar(100)
-  phone                     String?   @db.VarChar(20)
-  streetAddress             String?   @db.VarChar(255)
-  aptSuite                  String?   @db.VarChar(100)
-  city                      String?   @db.VarChar(100)
-  state                     String?   @db.VarChar(50)
-  zip                       String?   @db.VarChar(20)
-  country                   String?   @db.VarChar(50)
-  isVerified                Boolean   @default(false)
-  resetToken                String?   @db.VarChar(255)
+  firstName                 String          @db.VarChar(100)
+  lastName                  String          @db.VarChar(100)
+  phone                     String?         @db.VarChar(20)
+  streetAddress             String?         @db.VarChar(255)
+  aptSuite                  String?         @db.VarChar(100)
+  city                      String?         @db.VarChar(100)
+  state                     String?         @db.VarChar(50)
+  zip                       String?         @db.VarChar(20)
+  country                   String?         @db.VarChar(50)
+  isVerified                Boolean         @default(false)
+  resetToken                String?         @db.VarChar(255)
   resetTokenExpiry          DateTime?
-  verificationToken         String?   @db.VarChar(255)
+  verificationToken         String?         @db.VarChar(255)
   verificationTokenExpiry   DateTime?
-  status                    AccountStatus @default(ACTIVE)
-  createdAt                 DateTime  @default(now())
-  updatedAt                 DateTime  @updatedAt
+  status                    AccountStatus   @default(ACTIVE)
+  isOnline                  Boolean         @default(false)
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  /// Clover sync: stores the Clover employee ID for mapping webhook actors
+  cloverEmployeeId          String?         @unique
 
   /* relations */
-  roles            UserRole[]
-  staffProfile     StaffProfile?
-  driverProfile    DriverProfile?
+  roles            UserRole[]     
+  staffProfile     StaffProfile?  
+  driverProfile    DriverProfile? 
   collectedCash    CashCollection[]     @relation("CashCollectedBy")
   settledCash      CashCollection[]     @relation("CashSettledBy")
   customerOrders   Order[]              @relation("CustomerOrders")
   driverDeliveries Order[]              @relation("DriverOrders")
   staffOrders      Order[]              @relation("StaffOrders")
   statusChanges    OrderStatusHistory[] @relation("UserStatusChanges")
-  payouts          Payout[]
+  payouts          Payout[]            
+
+  // Tickets this user has redeemed
+  redeemedTickets  Ticket[]            @relation("RedeemedBy")
+
+  @@index([isOnline])
 }
 
 model Role {
@@ -112,20 +120,26 @@ enum MenuCategoryType {
   GolfMenu
 }
 
+/* --------------------------------------------------------------------------- */
+/*  MenuCategory                                                               */
+/* --------------------------------------------------------------------------- */
 model MenuCategory {
-  id               String @id @default(cuid())
+  id               String   @id @default(cuid())
   name             String
-  order            Int     @default(0)
-  hidden           Boolean @default(false)
+  order            Int      @default(0)
+  hidden           Boolean  @default(false)
   type             MenuCategoryType @default(MainMenu)
 
   /* relations */
   menuItems        MenuItem[]
-  cloverCategoryId String? @unique
+  cloverCategoryId String?  @unique
 
   @@index([type])
 }
 
+/* --------------------------------------------------------------------------- */
+/*  MenuItem   – with popularityScore, isActive, updatedAt (now fixed)         */
+/* --------------------------------------------------------------------------- */
 model MenuItem {
   id             String   @id @default(cuid())
   title          String
@@ -135,10 +149,17 @@ model MenuItem {
   hasSpiceLevel  Boolean  @default(false)
   showInGolfMenu Boolean  @default(false)
   isAlcohol      Boolean  @default(false)
-  createdAt      DateTime @default(now())
 
-  categoryId String
-  category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  /* Recommendation / lifecycle metadata */
+  popularityScore Int      @default(0)
+  isActive        Boolean  @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt   // ← default added ✅
+
+  /* relations */
+  categoryId   String
+  category     MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   optionGroups MenuItemOptionGroup[]
   cloverItemId String? @unique
@@ -149,6 +170,9 @@ model MenuItem {
   @@index([categoryId])
 }
 
+/* --------------------------------------------------------------------------- */
+/*  MenuItemOptionGroup                                                        */
+/* --------------------------------------------------------------------------- */
 model MenuItemOptionGroup {
   id            String @id @default(cuid())
   title         String
@@ -163,6 +187,9 @@ model MenuItemOptionGroup {
   choices    MenuOptionChoice[]
 }
 
+/* --------------------------------------------------------------------------- */
+/*  MenuOptionChoice & nested option models                                    */
+/* --------------------------------------------------------------------------- */
 model MenuOptionChoice {
   id               String @id @default(cuid())
   label            String
@@ -200,6 +227,7 @@ model NestedOptionChoice {
   nestedGroup   NestedOptionGroup @relation(fields: [nestedGroupId], references: [id], onDelete: Cascade)
 }
 
+
 /* ============================================================================ */
 /* 3.  Cart & Orders                                                            */
 /* ============================================================================ */
@@ -232,18 +260,23 @@ model Cart {
   number    Int      @unique
   createdAt DateTime @default(now())
 
-  orders Order[]
+  orders    Order[]
 }
 
 model Order {
   /* keys & timestamps */
-  id        String   @id @default(uuid())
-  orderId   String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(uuid())
+  orderId         String    @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  /* Clover sync fields */
+  cloverOrderId    String?   @unique
+  cloverLastSyncAt DateTime?
+  checkoutSessionId    String?   @unique    // ← NEW for Hosted-Checkout webhooks
 
   /* raw payload */
-  items Json
+  items           Json
 
   /* financials */
   subtotal                Float   @default(0)
@@ -258,24 +291,24 @@ model Order {
   discountSaved           Float?
   totalAmount             Float   @default(0)
 
-  /* free‑form extras (added) */
-  metadata                Json?            // new column
+  /* free-form extras (added) */
+  metadata        Json?      // new column
 
   /* guest info */
-  guestEmail String?
-  guestName  String?
-  guestPhone String?
+  guestEmail      String?
+  guestName       String?
+  guestPhone      String?
 
   /* scheduling & type */
-  schedule     DateTime?
-  orderType    String? @default("")
-  deliveryType DeliveryType @default(PICKUP_AT_CLUBHOUSE)
+  schedule        DateTime?
+  orderType       String?    @default("")
+  deliveryType    DeliveryType @default(PICKUP_AT_CLUBHOUSE)
 
   /* delivery metrics */
   deliveryAddress       Json?
   deliveryInstructions  String?
-  deliveryDistanceMiles Float @default(0)
-  deliveryTimeMinutes   Int   @default(0)
+  deliveryDistanceMiles Float    @default(0)
+  deliveryTimeMinutes   Int      @default(0)
   deliveredAt           DateTime?
 
   /* golf / event */
@@ -298,8 +331,8 @@ model Order {
   customerId Int?
   customer   User? @relation("CustomerOrders", fields: [customerId], references: [id])
 
-  cartId String?
-  cart   Cart? @relation(fields: [cartId], references: [id])
+  cartId     String?
+  cart       Cart? @relation(fields: [cartId], references: [id])
 
   cashCollection CashCollection? @relation("OrderCashCollection")
 
@@ -307,7 +340,7 @@ model Order {
   statusHistory OrderStatusHistory[]
   payouts       Payout[]
 
-  status OrderStatus @default(PENDING_PAYMENT)
+  status        OrderStatus @default(PENDING_PAYMENT)
 
   @@index([driverId])
   @@index([staffId])
@@ -326,6 +359,9 @@ model OrderLineItem {
   specialNotes    String?
   selectedOptions Json?
 
+  /* Clover sync field */
+  cloverLineItemId String?
+
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
 
@@ -341,8 +377,8 @@ model OrderStatusHistory {
   timestamp DateTime @default(now())
 
   userId Int?
-  user   User? @relation("UserStatusChanges", fields: [userId], references: [id], onDelete: SetNull)
-  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user   User?  @relation("UserStatusChanges", fields: [userId], references: [id], onDelete: SetNull)
+  order  Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -355,7 +391,6 @@ model EventLocation {
 
   orders Order[]
 }
-
 
 /* ============================================================================ */
 /* 4.  Cash‑collection & Payout                                                 */
@@ -416,26 +451,29 @@ model Payout {
 /* ============================================================================ */
 
 model Event {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   title            String
   description      String
   image            String?
   location         String
   date             DateTime
-  startTime        String   @default("00:00")
-  endTime          String   @default("00:00")
+  startTime        String    @default("00:00")
+  endTime          String    @default("00:00")
   adultPrice       Float
   kidPrice         Float
   kidPriceInfo     String?
   availableTickets Int
   isFree           Boolean
   adultOnly        Boolean
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  bookings Booking[]
-  faqs     Faq[]
-  rsvps    RSVP[]
+  bookings         Booking[]
+  faqs             Faq[]
+  rsvps            RSVP[]
+
+  // Back-relation for all tickets (paid or free)
+  tickets          Ticket[]
 }
 
 model RSVP {
@@ -446,21 +484,46 @@ model RSVP {
   adultCount Int
   kidCount   Int
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 
-  event Event @relation(fields: [eventId], references: [id])
+  // Relation to Event: cascade delete RSVPs if the Event is removed
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Back-relation: tickets issued for this RSVP (if any)
+  tickets    Ticket[]
+
+  /// Indexes for faster lookups by event or email
+  @@index([eventId])
+  @@index([email])
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
 }
 
 model Booking {
-  id         String   @id @default(cuid())
-  eventId    String
-  name       String
-  email      String
-  adultCount Int
-  kidCount   Int
-  totalPrice Float
-  createdAt  DateTime @default(now())
+  id           String        @id @default(cuid())
+  eventId      String
+  name         String
+  email        String
+  adultCount   Int
+  kidCount     Int
+  totalPrice   Float
+  status       BookingStatus @default(PENDING_PAYMENT)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
 
-  event Event @relation(fields: [eventId], references: [id])
+  // Relation to Event: cascade delete Bookings if the Event is removed
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Back-relation for tickets issued after payment
+  tickets      Ticket[]
+
+  /// Indexes for faster lookups by event or email
+  @@index([eventId])
+  @@index([email])
 }
 
 model Faq {
@@ -469,32 +532,84 @@ model Faq {
   question String
   answer   String
 
-  event Event @relation(fields: [eventId], references: [id])
+  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
 }
 
 model Career {
-  id           String   @id @default(cuid())
+  id           String        @id @default(cuid())
   title        String
   description  String
   requirements String?
   deadline     DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
 
   applications Application[]
 }
 
 model Application {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   applicantName String
-  email         String   @default("")
+  email         String    @default("")
   jobTitle      String
   resumeUrl     String
   careerId      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
 
-  career Career? @relation(fields: [careerId], references: [id])
+  career        Career?   @relation(fields: [careerId], references: [id], onDelete: Cascade)
+}
+
+/* ============================================================================ */
+/* 5b. Tickets                                                                   */
+/* ============================================================================ */
+
+// Strict enums for ticket type and status
+enum TicketType {
+  ADULT
+  KID
+}
+
+enum TicketStatus {
+  ISSUED
+  REDEEMED
+  CANCELLED
+}
+
+model Ticket {
+  id             String       @id @default(cuid())
+
+  // Optional link back to a paid Booking
+  booking        Booking?     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId      String?
+
+  // Optional link back to a free-event RSVP
+  rsvp           RSVP?        @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+  rsvpId         String?
+
+  // Denormalized link to the Event
+  event          Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId        String
+
+  // Purchaser info (from Booking or RSVP)
+  purchaser      String
+  purchaserEmail String
+
+  // Ticket category: adult or kid
+  ticketType     TicketType   @default(ADULT)
+
+  // Unique code for check-in
+  code           String       @unique
+
+  // Lifecycle tracking: issued → redeemed → cancelled
+  status         TicketStatus @default(ISSUED)
+  redeemedAt     DateTime?
+
+  // Which staff member redeemed this ticket
+  redeemedById   Int?
+  redeemedBy     User?        @relation("RedeemedBy", fields: [redeemedById], references: [id])
+
+  createdAt      DateTime     @default(now())
 }
 
 /* ============================================================================ */
@@ -635,4 +750,13 @@ model BannerImage {
   position  Int      @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/* ============================================================================ */
+/* 8.  System-wide key-value settings                                           */
+/* ============================================================================ */
+
+model SystemSetting {
+  key   String @id           // e.g. "cloverLocationId"
+  value String               // arbitrary value (UUID, JSON, etc.)
 }

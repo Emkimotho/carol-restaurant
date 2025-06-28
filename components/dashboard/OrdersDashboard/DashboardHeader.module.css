@@ -1,0 +1,22 @@
+/* File: components/dashboard/OrdersDashboard/DashboardHeader.module.css */
+
+.headerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  color: var(--dark-gray);
+  margin: 0;
+}
+
+.tipsWidget {
+  margin-top: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--dark-gray);
+}

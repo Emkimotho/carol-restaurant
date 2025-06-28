@@ -1,0 +1,130 @@
+/* File: components/dashboard/OrdersDashboard/DetailModal.module.css */
+
+/* ───────── Header meta ───────── */
+.meta {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.95rem;
+  color: var(--dark-gray);
+}
+
+.separator {
+  margin: 1rem 0;
+  border: none;
+  border-top: 1px solid var(--border-color);
+}
+
+.sectionTitle {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* ───────── Items list ───────── */
+.itemsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.itemCard {
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--white);
+  padding: 1rem;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.itemTitle {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.itemQty {
+  font-size: 0.95rem;
+  color: var(--gray-hover);
+}
+
+.itemDesc {
+  font-size: 0.9rem;
+  color: var(--dark-gray);
+  margin-bottom: 0.5rem;
+}
+
+.itemMeta {
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+/* ───────── Selected options ───────── */
+.optionsList {
+  list-style: none;
+  padding-left: 1rem;
+  margin: 0.5rem 0;
+}
+
+.optionItem {
+  margin: 0.25rem 0;
+}
+
+.optionGroupLabel {
+  font-style: italic;
+  margin-right: 0.25rem;
+}
+
+/* Choice labels: bold green */
+.optionLabel {
+  color: green;
+  font-weight: bold;
+}
+
+/* ───────── Special instructions / notes ───────── */
+/* Notes in secondary color, italic & bold */
+.note {
+  color: var(--secondary-color);
+  font-style: italic;
+  font-weight: bold;
+  margin: 0.25rem 0;
+}
+
+/* ───────── History toggle & list (admin) ───────── */
+.historyToggle {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: 2px solid var(--primary-color);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  text-align: center;
+  text-decoration: none;
+}
+
+.historyToggle:hover,
+.historyToggle:focus {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+  outline: none;
+}
+
+.historyList {
+  list-style: none;
+  padding-left: 1rem;
+  color: var(--gray);
+  font-size: 0.9rem;
+}
+
+.historyList li + li {
+  margin-top: 0.5rem;
+}

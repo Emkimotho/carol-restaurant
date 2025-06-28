@@ -1,0 +1,34 @@
+/* File: components/dashboard/OrdersDashboard/OnlineDrivers.module.css */
+
+.container {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  box-shadow: var(--box-shadow-primary);
+}
+
+.heading {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  color: var(--dark-gray);
+  margin: 0 0 0.75rem 0;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.item {
+  margin: 0.25rem 0;
+  font-family: var(--font-body);
+  color: var(--dark-gray);
+}
+
+.empty {
+  font-family: var(--font-body);
+  color: var(--gray-hover);
+  font-style: italic;
+}

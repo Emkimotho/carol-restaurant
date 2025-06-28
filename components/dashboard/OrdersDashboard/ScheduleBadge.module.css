@@ -1,0 +1,24 @@
+/* File: components/dashboard/OrdersDashboard/ScheduleBadge.module.css */
+/* ─────────────────────────────────────────────────────────────────────
+   Styles for the ScheduleBadge component
+   ──────────────────────────────────────────────────────────────────── */
+
+.scheduleBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  pointer-events: none;
+  display: inline-block;
+}
+
+.scheduleASAP {
+  background-color: var(--success-color, #28a745);
+  color: var(--white);
+}
+
+.scheduleScheduled {
+  background-color: var(--warning-color, #ffc107);
+  color: var(--black);
+}
