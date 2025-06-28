@@ -1,5 +1,3 @@
-// File: components/MenuPreview/MenuPreview.tsx
-
 "use client";
 
 import React from "react";

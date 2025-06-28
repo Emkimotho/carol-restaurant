@@ -1,21 +1,18 @@
-/* File: styles/menuPreview.module.css */
-
 .menuPreview {
   background-color: var(--light-gray);
   padding: 2rem 0;
 }
 
-.menuPreview h2 {
+.previewTitle {
   font-size: 2rem;
   margin-bottom: 1.5rem;
   color: var(--primary-color);
+  font-weight: 700;
 }
 
-/* Make each menuItem a centered column */
 .menuItem {
   margin-bottom: 2rem;
   transition: transform 0.3s ease;
-
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -26,10 +23,8 @@
   border-radius: 0.5rem;
   box-shadow: var(--box-shadow-primary);
   transition: transform 0.3s ease;
-
-  /* Make sure the image doesn’t overflow its parent */
   width: 100%;
-  max-width: 300px; /* or whatever max width you prefer */
+  max-width: 300px;
   height: auto;
 }
 
@@ -37,13 +32,14 @@
   transform: scale(1.05);
 }
 
-.menuItem h4 {
+.itemTitle {
   margin-top: 1rem;
   font-size: 1.5rem;
   color: var(--secondary-color);
+  font-weight: 600;
 }
 
-.menuItem p {
+.itemDesc {
   color: var(--gray);
   line-height: 1.5;
   margin-top: 0.5rem;
@@ -64,35 +60,31 @@
     var(--primary-color) 50%
   );
   background-size: 200% auto;
-  background-position: right center; /* Default shows primary color */
+  background-position: right center;
   transition: background-position 0.5s ease;
 }
 
 .btn:hover {
-  background-position: left center; /* Reveals secondary color */
+  background-position: left center;
 }
 
 /* Responsive Adjustments */
 @media (max-width: 767.98px) {
-  .menuPreview h2 {
+  .previewTitle {
     font-size: 1.75rem;
   }
-
-  .menuItem h4 {
+  .itemTitle {
     font-size: 1.25rem;
   }
 }
 
 @media (max-width: 575.98px) {
-  .menuPreview h2 {
+  .previewTitle {
     font-size: 1.5rem;
   }
-
-  .menuItem h4 {
+  .itemTitle {
     font-size: 1rem;
   }
-
-  /* On very small screens, keep them centered but narrow */
   .menuItem {
     max-width: 90%;
     margin-left: auto;
