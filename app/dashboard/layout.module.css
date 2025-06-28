@@ -173,3 +173,74 @@
     font-size: 1.1rem;
   }
 }
+
+
+
+
+/* 1) Hide sidebar off-canvas by default on mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;       /* take out of flow */
+    top: 0;
+    left: -260px;          /* hidden to the left */
+    height: 100%;
+    z-index: 20;
+    transition: left 0.3s ease;
+  }
+
+  /* Show when `.open` is toggled */
+  .sidebar.open {
+    left: 0;
+  }
+
+  /* Show burger button in header */
+  .burger {
+    display: inline-flex;
+  }
+  /* Hide close button on desktop */
+  .closeBtn {
+    display: inline-flex;
+    margin-bottom: 1rem;
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+
+  /* Backdrop behind sidebar */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 10;
+  }
+
+  /* Shift main content beneath header */
+  .main {
+    margin-left: 0;       /* no sidebar */
+  }
+}
+
+/* 2) On desktop/tablet (≥769px), sidebar is always visible */
+@media (min-width: 769px) {
+  .sidebar {
+    position: relative;
+    left: 0 !important;
+  }
+  .sidebar.open {
+    left: 0;
+  }
+
+  /* Hide mobile controls */
+  .burger,
+  .closeBtn,
+  .backdrop {
+    display: none;
+  }
+
+  /* Reserve space for sidebar */
+  .main {
+    margin-left: 240px;
+  }
+}
