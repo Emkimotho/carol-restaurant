@@ -46,6 +46,86 @@
 }
 
 /* ------------------------------------------------------------------ */
+/*  Force sub-category tabs (MAIN & GOLF) to stay on one line         */
+/*  and enable horizontal scrolling                                   */
+/* ------------------------------------------------------------------ */
+.menuWrapper :global(.nav-tabs#main-subtabs),
+.menuWrapper :global(.nav-tabs#golf-subtabs) {
+  position: relative;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;    /* Firefox */
+  margin-bottom: 1rem;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+}
+
+/* Hide WebKit scrollbar */
+.menuWrapper :global(.nav-tabs#main-subtabs::-webkit-scrollbar),
+.menuWrapper :global(.nav-tabs#golf-subtabs::-webkit-scrollbar) {
+  display: none !important;
+}
+
+/* Prevent each tab from shrinking */
+.menuWrapper :global(.nav-tabs#main-subtabs .nav-item),
+.menuWrapper :global(.nav-tabs#golf-subtabs .nav-item) {
+  flex: 0 0 auto !important;
+}
+
+/* Keep each tab label on one line, with comfortable padding */
+.menuWrapper :global(.nav-tabs#main-subtabs .nav-link),
+.menuWrapper :global(.nav-tabs#golf-subtabs .nav-link) {
+  white-space: nowrap !important;
+  padding: 0.5rem 1rem !important;
+  flex-shrink: 0 !important;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Peek arrows hint                                                  */
+/* ------------------------------------------------------------------ */
+.menuWrapper :global(.nav-tabs#main-subtabs)::before,
+.menuWrapper :global(.nav-tabs#golf-subtabs)::before,
+.menuWrapper :global(.nav-tabs#main-subtabs)::after,
+.menuWrapper :global(.nav-tabs#golf-subtabs)::after {
+  content: "›";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Left arrow */
+.menuWrapper :global(.nav-tabs#main-subtabs)::before,
+.menuWrapper :global(.nav-tabs#golf-subtabs)::before {
+  content: "‹";
+  left: 0.25rem;
+}
+
+/* Right arrow */
+.menuWrapper :global(.nav-tabs#main-subtabs)::after,
+.menuWrapper :global(.nav-tabs#golf-subtabs)::after {
+  right: 0.25rem;
+}
+
+/* ------------------------------------------------------------------ */
 /*  “Start Order” button                                              */
 /* ------------------------------------------------------------------ */
 .startOrderButton {
@@ -100,7 +180,7 @@
 /*  Green flag icon for Golf Menu tab                                 */
 /* ------------------------------------------------------------------ */
 .golfFlag {
-  color: var(--primary-color);   /* same green as your theme */
+  color: var(--primary-color);
   margin-right: 0.25rem;
   font-size: 1rem;
 }
