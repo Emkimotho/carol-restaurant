@@ -1,7 +1,4 @@
-/* File: components/dashboard/AdminDashboard/AdminDashboard.module.css
- *
- * Responsive flex layout using global CSS variables.
- */
+/* File: components/dashboard/AdminDashboard/AdminDashboard.module.css */
 
 /* 1. Container */
 .dashboardContainer {
@@ -54,13 +51,8 @@
   align-items: center;
   gap: 1rem;
 }
-@media (min-width: 768px) {
-  .headerLeft {
-    margin-left: 250px; /* push under sidebar */
-  }
-}
 
-/* Hamburger toggle */
+/* Hamburger toggle (mobile) */
 .sidebarToggle {
   background: none;
   border: none;
@@ -69,14 +61,12 @@
   cursor: pointer;
 }
 @media (min-width: 768px) {
-  .sidebarToggle { display: none; }
-}
-.hamburgerIcon {
-  width: 1.5rem;
-  height: 1.5rem;
+  .sidebarToggle {
+    display: none;
+  }
 }
 
-/* Header nav links */
+/* Desktop header nav links */
 .headerNav {
   display: flex;
   gap: 1.5rem;
@@ -127,26 +117,41 @@
   position: relative;
 }
 
-/* Sidebar - desktop fixed */
+/* Sidebar (desktop) */
 .adminSidebar {
   width: 250px;
   background-color: var(--dark-gray);
   padding: 1rem;
   flex-shrink: 0;
 }
+
+/* Sidebar (mobile): off-canvas by default */
 @media (max-width: 767px) {
   .adminSidebar {
     position: fixed;
     top: calc(var(--header-top-height) + var(--header-bottom-height));
     left: 0;
+    width: 250px;
     height: calc(100vh - var(--header-top-height) - var(--header-bottom-height));
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     z-index: 200;
+
+    /* enable scrolling when content overflows */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
+  /* Show when open */
   .adminSidebar.open {
     transform: translateX(0);
   }
+}
+
+/* Divider between headerLinks and sidebarLinks */
+.divider {
+  border: none;
+  border-top: 1px solid var(--dark-gray-hover);
+  margin: 1rem 0;
 }
 
 /* Close “×” (mobile only) */
@@ -161,7 +166,9 @@
   cursor: pointer;
 }
 @media (min-width: 768px) {
-  .sidebarClose { display: none; }
+  .sidebarClose {
+    display: none;
+  }
 }
 
 /* Sidebar nav links */
@@ -200,7 +207,9 @@
   z-index: 150;
 }
 @media (min-width: 768px) {
-  .backdrop { display: none; }
+  .backdrop {
+    display: none;
+  }
 }
 
 /* Main content */
@@ -213,5 +222,12 @@
 @media (min-width: 768px) {
   .mainContent {
     padding: 2rem;
+  }
+}
+
+/* Hide desktop header nav on mobile to reduce clutter */
+@media (max-width: 767px) {
+  .headerNav {
+    display: none;
   }
 }

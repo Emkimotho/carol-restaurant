@@ -1,16 +1,21 @@
 // File: components/dashboard/AdminDashboard/AdminLayout.tsx
-// ──────────────────────────────────────────────────────────────
-//  Admin layout — now includes “Finances”, “Payouts”, “Cash Audit” links in the header
-// ──────────────────────────────────────────────────────────────
-
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, ReactNode } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import {
+  FaBars,
+  FaTimes,
+  FaBell,
+} from "react-icons/fa";
 import styles from "./AdminDashboard.module.css";
 
-const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AdminLayoutProps {
+  children: ReactNode;
+}
+
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   /* ------------------------------------------------------------------
      Local state: sidebar open/close
   -------------------------------------------------------------------*/
@@ -19,7 +24,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const closeSidebar = () => setSidebarOpen(false);
 
   /* ------------------------------------------------------------------
-     Header links (visible on all screen sizes)
+     Header links (visible on desktop header bar)
   -------------------------------------------------------------------*/
   const headerLinks = [
     { href: "/dashboard/admin-dashboard",              label: "Dashboard Home" },
@@ -38,7 +43,7 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { href: "/dashboard/admin-dashboard/event-manager",   label: "Events" },
     { href: "/dashboard/admin-dashboard/opening-hours",   label: "Hours" },
     { href: "/dashboard/admin-dashboard/delivery-charge", label: "Delivery Charges" },
-     { href: "/dashboard/admin-dashboard/banner",          label: "Banner" },
+    { href: "/dashboard/admin-dashboard/banner",          label: "Banner" },
     { href: "/dashboard/admin-dashboard/gallery",         label: "Gallery" },
     { href: "/dashboard/admin-dashboard/subscriptions",   label: "Subscriptions" },
     { href: "/dashboard/admin-dashboard/menu-preview",    label: "Menu Preview" },
@@ -50,9 +55,6 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { href: "/dashboard/admin-dashboard/settings",        label: "Settings" },
   ];
 
-  /* ------------------------------------------------------------------
-     Render
-  -------------------------------------------------------------------*/
   return (
     <div className={styles.dashboardContainer}>
       {/* ───────── HEADER ───────── */}
@@ -64,26 +66,18 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         {/* Bottom bar */}
         <div className={styles.headerBottom}>
-          {/* Left side: hamburger + nav */}
+          {/* Left side: hamburger + desktop nav */}
           <div className={styles.headerLeft}>
+            {/* Burger toggle for mobile */}
             <button
               className={styles.sidebarToggle}
               onClick={toggleSidebar}
               aria-label="Toggle sidebar"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className={styles.hamburgerIcon}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              <FaBars />
             </button>
 
+            {/* Desktop header links */}
             <nav className={styles.headerNav}>
               {headerLinks.map((link) => (
                 <Link
@@ -97,29 +91,14 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </nav>
           </div>
 
-          {/* Right side: logout */}
+          {/* Right side: notifications + logout */}
           <div className={styles.headerRight}>
             <button
               className={styles.notificationButton}
               aria-label="Notifications"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className={styles.notificationIcon}
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 17h5l-1.405-1.405C18.11 14.79 18 13.9 18 13V9a6 6 0 10-12
-                     0v4c0 .9-.11 1.79-.595 2.595L4 17h5m6
-                     0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
+              <FaBell className={styles.notificationIcon} />
             </button>
-
             <button
               className={styles.logoutButton}
               onClick={() => signOut({ callbackUrl: "/login" })}
@@ -137,20 +116,36 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <div className={styles.backdrop} onClick={closeSidebar} />
         )}
 
-        {/* Sidebar */}
+        {/* Sidebar drawer */}
         <aside
-          className={`${styles.adminSidebar} ${sidebarOpen ? styles.open : ""}`}
+          className={`${styles.adminSidebar} ${
+            sidebarOpen ? styles.open : ""
+          }`}
         >
+          {/* Close button for mobile */}
           <button
             className={styles.sidebarClose}
             onClick={closeSidebar}
             aria-label="Close sidebar"
           >
-            &times;
+            <FaTimes />
           </button>
 
+          {/* Combined nav: headerLinks + deeper sidebarLinks */}
           <nav className={styles.sidebarNav}>
             <ul>
+              {headerLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={styles.sidebarLink}
+                    onClick={closeSidebar}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+              <hr className={styles.divider} />
               {sidebarLinks.map((link) => (
                 <li key={link.href}>
                   <Link
