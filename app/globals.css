@@ -218,7 +218,6 @@ input[type="checkbox"] {
  10. Print Styles (earnings-print-zone)
 ────────────────────────────────────────────────────────────────────────────*/
 @media print {
-  /* hide all UI chrome */
   header,
   nav,
   aside,
@@ -233,7 +232,6 @@ input[type="checkbox"] {
     display: none !important;
   }
 
-  /* show only the earnings area */
   body * {
     visibility: hidden !important;
   }
@@ -249,7 +247,6 @@ input[type="checkbox"] {
     padding:  1in 0;
   }
 
-  /* prevent table row breaks */
   table {
     page-break-inside: avoid;
     width: 100%;
@@ -261,14 +258,13 @@ input[type="checkbox"] {
     display: table-footer-group;
   }
 
-  /* standard print font sizing */
   body, p, td, th, h1, h2, h3 {
     font-size: 12pt;
     color:     #000;
   }
   * {
     -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;  
+    print-color-adjust: exact;
   }
 }
 
@@ -294,7 +290,121 @@ input[type="checkbox"] {
 .hamburger:hover {
   transform: scale(1.1);
 }
-/* ...rest of hamburger & overlay-nav styles unchanged... */
+.hamburger .bar {
+  display:         block;
+  width:           var(--bar-width);
+  height:          var(--bar-thickness);
+  background-color: var(--foreground);
+  border-radius:    2px;
+  position:         absolute;
+  transition:       all var(--transition-speed) ease;
+}
+.hamburger .bar1 {
+  top: calc(50% - var(--bar-spacing));
+}
+.hamburger .bar2 {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.hamburger .bar3 {
+  top: calc(50% + var(--bar-spacing));
+}
+.hamburger.open .bar1 {
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+}
+.hamburger.open .bar2 {
+  opacity: 0;
+}
+.hamburger.open .bar3 {
+  top: 50%;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.overlay-nav {
+  position: fixed;
+  top:      0;
+  right:    0;
+  width:    100%;
+  height:   100%;
+  background-color: rgba(0,0,0,0.9);
+  display:      flex;
+  justify-content: center;
+  align-items: center;
+  opacity:       0;
+  transform:     translateX(100%);
+  transition:    opacity var(--transition-speed) ease,
+                 transform var(--transition-speed) ease;
+  z-index:       1000;
+  pointer-events: none;
+}
+.overlay-nav.open {
+  opacity:       1;
+  transform:     translateX(0);
+  pointer-events: auto;
+}
+
+.overlay-menu {
+  list-style: none;
+  text-align: center;
+  padding: 0;
+  margin:  0;
+}
+@media (max-width: 991px) {
+  .overlay-menu {
+    display:         flex;
+    flex-direction:  column;
+    align-items:     flex-start;
+    padding-left:    1.5rem;
+  }
+  .overlay-menu li {
+    width:      100%;
+    text-align: left;
+  }
+}
+.overlay-menu li {
+  margin:      16px 0;
+  opacity:     0;
+  transform:   translateY(10px);
+  transition:  opacity var(--transition-speed) ease,
+               transform var(--transition-speed) ease;
+}
+.overlay-nav.open .overlay-menu li {
+  opacity:   1;
+  transform: translateY(0);
+}
+.overlay-nav.open .overlay-menu li:nth-child(1) { transition-delay: calc(var(--menu-item-delay)*1); }
+.overlay-nav.open .overlay-menu li:nth-child(2) { transition-delay: calc(var(--menu-item-delay)*2); }
+.overlay-nav.open .overlay-menu li:nth-child(3) { transition-delay: calc(var(--menu-item-delay)*3); }
+.overlay-nav.open .overlay-menu li:nth-child(4) { transition-delay: calc(var(--menu-item-delay)*4); }
+.overlay-nav.open .overlay-menu li:nth-child(5) { transition-delay: calc(var(--menu-item-delay)*5); }
+
+.nav-link {
+  font-size:        var(--font-size-nav);
+  color:            var(--white);
+  text-decoration: none;
+  transition:       color var(--transition-speed) ease;
+}
+.nav-link:hover {
+  color: var(--gray-hover);
+}
+
+.closeMenuButton {
+  position: absolute;
+  top:      20px;
+  right:    20px;
+  background: transparent;
+  border:     none;
+  color:      var(--white);
+  font-size:  1.5rem;
+  cursor:     pointer;
+  z-index:    1002;
+  transition: color var(--transition-speed) ease;
+}
+.closeMenuButton:hover,
+.closeMenuButton:focus {
+  color: var(--gray-hover);
+}
 
 /*────────────────────────────────────────────────────────────────────────────
  12. Prevent iOS Safari zoom-on-focus and stop horizontal panning
@@ -311,4 +421,82 @@ input,
 textarea {
   font-size: 16px;
   line-height: 1.4;
+}
+
+/*────────────────────────────────────────────────────────────────────────────
+ 13. Bootstrap Focus & Form-Control Overrides
+────────────────────────────────────────────────────────────────────────────*/
+/* replace Bootstrap’s default blue focus rings */
+select:focus,
+input[type="checkbox"]:focus,
+input[type="radio"]:focus,
+input:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(0, 191, 99, 0.25);
+}
+
+/*────────────────────────────────────────────────────────────────────────────
+ 14. Checkbox & Radio Sizing
+────────────────────────────────────────────────────────────────────────────*/
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--primary-color);
+  width: 1.25em;
+  height: 1.25em;
+  margin-right: 0.5em;
+}
+
+/*────────────────────────────────────────────────────────────────────────────
+ 15. Typography Hierarchy
+────────────────────────────────────────────────────────────────────────────*/
+h1, .h1 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+h2, .h2 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+h3, .h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+h4, .h4 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+/*────────────────────────────────────────────────────────────────────────────
+ 16. Utility Containers & Layout Helpers
+────────────────────────────────────────────────────────────────────────────*/
+/* Centered content container */
+.container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Two-column layout for desktop */
+@media (min-width: 768px) {
+  .two-column {
+    display: flex;
+    gap: 2rem;
+  }
+  .two-column > .column {
+    flex: 1;
+  }
 }

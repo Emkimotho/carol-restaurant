@@ -9,7 +9,7 @@
   left: 0;
   width: 100%;
   height: var(--navbar-height);
-  z-index: 1000;
+  z-index: 2000;            /* raised above modals (which sit at ~1050) */
   font-family: var(--font-body);
   overflow: hidden;
 }

@@ -280,10 +280,10 @@ export default function ItemDetailPage({
         </div>
       </div>
 
-      {/* ---------- RECOMMENDATIONS: Same Category ---------- */}
+                      {/* ---------- Recommendations ---------- */}
       {recommendations.length > 0 && (
         <RecommendationsSection
-          title={`More ${item.category?.name ?? "items"} you may like…`}
+          title="You may also like ..."
           items={recommendations}
           provenance={provenance}
         />
