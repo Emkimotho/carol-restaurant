@@ -1,4 +1,5 @@
 // File: app/api/customer/dashboard/route.ts
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { OrderStatus } from "@prisma/client";
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
     },
     select: {
       id: true,
+      orderId: true,             // include human-friendly slug
       createdAt: true,
       totalAmount: true,
     },
@@ -62,6 +64,7 @@ export async function GET(request: Request) {
     },
     select: {
       id: true,
+      orderId: true,             // include human-friendly slug
       createdAt: true,
       totalAmount: true,
     },
@@ -84,11 +87,13 @@ export async function GET(request: Request) {
     },
     pendingOrders: pending.map((o) => ({
       id: o.id,
+      orderId: o.orderId,                // expose slug
       date: o.createdAt.toISOString().split("T")[0],
       total: o.totalAmount,
     })),
     pastOrders: past.map((o) => ({
       id: o.id,
+      orderId: o.orderId,                // expose slug
       date: o.createdAt.toISOString().split("T")[0],
       total: o.totalAmount,
     })),

@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import useSWR from "swr";
 import {
   FaUserCircle,
   FaClipboardList,
@@ -12,10 +13,17 @@ import {
 import { toast } from "react-toastify";
 import styles from "./CustomerDashboard.module.css";
 
+interface OrderItem {
+  title: string;
+  quantity: number;
+}
+
 interface Order {
-  id: string;
-  date: string;
+  id: string;          // internal UUID
+  orderId: string;     // friendly ORD-… slug
+  date: string;        // YYYY-MM-DD
   total: number;
+  items: OrderItem[];
 }
 
 interface UserProfile {
@@ -33,13 +41,16 @@ interface UserProfile {
 
 type SectionKey = "profile" | "pending" | "past" | "edit";
 
+// simple fetcher for SWR
+const fetcher = (url: string) =>
+  fetch(url).then((res) => {
+    if (!res.ok) throw new Error("Network error");
+    return res.json();
+  });
+
 export default function CustomerDashboard() {
   const [section, setSection] = useState<SectionKey>("profile");
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
-  const [pastOrders, setPastOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-
   const [form, setForm] = useState({
     phone: "",
     streetAddress: "",
@@ -50,16 +61,16 @@ export default function CustomerDashboard() {
     country: "",
   });
   const [saving, setSaving] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
+  // 1) Load profile & initialize form
   useEffect(() => {
-    async function load() {
+    async function loadProfile() {
       try {
         const res = await fetch("/api/customer/dashboard");
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setProfile(data.profile);
-        setPendingOrders(data.pendingOrders);
-        setPastOrders(data.pastOrders);
         setForm({
           phone: data.profile.phone ?? "",
           streetAddress: data.profile.streetAddress ?? "",
@@ -71,19 +82,38 @@ export default function CustomerDashboard() {
         });
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load dashboard data.");
+        toast.error("Failed to load profile.");
       } finally {
-        setLoading(false);
+        setLoadingProfile(false);
       }
     }
-    load();
+    loadProfile();
   }, []);
 
+  // 2) Fetch orders on-demand based on section
+  const statusMap: Record<SectionKey, string> = {
+    profile: "",
+    edit: "",
+    pending: "active",
+    past: "past",
+  };
+  const shouldFetch = section === "pending" || section === "past";
+  const { data: ordersData, error: ordersError } = useSWR<{
+    orders: Order[];
+  }>(
+    shouldFetch
+      ? `/api/customer/orders?which=${statusMap[section]}`
+      : null,
+    fetcher
+  );
+  const loadingOrders = shouldFetch && !ordersData && !ordersError;
+  const ordersList = ordersData?.orders ?? [];
+
+  // 3) Form handlers
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -106,21 +136,18 @@ export default function CustomerDashboard() {
     }
   };
 
+  // 4) Render sections
   const renderSection = () => {
-    if (loading) return <p>Loading…</p>;
+    if (loadingProfile) return <p>Loading profile…</p>;
 
     switch (section) {
       case "profile":
         if (!profile) return <p>No profile data.</p>;
-
-        // Build formatted address lines
+        // build address lines
         const street = profile.streetAddress?.trim();
         const rawApt = profile.aptSuite?.trim();
         const aptLabel =
-          rawApt &&
-          !/^apt[\s\.]/i.test(rawApt) // if it doesn't already start with "apt"
-            ? `Apt. ${rawApt}`
-            : rawApt;
+          rawApt && !/^apt[\s\.]/i.test(rawApt) ? `Apt. ${rawApt}` : rawApt;
         const line1 = [street, aptLabel].filter(Boolean).join(" ");
         const line2 =
           [profile.city, profile.state].filter(Boolean).join(", ") +
@@ -154,46 +181,38 @@ export default function CustomerDashboard() {
         );
 
       case "pending":
+      case "past":
+        if (ordersError) return <p>Error loading orders.</p>;
+        if (loadingOrders) return <p>Loading orders…</p>;
         return (
           <div className={styles.sectionCard}>
-            <h2>Pending Orders</h2>
-            {pendingOrders.length ? (
+            <h2>{section === "pending" ? "Pending Orders" : "Past Orders"}</h2>
+            {ordersList.length ? (
               <ul className={styles.orderList}>
-                {pendingOrders.map((o) => (
+                {ordersList.map((o) => (
                   <li key={o.id}>
                     <div className={styles.orderInfo}>
-                      <span>#{o.id}</span>
+                      <span>#{o.orderId}</span>
                       <span>{o.date}</span>
                       <span>${o.total.toFixed(2)}</span>
                     </div>
-                    <Link href={`/track-delivery/${o.id}`}>
-                      <button className={styles.trackBtn}>Track</button>
-                    </Link>
+                    <ul className={styles.itemList}>
+                      {o.items.map((it, i) => (
+                        <li key={i}>
+                          {it.title} × {it.quantity}
+                        </li>
+                      ))}
+                    </ul>
+                    {section === "pending" && (
+                      <Link href={`/track-delivery/${o.orderId}`}>
+                        <button className={styles.trackBtn}>Track</button>
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p>No pending orders.</p>
-            )}
-          </div>
-        );
-
-      case "past":
-        return (
-          <div className={styles.sectionCard}>
-            <h2>Past Orders</h2>
-            {pastOrders.length ? (
-              <ul className={styles.orderList}>
-                {pastOrders.map((o) => (
-                  <li key={o.id}>
-                    <span>#{o.id}</span>
-                    <span>{o.date}</span>
-                    <span>${o.total.toFixed(2)}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>No past orders.</p>
+              <p>No {section === "pending" ? "pending" : "past"} orders.</p>
             )}
           </div>
         );
@@ -239,6 +258,7 @@ export default function CustomerDashboard() {
     }
   };
 
+  // 5) Tabs
   const tabs: { key: SectionKey; label: string; icon: React.ReactNode }[] = [
     { key: "profile", label: "Profile", icon: <FaUserCircle /> },
     { key: "pending", label: "Pending Orders", icon: <FaClipboardList /> },

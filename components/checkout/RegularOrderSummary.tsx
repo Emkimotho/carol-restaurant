@@ -9,6 +9,7 @@
 
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 import styles                       from "./OrderSummaryStep.module.css";
 import { OrderContext }             from "@/contexts/OrderContext";
@@ -113,6 +114,7 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
     deliveryCharges: admin,
     loading:         adminLoading,
   } = useContext(DeliveryChargesContext)!;
+  const { data: session }   = useSession();
 
   /* ------------------ local state --------------------------------- */
   const [formattedSchedule, setFormattedSchedule] =
@@ -139,9 +141,10 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
     process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ||
     "20025 Mount Aetna Road, Hagerstown, MD 21742";
   const displayName =
-    order.customerId && order.customerName
+    session?.user?.name ||
+    (order.customerId && order.customerName
       ? order.customerName
-      : order.guestName;
+      : order.guestName);
 
   /* ------------------ schedule → human string --------------------- */
   useEffect(() => {

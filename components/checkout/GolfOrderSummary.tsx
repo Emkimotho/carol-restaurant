@@ -15,6 +15,7 @@
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import styles from "./OrderSummaryStep.module.css";
 
 import { OrderContext } from "@/contexts/OrderContext";
@@ -74,6 +75,7 @@ export default function GolfOrderSummary({
 }: OrderSummaryStepProps & { containsAlcohol: boolean }) {
   const { order, setOrder } = useContext(OrderContext)!;
   const [ageConfirmed, setAgeConfirmed] = useState(order.ageVerified);
+  const { data: session } = useSession();
 
   /* ---------- default schedule to “now” (ASAP) -------------------- */
   useEffect(() => {
@@ -90,11 +92,14 @@ export default function GolfOrderSummary({
   const rawTotal = calculateTotalWithTipAndTax(subtotal, tipAmt, taxAmt, 0);
   const total    = typeof rawTotal === "string" ? parseFloat(rawTotal) : rawTotal;
 
-  /* ---------- labels ---------------------------------------------- */
-  const displayName = order.customerId && order.customerName
-    ? order.customerName
-    : order.guestName;
+  /* ---------- display name logic --------------------------------- */
+  const displayName =
+    session?.user?.name ||
+    (order.customerId && order.customerName
+      ? order.customerName
+      : order.guestName);
 
+  /* ---------- golf delivery label ------------------------------- */
   const golfLabel = (): string => {
     switch (order.deliveryType) {
       case DeliveryType.PICKUP_AT_CLUBHOUSE:

@@ -1,11 +1,10 @@
-// File: app/payment-confirmation/card/page.tsx
 /* =======================================================================
-   Credit‑card payment confirmation + optional delivery‑tracking
+   Credit-card payment confirmation + delivery-tracking
    ====================================================================== */
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
-import { useRouter, useSearchParams }             from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { OrderContext } from "@/contexts/OrderContext";
 import { CartContext }  from "@/contexts/CartContext";
@@ -34,59 +33,53 @@ interface FetchedOrder {
 
 /* ─ Helpers ──────────────────────────────────────────────────────────── */
 const money = (n: number) => `$${n.toFixed(2)}`;
-/* Eastern‑time clock (e.g. “1:57 AM”) */
 const etClock = (iso: string) =>
   new Date(iso).toLocaleTimeString("en-US", {
-    hour:     "numeric",
-    minute:   "2-digit",
-    hour12:   true,
+    hour:   "numeric",
+    minute: "2-digit",
+    hour12: true,
     timeZone: "America/New_York",
   });
 
 /* ===================================================================== */
 export default function CardPaymentConfirmation() {
-  /* Router / params */
-  const router      = useRouter();
-  const params      = useSearchParams();
-  const dbId        = params.get("id") ?? "";
+  const router   = useRouter();
+  const params   = useSearchParams();
+  const dbId     = params.get("id") ?? "";
 
-  /* Contexts */
-  const orderCtx    = useContext(OrderContext);
-  const cartCtx     = useContext(CartContext);
+  const orderCtx = useContext(OrderContext);
+  const cartCtx  = useContext(CartContext);
   if (!orderCtx || !cartCtx) return null;
   const { order: ctxOrder } = orderCtx;
   const { clearCart }       = cartCtx;
 
-  /* Local state */
-  const [dbOrder,  setDbOrder]  = useState<FetchedOrder | null>(null);
-  const [loading,  setLoading]  = useState(false);
-  const [errMsg,   setErrMsg]   = useState<string | null>(null);
-  const [emailOK,  setEmailOK]  = useState(false);
+  const [dbOrder, setDbOrder] = useState<FetchedOrder | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg]   = useState<string | null>(null);
+  const [emailOK, setEmailOK] = useState(false);
 
   const restaurantAddress =
     process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ??
     "20025 Mount Aetna Road, Hagerstown, MD 21742";
 
-  /* – Clear cart exactly once – */
+  /* Clear cart once */
   useEffect(clearCart, [clearCart]);
 
-  /* – Fetch latest order by row‑ID – */
-  const loadOrder = () => {
+  /* Fetch order */
+  useEffect(() => {
     if (!dbId) return;
     setLoading(true);
-    setErrMsg(null);
     fetch(`/api/orders/${encodeURIComponent(dbId)}`)
       .then(async r => {
         if (!r.ok) throw new Error(String(r.status));
         const { order } = await r.json();
-        setDbOrder(order as FetchedOrder);
+        setDbOrder(order);
       })
-      .catch(()  => setErrMsg("Couldn’t load order details."))
+      .catch(() => setErrMsg("Couldn’t load order details."))
       .finally(() => setLoading(false));
-  };
-  useEffect(loadOrder, [dbId]);
+  }, [dbId]);
 
-  /* – Email receipt (once) – */
+  /* Email receipt */
   useEffect(() => {
     const target = dbOrder?.guestEmail ?? ctxOrder.guestEmail;
     if (!target || emailOK) return;
@@ -96,24 +89,22 @@ export default function CardPaymentConfirmation() {
 
     fetch("/api/send-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
         to:      target,
-        subject: "19th Hole — Payment Confirmation",
+        subject: "19th Hole — Payment Confirmation",
         text:    `Your card payment of $${amount.toFixed(
                    2
-                 )} for order #${humanId} has been received.`,
+                 )} for order #${humanId} has been received.`,
         html:    `<p>Your card payment of <strong>$${amount.toFixed(
                    2
-                 )}</strong> for order #${humanId} has been received.</p>`,
+                 )}</strong> for order #${humanId} has been received.</p>`,
       }),
     }).then(r => r.ok && setEmailOK(true))
       .catch(console.error);
   }, [dbOrder, ctxOrder, emailOK]);
 
-  /* Prefer DB snapshot; fall back to minimal context fields */
   const snap = dbOrder ?? (ctxOrder as Partial<FetchedOrder>);
-
   const {
     orderId       = "",
     totalAmount   = 0,
@@ -124,20 +115,16 @@ export default function CardPaymentConfirmation() {
     deliveryAddress,
   } = snap;
 
-  const placedClock = dbOrder?.createdAt               // ✅ only when DB record present
+  const placedClock = dbOrder?.createdAt
     ? etClock(dbOrder.createdAt)
     : undefined;
 
   const isDelivery =
     deliveryType === "DELIVERY" || orderType?.includes("delivery");
 
-  /* ────────────────────────────────────────────────────────────────────
-     RENDER
-     ────────────────────────────────────────────────────────────────── */
   return (
     <div className={styles.container}>
       <div className={styles.confirmationCard}>
-        {/* tick icon */}
         <div className={styles.iconWrapper}>
           <svg className={styles.checkIcon} viewBox="0 0 52 52">
             <circle className={styles.checkCircle} cx="26" cy="26" r="25" />
@@ -145,13 +132,25 @@ export default function CardPaymentConfirmation() {
           </svg>
         </div>
 
-        <h1 className={styles.title}>Payment Confirmed!</h1>
+        <h1 className={styles.title}>Payment Confirmed!</h1>
 
         {loading && <p className={styles.message}>Fetching order details…</p>}
         {errMsg  && (
           <p className={styles.message}>
             Payment succeeded, but we couldn’t load full details.&nbsp;
-            <button onClick={loadOrder} className={styles.retryBtn}>retry</button>
+            <button onClick={() => {
+              setErrMsg(null);
+              setDbOrder(null);
+              setLoading(false);
+              fetch(`/api/orders/${encodeURIComponent(dbId)}`)
+                .then(async r => {
+                  if (!r.ok) throw new Error(String(r.status));
+                  const { order } = await r.json();
+                  setDbOrder(order);
+                })
+                .catch(() => setErrMsg("Couldn’t load order details."))
+                .finally(() => setLoading(false));
+            }} className={styles.retryBtn}>retry</button>
           </p>
         )}
         {!loading && !errMsg && (
@@ -160,18 +159,16 @@ export default function CardPaymentConfirmation() {
           </p>
         )}
 
-        {/* ── Order number row ───────────────────────────────────────── */}
         {orderId && (
           <div className={styles.orderNumberRow}>
-            <span className={styles.factLabel}>Order #</span>
+            <span className={styles.factLabel}>Order #</span>
             <span className={styles.orderNumber}>{orderId}</span>
           </div>
         )}
 
-        {/* ── Paid / Placed row ─────────────────────────────────────── */}
         <div className={styles.paidPlacedRow}>
           <div>
-            <span className={styles.factLabel}>Paid with</span>
+            <span className={styles.factLabel}>Paid with</span>
             <span>{paymentMethod === "CARD" ? "Card" : paymentMethod}</span>
           </div>
           {placedClock && (
@@ -182,20 +179,17 @@ export default function CardPaymentConfirmation() {
           )}
         </div>
 
-        {/* ── Status row ────────────────────────────────────────────── */}
         <div className={styles.statusRow}>
           <span className={styles.factLabel}>Status</span>
           <span>{status.replace(/_/g, " ")}</span>
         </div>
 
-        {/* ── fulfilment block ──────────────────────────────────────── */}
         {isDelivery ? (
           <div className={styles.detailSection}>
-            <h2 className={styles.subtitle}>Delivery To</h2>
+            <h2 className={styles.subtitle}>Delivery To</h2>
             {deliveryAddress ? (
               <p className={styles.address}>
-                {deliveryAddress.street}, {deliveryAddress.city},{" "}
-                {deliveryAddress.state} {deliveryAddress.zipCode}
+                {deliveryAddress.street}, {deliveryAddress.city}, {deliveryAddress.state} {deliveryAddress.zipCode}
               </p>
             ) : (
               <p className={styles.address}>
@@ -205,36 +199,37 @@ export default function CardPaymentConfirmation() {
           </div>
         ) : (
           <div className={styles.detailSection}>
-            <h2 className={styles.subtitle}>Pickup At</h2>
+            <h2 className={styles.subtitle}>Pickup At</h2>
             <p className={styles.address}>{restaurantAddress}</p>
           </div>
         )}
 
-        {/* ── buttons ──────────────────────────────────────────────── */}
-        <div className={styles.navigation}>
-          {isDelivery && orderId && (
+        {/* ←— newly added “Track” button */}
+        {orderId && (
+          <div className={styles.navigation}>
             <button
               onClick={() => router.push(`/track-delivery/${orderId}`)}
               className="btn"
             >
-              Track My Order
+              Track My Order
             </button>
-          )}
-          <button onClick={() => router.push("/menu")} className="btn secondary">
-            View Menu
-          </button>
-          <button onClick={() => router.push("/")} className="btn secondary">
-            Home
-          </button>
-        </div>
+            <button onClick={() => router.push("/menu")}    className="btn secondary">
+              View Menu
+            </button>
+            <button onClick={() => router.push("/")}        className="btn secondary">
+              Home
+            </button>
+          </div>
+        )}
 
-       <p className={styles.note}>
-  {emailOK
-    ? "A confirmation email has been sent to you. Enjoy the 19"
-    : "A confirmation email will be sent to you shortly. Enjoy the 19"}
-  <sup>th</sup> Hole!
-</p>
-   </div>
+        <p className={styles.note}>
+          {emailOK
+            ? "A confirmation email has been sent to you. Enjoy the 19"
+            : "A confirmation email will be sent to you shortly. Enjoy the 19"
+          }
+          <sup>th</sup> Hole!
+        </p>
+      </div>
     </div>
   );
 }

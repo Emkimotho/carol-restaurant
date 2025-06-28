@@ -1,4 +1,6 @@
-// File: app/payment-confirmation/cash/page.tsx
+/* =======================================================================
+   Cash-order confirmation + optional delivery-tracking
+   ====================================================================== */
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
@@ -9,9 +11,6 @@ import { CartContext }  from "@/contexts/CartContext";
 
 import styles from "./PaymentConfirmation.module.css";
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
 interface FetchedOrder {
   id:           string;
   orderId:      string;
@@ -25,9 +24,6 @@ interface FetchedOrder {
 
 const fmtMoney = (n: number) => `$${n.toFixed(2)}`;
 
-/* ================================================================== */
-/*  Component                                                         */
-/* ================================================================== */
 export default function CashPaymentConfirmation() {
   const router  = useRouter();
   const params  = useSearchParams();
@@ -36,18 +32,18 @@ export default function CashPaymentConfirmation() {
   const orderCtx = useContext(OrderContext);
   const cartCtx  = useContext(CartContext);
   if (!orderCtx || !cartCtx) return null;
+  const { order: ctxOrder } = orderCtx;
+  const { clearCart }       = cartCtx;
 
-  /* -------- clear cart exactly once (fixes infinite loop) -------- */
-  const { clearCart } = cartCtx;
-  useEffect(() => { clearCart(); }, [clearCart]);
+  const [order,     setOrder]     = useState<FetchedOrder | null>(null);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
 
-  /* ---------------- local state ---------------------------------- */
-  const [order,      setOrder]      = useState<FetchedOrder | null>(null);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
-  const [emailSent,  setEmailSent]  = useState(false);
+  /* Clear cart */
+  useEffect(() => clearCart(), [clearCart]);
 
-  /* 1️⃣ fetch order from API -------------------------------------- */
+  /* Fetch order */
   useEffect(() => {
     if (!dbId) return;
     setLoading(true);
@@ -55,15 +51,15 @@ export default function CashPaymentConfirmation() {
       .then(async r => {
         if (!r.ok) throw new Error(`Status ${r.status}`);
         const { order } = await r.json();
-        setOrder(order as FetchedOrder);
+        setOrder(order);
       })
       .catch(() => setError("Could not load order details."))
       .finally(() => setLoading(false));
   }, [dbId]);
 
-  /* 2️⃣ send confirmation email once ------------------------------ */
+  /* Email confirmation */
   useEffect(() => {
-    const o = order ?? orderCtx.order;
+    const o = order ?? ctxOrder;
     if (emailSent || !o?.guestEmail) return;
 
     fetch("/api/send-email", {
@@ -73,19 +69,17 @@ export default function CashPaymentConfirmation() {
         to:      o.guestEmail,
         subject: "19th Hole — Cash Order Confirmation",
         text:    `Your order #${o.orderId} for ${fmtMoney(o.totalAmount)} has been placed. Please have cash ready when we deliver.`,
-        html:    `<p>Your order <strong>#${o.orderId}</strong> for <strong>${fmtMoney(o.totalAmount)}</strong> has been placed. Please have cash ready when we deliver.</p>`
-      })
+        html:    `<p>Your order <strong>#${o.orderId}</strong> for <strong>${fmtMoney(o.totalAmount)}</strong> has been placed. Please have cash ready when we deliver.</p>`,
+      }),
     })
-      .then(r => r.ok && setEmailSent(true))
-      .catch(console.error);
-  }, [order, orderCtx.order, emailSent]);
+    .then(r => r.ok && setEmailSent(true))
+    .catch(console.error);
+  }, [order, ctxOrder, emailSent]);
 
-  /* ---------------- loading / error UI --------------------------- */
   if (loading) return <div className={styles.message}>Loading order…</div>;
   if (error)   return <div className={styles.message}>{error}</div>;
 
-  /* ---------------- final payload & display ---------------------- */
-  const o   = (order ?? orderCtx.order) as FetchedOrder;
+  const o   = (order ?? ctxOrder) as FetchedOrder;
   const amt = fmtMoney(o.totalAmount);
 
   let heading: string;
@@ -94,7 +88,7 @@ export default function CashPaymentConfirmation() {
   switch (o.deliveryType) {
     case "PICKUP_AT_CLUBHOUSE":
       heading     = "Pickup at Clubhouse";
-      instruction = <>Please pick up your order at the clubhouse and have <strong>{amt}</strong> in hand.</>;
+      instruction = <>Please pick up your order at the clubhouse and have <strong>{amt}</strong> ready.</>;
       break;
     case "ON_COURSE":
       heading     = o.holeNumber != null
@@ -135,14 +129,23 @@ export default function CashPaymentConfirmation() {
           </div>
         </div>
 
-        <div className={styles.navigation}>
-          <button onClick={() => router.push("/menu")} className="btn secondary">
-            View Menu
-          </button>
-          <button onClick={() => router.push("/")} className="btn secondary">
-            Home
-          </button>
-        </div>
+        {/* ←— newly added “Track” button */}
+        {o.orderId && (
+          <div className={styles.navigation}>
+            <button
+              onClick={() => router.push(`/track-delivery/${o.orderId}`)}
+              className="btn"
+            >
+              Track My Order
+            </button>
+            <button onClick={() => router.push("/menu")} className="btn secondary">
+              View Menu
+            </button>
+            <button onClick={() => router.push("/")}     className="btn secondary">
+              Home
+            </button>
+          </div>
+        )}
 
         <p className={styles.note}>
           You’ll receive a confirmation email shortly. Thanks for choosing the 19<sup>th</sup> Hole!

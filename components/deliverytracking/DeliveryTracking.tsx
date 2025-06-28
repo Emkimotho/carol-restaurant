@@ -30,12 +30,13 @@ export default function DeliveryTracking({
   initialOrder,
 }: DeliveryTrackingProps) {
   const { order: ctxOrder } = useContext(OrderContext) ?? { order: {} as any };
-  const orderId    = initialOrder?.id       ?? ctxOrder.id;
-  const friendly   = initialOrder?.orderId  ?? ctxOrder.orderId;
+  const orderId   = initialOrder?.id      ?? ctxOrder.id;
+  const friendly  = initialOrder?.orderId ?? ctxOrder.orderId;
 
+  // fetch latest status, deliveryType, etc.
   const { order: fetched, loading, error } = useOrder(orderId);
 
-  // Current status
+  // derive current status (server truth)
   const [status, setStatus] = useState(
     initialOrder?.status ?? fetched?.status ?? "ORDER_RECEIVED"
   );
@@ -43,7 +44,7 @@ export default function DeliveryTracking({
     if (fetched?.status) setStatus(fetched.status);
   }, [fetched?.status]);
 
-  // Live WebSocket updates
+  // live websocket updates
   useEffect(() => {
     if (!orderId) return;
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
@@ -57,7 +58,7 @@ export default function DeliveryTracking({
     return () => ws.close();
   }, [orderId]);
 
-  // Status → step index
+  // map statuses to progress-bar steps
   const statusMap: Record<string, number> = {
     ORDER_RECEIVED:      0,
     IN_PROGRESS:         1,
@@ -68,26 +69,31 @@ export default function DeliveryTracking({
   };
   const currentStep = statusMap[status] ?? 0;
 
-  // Detect golf vs regular delivery
+  // golf vs. regular
   const deliveryType = initialOrder?.deliveryType ?? fetched?.deliveryType;
   const isGolf       = deliveryType !== "DELIVERY";
   const holeNumber   = initialOrder?.holeNumber ?? fetched?.holeNumber;
   const serverName   = initialOrder?.serverName ?? fetched?.serverName;
 
-  // Customize step label for golf (server instead of driver)
+  // personalize “Picked up” label for golf orders
   const steps = BASE_STEPS.map((s, idx) =>
-    idx === 3 // the "Picked Up" step
+    idx === 3
       ? {
           ...s,
           label: isGolf
-            ? `Picked Up by ${serverName ? serverName : "Server"}`
+            ? `Picked Up by ${serverName ?? "Server"}`
             : s.label,
         }
       : s
   );
 
-  // --- Clubhouse pickup shortcut ---
-  if (isGolf && deliveryType === "PICKUP_AT_CLUBHOUSE") {
+  // ─── CLUBHOUSE PICKUP SHORTCUT ───
+  // only show when the kitchen has actually marked ORDER_READY
+  if (
+    isGolf &&
+    deliveryType === "PICKUP_AT_CLUBHOUSE" &&
+    statusMap[status] >= statusMap["ORDER_READY"]
+  ) {
     return (
       <div className={styles.container}>
         <div className={styles.trackingCard}>
@@ -109,7 +115,7 @@ export default function DeliveryTracking({
     );
   }
 
-  // --- On-course / Pavilion delivery header ---
+  // ─── ON-COURSE / PAVILION HEADER ───
   const locationLabel =
     deliveryType === "ON_COURSE"
       ? `Hole ${holeNumber ?? "—"}`
@@ -136,11 +142,19 @@ export default function DeliveryTracking({
         <div className={styles.progressBar}>
           {steps.map((stepDef, idx) => (
             <div key={idx} className={styles.stepContainer}>
-              <div className={`${styles.circle} ${idx <= currentStep ? styles.active : ""}`}>
+              <div
+                className={`${styles.circle} ${
+                  idx <= currentStep ? styles.active : ""
+                }`}
+              >
                 <span className={styles.icon}>{stepDef.icon}</span>
               </div>
               {idx < steps.length - 1 && (
-                <div className={`${styles.line} ${idx < currentStep ? styles.active : ""}`} />
+                <div
+                  className={`${styles.line} ${
+                    idx < currentStep ? styles.active : ""
+                  }`}
+                />
               )}
               <div className={styles.labelContainer}>
                 <span className={styles.stepLabel}>{stepDef.label}</span>
@@ -159,9 +173,9 @@ export default function DeliveryTracking({
 
         <div className={styles.contact}>
           <p>
-            Questions? Call 
+            Questions? Call{" "}
             <strong>
-              {isGolf ? serverName || "Server" : "Driver"} (240) 313-2819
+              {isGolf ? serverName ?? "Server" : "Driver"} (240) 313-2819
             </strong>
             .
           </p>
