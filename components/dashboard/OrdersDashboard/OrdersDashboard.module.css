@@ -1,6 +1,6 @@
 /* File: components/dashboard/OrdersDashboard/OrdersDashboard.module.css */
 
-/* Top-level container for the dashboard */
+/* ───────── Top-level container ───────── */
 .container {
   background-color: var(--light-gray);
   color: var(--dark-gray);
@@ -18,4 +18,118 @@
   .container {
     padding: 1rem;
   }
+}
+
+/* ───────── Search & Filter ───────── */
+.searchInput {
+  padding: 0.75rem;
+  font-size: 1rem;
+  width: 50%;
+  max-width: 400px;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+}
+.filterLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+.filterSelect {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+}
+
+/* Mobile: make search & filter full-width */
+@media (max-width: 768px) {
+  .searchInput,
+  .filterSelect {
+    width: 100%;
+    max-width: none;
+  }
+  .filterLabel {
+    display: block;
+    margin-bottom: 1rem;
+  }
+}
+
+/* ───────── Tabs ───────── */
+.tabsContainer {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* smooth on iOS */
+  scroll-snap-type: x mandatory;     /* enable snap */
+  gap: 0.5rem;                       /* spacing between tabs */
+
+  /* key: allow overscroll space at both ends */
+  scroll-padding-inline: 1rem;
+}
+.tabsContainer::-webkit-scrollbar {
+  display: none;                     /* hide scrollbar */
+}
+.tabsContainer > * {
+  scroll-snap-align: start;          /* each tab snaps at start */
+}
+
+/* ───────── Orders Grid Wrapper ───────── */
+.ordersGridWrapper {
+  display: grid;
+  gap: 1rem;
+}
+@media (max-width: 640px) {
+  .ordersGridWrapper {
+    grid-template-columns: 1fr;
+  }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .ordersGridWrapper {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1025px) {
+  .ordersGridWrapper {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ───────── Pagination Controls ───────── */
+.paginationControls {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+.paginationButton {
+  margin: 0 0.25rem;
+  padding: 0.5rem 0.75rem;
+  min-width: 2.5rem;   /* thumb-friendly */
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  background: var(--white);
+  cursor: pointer;
+}
+.paginationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ───────── Modal Overrides ───────── */
+.detailModal,
+.ageCheckModal {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+/* ───────── Utility tweaks ───────── */
+/* Ensure images/tables/etc inside container wrap */
+.container img,
+.container table {
+  max-width: 100%;
+  height: auto;
+  overflow-x: auto;
 }
