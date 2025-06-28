@@ -409,3 +409,18 @@ input[type="checkbox"] {
 .closeMenuButton:focus {
   color: var(--gray-hover);
 }
+
+/*────────────────────────────────────────────────────────────────────────────
+ 12. Prevent iOS Safari zoom-on-focus and horizontal “letter-boxing”
+────────────────────────────────────────────────────────────────────────────*/
+html,
+body {
+  overflow-x: hidden;
+  width: 100vw;
+}
+
+input,
+textarea {
+  font-size: 16px;
+  line-height: 1.4;
+}

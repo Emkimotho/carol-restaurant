@@ -15,6 +15,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "19th Hole Restaurant and Bar",
   description: "19th Hole Restaurant and Bar at the Black Rock",
+  viewport: "width=device-width, initial-scale=1.0, viewport-fit=cover",
 };
 
 export default function RootLayout({
@@ -24,6 +25,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head />
       <body className={inter.className}>
         {/* ─── 1) Golf‐ball animation listener across the whole app ─── */}
         <AddToCartEffect />
