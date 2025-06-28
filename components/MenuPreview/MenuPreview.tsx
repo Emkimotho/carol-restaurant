@@ -22,19 +22,22 @@ const MenuPreview: React.FC = () => {
   const { data, error } = useSWR<PreviewItem[]>("/api/menupreview", fetcher);
 
   if (error) {
-    return <p className="text-center text-danger">Failed to load menu preview.</p>;
+    return (
+      <p className="text-center text-danger">
+        Failed to load menu preview.
+      </p>
+    );
   }
   if (!data) {
     return <p className="text-center">Loading preview…</p>;
   }
 
-  // Ensure `data` is an array before mapping
   const items: PreviewItem[] = Array.isArray(data) ? data : [];
 
   return (
     <section className={styles.menuPreview}>
       <div className="container text-center">
-        <h2>Menu Preview</h2>
+        <h2 className={styles.previewTitle}>Menu Preview</h2>
         <div className="row mt-4">
           {items.map((item) => (
             <div key={item.id} className="col-md-4 mb-4">
@@ -47,8 +50,10 @@ const MenuPreview: React.FC = () => {
                   style={{ objectFit: "cover", borderRadius: "8px" }}
                   className="img-fluid"
                 />
-                <h4 className="mt-2">{item.title}</h4>
-                {item.description && <p>{item.description}</p>}
+                <h4 className={styles.itemTitle}>{item.title}</h4>
+                {item.description && (
+                  <p className={styles.itemDesc}>{item.description}</p>
+                )}
               </div>
             </div>
           ))}
