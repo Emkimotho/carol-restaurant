@@ -1,9 +1,10 @@
 // File: app/dashboard/profile/page.tsx
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import useSWR from "swr";
 import { toast } from "react-toastify";
+import { useSession } from "next-auth/react";
 import {
   Box,
   Card,
@@ -20,13 +21,36 @@ const fetcher = (url: string) =>
   });
 
 export default function ProfilePage() {
-  const userId = 1; // or pull from your auth/session
-  const { data, error } = useSWR(`/api/users/${userId}`, fetcher);
+  const { data: session, status } = useSession();
+  // 1) Show spinner while NextAuth is loading
+  if (status === "loading") {
+    return (
+      <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+  // 2) If not signed in, you could redirect or show a message
+  if (!session?.user?.id) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography color="error">You must be signed in to view this page.</Typography>
+      </Box>
+    );
+  }
 
-  React.useEffect(() => {
-    if (error) toast.error("Failed to load profile");
+  // 3) Fetch the profile from your customer endpoint
+  const { data, error } = useSWR<{ profile: any }>(
+    "/api/customer/dashboard",
+    fetcher
+  );
+
+  // 4) Error toast
+  useEffect(() => {
+    if (error) toast.error("Failed to load profile.");
   }, [error]);
 
+  // 5) Loading state
   if (!data && !error) {
     return (
       <Box sx={{ p: 4, display: "flex", justifyContent: "center" }}>
@@ -35,7 +59,8 @@ export default function ProfilePage() {
     );
   }
 
-  if (error || !data) {
+  // 6) Not found
+  if (error || !data?.profile) {
     return (
       <Box sx={{ p: 4 }}>
         <Typography color="error">Profile not found.</Typography>
@@ -43,29 +68,26 @@ export default function ProfilePage() {
     );
   }
 
-  // Determine address lines
-  // Prefer individual fields, but fall back to raw `data.address` if present
-  const street = data.streetAddress?.trim();
-  const apt = data.aptSuite?.trim();
-  const city = data.city?.trim();
-  const state = data.state?.trim();
-  const zip = data.zip?.trim();
-  const country = data.country?.trim() ?? "USA";
+  // 7) Build address lines (same as before)
+  const p = data.profile;
+  const street = p.streetAddress?.trim();
+  const apt    = p.aptSuite?.trim();
+  const city   = p.city?.trim();
+  const state  = p.state?.trim();
+  const zip    = p.zip?.trim();
+  const country= p.country?.trim() ?? "USA";
 
   let addressLines: string[] = [];
-
   if (street || apt || city || state || zip) {
-    // build from components
     const line1 = [street, apt ? `Apt. ${apt}` : null]
       .filter(Boolean)
       .join(" ");
     const line2 = [city, state].filter(Boolean).join(", ") + (zip ? ` ${zip}` : "");
     addressLines = [line1, line2, country].filter(Boolean);
-  } else if (data.address) {
-    // fallback: split raw address string by commas
-    addressLines = data.address
+  } else if (p.address) {
+    addressLines = p.address
       .split(",")
-      .map((segment: string) => segment.trim())
+      .map((s: string) => s.trim())
       .filter(Boolean);
   }
 
@@ -79,41 +101,40 @@ export default function ProfilePage() {
     >
       <Card sx={{ width: { xs: "100%", sm: 400 } }}>
         <CardContent sx={{ textAlign: "center" }}>
-          {data.driverProfile?.photoUrl && (
+          {p.photoUrl && (
             <Avatar
-              src={data.driverProfile.photoUrl}
+              src={p.photoUrl}
               sx={{ width: 88, height: 88, mx: "auto", mb: 2 }}
             />
           )}
 
           <Typography variant="h5" gutterBottom>
-            {data.firstName} {data.lastName}
+            {p.firstName} {p.lastName}
           </Typography>
 
           <Typography variant="body1" gutterBottom>
-            {data.email}
+            {p.email}
           </Typography>
 
-          {data.phone && (
+          {p.phone && (
             <Typography variant="body1" gutterBottom>
-              Phone: {data.phone}
+              Phone: {p.phone}
             </Typography>
           )}
 
-          {/* Render each address line on its own Typography */}
-          {addressLines.map((line, idx) => (
-            <Typography key={idx} variant="body1" gutterBottom>
+          {addressLines.map((line, i) => (
+            <Typography key={i} variant="body1" gutterBottom>
               {line}
             </Typography>
           ))}
 
-          {data.driverProfile && (
+          {p.licenseNumber && (
             <>
               <Typography variant="body1" gutterBottom>
-                License #: {data.driverProfile.licenseNumber}
+                License #: {p.licenseNumber}
               </Typography>
               <Typography variant="body1">
-                Vehicle: {data.driverProfile.carMakeModel}
+                Vehicle: {p.carMakeModel}
               </Typography>
             </>
           )}

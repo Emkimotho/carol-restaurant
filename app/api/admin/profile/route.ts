@@ -5,21 +5,21 @@
 // -----------------------------------------------------
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { getServerSession }         from "next-auth/next";
+import { authOptions }              from "@/lib/auth";
+import prisma                       from "@/lib/prisma";
 
-/** Returns true if the session’s user has the ADMIN role */
+/** Returns true if the session’s user has the "admin" role (case-insensitive) */
 function isAdmin(session: any): boolean {
   return (
     Array.isArray(session.user.roles) &&
-    session.user.roles.includes("ADMIN")
+    session.user.roles.some((r: string) => r.toLowerCase() === "admin")
   );
 }
 
-export async function GET(_: NextRequest) {
+export async function GET(req: NextRequest) {
+  // 1️⃣ Authenticate & authorize
   const session = await getServerSession(authOptions);
-
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -27,6 +27,7 @@ export async function GET(_: NextRequest) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
+  // 2️⃣ Fetch profile
   try {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -63,8 +64,8 @@ export async function GET(_: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  // 1️⃣ Authenticate & authorize
   const session = await getServerSession(authOptions);
-
   if (!session?.user?.id) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
@@ -72,6 +73,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
+  // 2️⃣ Parse update fields
   const {
     phone,
     streetAddress,
@@ -83,6 +85,7 @@ export async function PATCH(req: NextRequest) {
     position,
   } = await req.json();
 
+  // 3️⃣ Perform update with upsert on staffProfile
   try {
     const updated = await prisma.user.update({
       where: { id: session.user.id },

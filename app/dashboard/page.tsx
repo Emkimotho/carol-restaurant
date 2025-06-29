@@ -1,18 +1,18 @@
 // File: app/dashboard/page.tsx
 // Description: Reads the session and 302s into the right sub-dashboard
 
-import { getServerSession } from "next-auth";
-import { authOptions }       from "@/app/api/auth/[...nextauth]/route";  // ← point at the NextAuth file
-import { redirect }          from "next/navigation";
+import { getServerSession } from "next-auth/next";
+import { authOptions }      from "@/lib/auth";
+import { redirect }         from "next/navigation";
 
 export default async function DashboardIndex() {
   const session = await getServerSession(authOptions);
   if (!session) {
-    // send unauth’d folks to the NextAuth sign-in
-    return redirect("/auth/signin");
+    // send unauth’d folks to your custom sign-in page
+    return redirect("/login");
   }
 
-  const roles = (session.user.roles || []).map((r) => r.toLowerCase());
+  const roles = (session.user.roles || []).map((r: string) => r.toLowerCase());
 
   if (roles.includes("superadmin") || roles.includes("admin")) {
     return redirect("/dashboard/admin-dashboard");
