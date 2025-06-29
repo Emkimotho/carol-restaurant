@@ -1,54 +1,23 @@
 // File: lib/auth.ts
-// Description: NextAuth configuration (credentials + JWT) — always redirects to /dashboard after sign-in
+// ──────────────────────────────────────────────────────────────────────
+// Consolidated NextAuth configuration — single source of truth.
+//
+// Note: We return `id` as a number (to match our extended User type) and
+// add the second `req` parameter to `authorize` so the signature matches.
+//
+// Your app/api/auth/[...nextauth]/route.ts imports `authOptions` from here.
+// ──────────────────────────────────────────────────────────────────────
 
-import NextAuth, {
-  NextAuthOptions,
-  Account,
-  Profile,
-  User as NextUser,
-} from "next-auth";
-import type { AdapterUser } from "next-auth/adapters";
-import type { JWT } from "next-auth/jwt";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
+import { compare } from "bcrypt";
 
 const prisma = new PrismaClient();
 const isProd = process.env.NODE_ENV === "production";
 
-/* ------------------------------------------------------------------
-   Helper: unpack user → { id, name, roles, isVerified }
--------------------------------------------------------------------*/
-function unpack(
-  user: NextUser | AdapterUser | undefined | null
-) {
-  const u = user as
-    | (NextUser & { name?: string; roles?: string[]; isVerified?: boolean })
-    | (AdapterUser & { name?: string; roles?: string[]; isVerified?: boolean })
-    | null
-    | undefined;
-
-  const rawId = u?.id;
-  const idNum =
-    typeof rawId === "string"
-      ? parseInt(rawId, 10)
-      : typeof rawId === "number"
-      ? rawId
-      : 0;
-
-  return {
-    id:         idNum,
-    name:       u?.name ?? "",
-    roles:      u?.roles ?? [],
-    isVerified: u?.isVerified ?? false,
-  };
-}
-
-/* ------------------------------------------------------------------
-   Main NextAuth options
--------------------------------------------------------------------*/
 export const authOptions: NextAuthOptions = {
-  // 1) Use JWT for session
+  // 1) Use JWT sessions
   session: { strategy: "jwt" },
 
   // 2) Credentials provider
@@ -59,68 +28,91 @@ export const authOptions: NextAuthOptions = {
         email:    { label: "Email",    type: "email"    },
         password: { label: "Password", type: "password" },
       },
-      async authorize(creds) {
-        if (!creds?.email || !creds.password) return null;
+      // Note the two parameters here: credentials + req
+      async authorize(credentials, req) {
+        if (!credentials?.email || !credentials.password) {
+          return null;
+        }
 
-        // Fetch user with roles and verification flag
+        // Fetch user and roles
         const user = await prisma.user.findUnique({
-          where: { email: creds.email },
-          select: {
-            id:         true,
-            email:      true,
-            password:   true,
-            isVerified: true,
-            firstName:  true,
-            lastName:   true,
-            roles:      { select: { role: { select: { name: true } } } },
-          },
+          where: { email: credentials.email },
+          include: { roles: { include: { role: true } } },
         });
-        if (!user || !user.isVerified) return null;
+        if (!user || !user.isVerified) {
+          return null;
+        }
 
         // Verify password
-        const ok = await bcrypt.compare(creds.password, user.password);
-        if (!ok) return null;
+        const valid = await compare(credentials.password, user.password);
+        if (!valid) {
+          return null;
+        }
 
-        // Return a user object with lowercase roles
+        // Return a minimal user object with `id` as number
         return {
-          id:         user.id,
-          email:      user.email,
-          name:       `${user.firstName} ${user.lastName}`.trim(),
-          roles:      user.roles.map(({ role }) => role.name.toLowerCase()),
-          isVerified: user.isVerified,
-        } as any;
+          id:            user.id,
+          name:          `${user.firstName} ${user.lastName}`.trim(),
+          email:         user.email,
+          phone:         user.phone ?? "",
+          roles:         user.roles.map((ur) => ur.role.name.toLowerCase()),
+          isVerified:    user.isVerified,
+          streetAddress: user.streetAddress,
+          aptSuite:      user.aptSuite,
+          city:          user.city,
+          state:         user.state,
+          zip:           user.zip,
+          country:       user.country,
+        } as any;  // cast to satisfy NextAuth's User type requirements
       },
     }),
   ],
 
-  // 3) Callbacks to flow data through JWT → session
+  // 3) Callbacks
   callbacks: {
-    async signIn({ user }) {
-      const { roles } = unpack(user);
-      // allow login for any valid role
-      return roles.some(r =>
+    async signIn({ user }: any) {
+      const roles: string[] = (user.roles as string[]) || [];
+      return roles.some((r) =>
         ["superadmin","admin","staff","driver","customer","server","cashier"].includes(r)
       );
     },
-    async jwt({ token, user }) {
+
+    async jwt({ token, user }: any) {
       if (user) {
-        const { id, name, roles, isVerified } = unpack(user);
-        token.id         = id;
-        token.name       = name;
-        token.roles      = roles;
-        token.isVerified = isVerified;
+        token.id            = user.id;
+        token.name          = user.name;
+        token.email         = user.email;
+        token.roles         = user.roles;
+        token.isVerified    = user.isVerified;
+        token.phone         = user.phone;
+        token.streetAddress = user.streetAddress;
+        token.aptSuite      = user.aptSuite;
+        token.city          = user.city;
+        token.state         = user.state;
+        token.zip           = user.zip;
+        token.country       = user.country;
       }
       return token;
     },
-    async session({ session, token }) {
-      (session.user as any).id         = token.id;
-      (session.user as any).name       = token.name;
-      (session.user as any).roles      = token.roles;
-      (session.user as any).isVerified = token.isVerified;
+
+    async session({ session, token }: any) {
+      (session.user as any).id            = token.id;
+      (session.user as any).name          = token.name;
+      (session.user as any).email         = token.email;
+      (session.user as any).roles         = token.roles;
+      (session.user as any).isVerified    = token.isVerified;
+      (session.user as any).phone         = token.phone;
+      (session.user as any).streetAddress = token.streetAddress;
+      (session.user as any).aptSuite      = token.aptSuite;
+      (session.user as any).city          = token.city;
+      (session.user as any).state         = token.state;
+      (session.user as any).zip           = token.zip;
+      (session.user as any).country       = token.country;
       return session;
     },
-    /** Always send everyone to /dashboard after sign-in */
-    async redirect({ url, baseUrl }) {
+
+    // Redirect everyone to /dashboard after sign-in
+    async redirect({ baseUrl }: any) {
       return `${baseUrl}/dashboard`;
     },
   },
@@ -131,33 +123,6 @@ export const authOptions: NextAuthOptions = {
     error:  "/login",
   },
 
-  // 5) Cookie settings to allow fetch() on PATCH/DELETE
-  cookies: {
-    sessionToken: {
-      name: "next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: isProd ? "none" : "lax",
-        secure:   isProd,
-        path:     "/",
-      },
-    },
-    csrfToken: {
-      name: "next-auth.csrf-token",
-      options: {
-        httpOnly: false,
-        sameSite: isProd ? "none" : "lax",
-        secure:   isProd,
-        path:     "/",
-      },
-    },
-  },
-
-  // 6) Secret for signing tokens
+  // 5) Secret for signing and encrypting JWTs
   secret: process.env.NEXTAUTH_SECRET,
 };
-
-/* ------------------------------------------------------------------
-   Default export for /api/auth/[...nextauth]
--------------------------------------------------------------------*/
-export default NextAuth(authOptions);

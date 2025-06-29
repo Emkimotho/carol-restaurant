@@ -1,9 +1,10 @@
 /* File: app/globals.css */
 
 /*────────────────────────────────────────────────────────────────────────────
-  1. Import Bootstrap
+  1. Import Bootstrap and Google Fonts
 ────────────────────────────────────────────────────────────────────────────*/
 @import "bootstrap/dist/css/bootstrap.min.css";
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap");
 
 /*────────────────────────────────────────────────────────────────────────────
   2. Tailwind Directives
