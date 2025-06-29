@@ -2,109 +2,135 @@
 // ------------------------------------------------------------------
 // • Central Clover helper: environment config, generic fetch wrapper,
 //   convenience helpers for inventory sync and catalog fetch.
-// • Logs every outbound request (method, URL, and payload)
-//   so you can pinpoint exactly what is being sent to Clover.
+// • Fails fast if required env vars are missing.
+// • Strips debug logs in production for cleaner logs.
 // ------------------------------------------------------------------
 
 import { createHmac, timingSafeEqual } from "crypto";
 
-/** Your main Clover config object */
 export interface CloverConfig {
   baseUrl:    string;
   merchantId: string;
   /** Public OAuth / sandbox token */
   token:      string;
-  /** Private-eCom token – required only for fetchCloverItems */
+  /** Private‐eCom token – required for catalog fetch */
   privToken?: string;
 }
 
-/* ───────────────────────  Env → Config  ─────────────────────── */
+let _cachedConfig: CloverConfig | null = null;
 
+/**
+ * Load and validate all Clover configuration from env.
+ * Memoized so it's only done once per lambda cold start.
+ */
 export function getCloverConfig(): CloverConfig {
-  const isProd = process.env.NODE_ENV === "production";
-
-  if (isProd) {
-    if (!process.env.CLOVER_BASE_URL_PROD?.trim()) {
-      throw new Error('Missing or invalid "CLOVER_BASE_URL_PROD".');
-    }
-    if (!process.env.CLOVER_MERCHANT_ID_PROD?.trim()) {
-      throw new Error('Missing or invalid "CLOVER_MERCHANT_ID_PROD".');
-    }
-    if (!process.env.CLOVER_API_TOKEN_PROD?.trim()) {
-      throw new Error('Missing or invalid "CLOVER_API_TOKEN_PROD".');
-    }
-
-    return {
-      baseUrl:    process.env.CLOVER_BASE_URL_PROD.trim(),
-      merchantId: process.env.CLOVER_MERCHANT_ID_PROD.trim(),
-      token:      process.env.CLOVER_API_TOKEN_PROD.trim(),
-      privToken:  process.env.CLOVER_PRIVATE_ECOM_TOKEN_PROD?.trim(),
-    };
+  if (_cachedConfig) {
+    return _cachedConfig;
   }
 
-  /* development / sandbox */
-  const baseUrl =
-    process.env.CLOVER_BASE_URL?.trim()
-    || process.env.CLOVER_BASE_URL_SANDBOX?.trim()
-    || "https://apisandbox.dev.clover.com";
+  const isProd = process.env.NODE_ENV === "production";
+  let baseUrl: string | undefined,
+      merchantId: string | undefined,
+      token: string | undefined,
+      privToken: string | undefined;
 
-  const merchantId =
-    process.env.CLOVER_MERCHANT_ID?.trim()
-    || process.env.CLOVER_MERCHANT_ID_SANDBOX?.trim();
+  if (isProd) {
+    baseUrl    = process.env.CLOVER_BASE_URL_PROD?.trim();
+    merchantId = process.env.CLOVER_MERCHANT_ID_PROD?.trim();
+    token      = process.env.CLOVER_API_TOKEN_PROD?.trim();
+    privToken  = process.env.CLOVER_PRIVATE_ECOM_TOKEN_PROD?.trim();
 
-  const token =
-    process.env.CLOVER_API_TOKEN?.trim()
-    || process.env.CLOVER_API_TOKEN_SANDBOX?.trim();
+    if (!baseUrl) {
+      throw new Error('Missing or empty env var "CLOVER_BASE_URL_PROD"');
+    }
+    if (!merchantId) {
+      throw new Error('Missing or empty env var "CLOVER_MERCHANT_ID_PROD"');
+    }
+    if (!token) {
+      throw new Error('Missing or empty env var "CLOVER_API_TOKEN_PROD"');
+    }
+  } else {
+    baseUrl =
+      process.env.CLOVER_BASE_URL_SANDBOX?.trim() ||
+      process.env.CLOVER_BASE_URL?.trim() ||
+      "https://apisandbox.dev.clover.com";
+    merchantId =
+      process.env.CLOVER_MERCHANT_ID_SANDBOX?.trim() ||
+      process.env.CLOVER_MERCHANT_ID?.trim();
+    token =
+      process.env.CLOVER_API_TOKEN_SANDBOX?.trim() ||
+      process.env.CLOVER_API_TOKEN?.trim();
+    privToken =
+      process.env.CLOVER_PRIVATE_ECOM_TOKEN_SANDBOX?.trim() ||
+      process.env.CLOVER_PRIVATE_ECOM_TOKEN?.trim();
 
-  if (!merchantId) throw new Error('Missing "CLOVER_MERCHANT_ID".');
-  if (!token)      throw new Error('Missing "CLOVER_API_TOKEN".');
+    if (!baseUrl) {
+      throw new Error('Missing or empty env var "CLOVER_BASE_URL_SANDBOX" or "CLOVER_BASE_URL"');
+    }
+    if (!merchantId) {
+      throw new Error('Missing or empty env var "CLOVER_MERCHANT_ID_SANDBOX" or "CLOVER_MERCHANT_ID"');
+    }
+    if (!token) {
+      throw new Error('Missing or empty env var "CLOVER_API_TOKEN_SANDBOX" or "CLOVER_API_TOKEN"');
+    }
+  }
 
-  return {
-    baseUrl,
-    merchantId,
-    token,
-    privToken:
-      process.env.CLOVER_PRIVATE_ECOM_TOKEN?.trim()
-      || process.env.CLOVER_PRIVATE_ECOM_TOKEN_SANDBOX?.trim(),
-  };
+  _cachedConfig = { baseUrl, merchantId, token, privToken };
+  return _cachedConfig;
 }
 
-/* ─────────────────────────  Generic fetch  ───────────────────────── */
-
+/**
+ * Generic fetch wrapper for Clover API requests.
+ * - Injects Authorization header.
+ * - Retries v2 endpoint on v3 404s.
+ * - Parses JSON safely.
+ * - Throws on non-OK status.
+ */
 export async function cloverFetch<T = any>(
   path:    string,
-  options: RequestInit = {},
+  options: RequestInit = {}
 ): Promise<T> {
   const { baseUrl, token } = getCloverConfig();
-  const url = `${baseUrl}${path}`;
+  const url  = `${baseUrl}${path}`;
+  const method = (options.method || "GET").toUpperCase();
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Accept:         "application/json",
-    Authorization:  `Bearer ${token}`,
-    ...(options.headers as Record<string, string> | undefined),
+    "Accept":       "application/json",
+    "Authorization": `Bearer ${token}`,
+    ...(options.headers as Record<string, string> || {}),
   };
 
-  const method = (options.method || "GET").toUpperCase();
-  console.log("[Clover Request]", method, url, "Payload:", options.body ?? "<no body>");
+  // Debug logging only in non-production
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[Clover Request]", method, url, "Payload:", options.body ?? "<no body>");
+  }
 
   let response = await fetch(url, { ...options, headers });
 
-  // 404 fallback v3 → v2
+  // v3 → v2 fallback for merchant‐scoped endpoints
   if (response.status === 404 && path.startsWith("/v3/merchants/")) {
     const fallback = path.replace(/^\/v3\/merchants\//, "/v2/merchants/");
     const v2Url    = `${baseUrl}${fallback}`;
-    console.log("[Clover Fallback] 404 from v3, retrying v2:", method, v2Url);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[Clover Fallback] retrying v2 endpoint:", method, v2Url);
+    }
     response = await fetch(v2Url, { ...options, headers });
   }
 
+  // No content
   if (response.status === 204) {
     return {} as T;
   }
 
-  const text   = await response.text();
-  const isJSON = response.headers.get("content-type")?.includes("application/json");
-  const data   = isJSON && text ? JSON.parse(text) : {};
+  // Safely parse JSON
+  const text = await response.text();
+  let data: T;
+  try {
+    data = text ? JSON.parse(text) : ({} as T);
+  } catch {
+    data = ({} as T);
+  }
 
   if (!response.ok) {
     throw new Error(
@@ -112,16 +138,12 @@ export async function cloverFetch<T = any>(
     );
   }
 
-  return data as T;
+  return data;
 }
 
-/* ────────────────────────  Inventory helper  ─────────────────────── */
-
- /**
-  * Pushes a new stock level for a single Clover item.
-  * @param cloverItemId the Clover item’s UUID
-  * @param newQuantity  the exact quantity to set
-  */
+/**
+ * Push a new stock level for a Clover item.
+ */
 export async function pushStockToClover(
   cloverItemId: string,
   newQuantity:  number
@@ -136,8 +158,10 @@ export async function pushStockToClover(
   );
 }
 
-/* ─────────────────────────  Catalog helper  ───────────────────────── */
-
+/**
+ * Fetch your full catalog from Clover (v3 → v2 fallback).
+ * Requires your private eCom token in config. Throws if missing.
+ */
 export interface CloverCatalogItem {
   id:      string;
   name:    string;
@@ -145,34 +169,36 @@ export interface CloverCatalogItem {
   taxable: boolean;
 }
 
-/**
- * Fetches your full catalog from Clover (v3→v2 fallback).
- * Requires your private eCom token (`privToken` in config).
- */
 export async function fetchCloverItems(): Promise<CloverCatalogItem[]> {
   const { baseUrl, merchantId, privToken } = getCloverConfig();
   if (!privToken) {
     throw new Error("Missing CLOVER_PRIVATE_ECOM_TOKEN for catalog fetch.");
   }
 
-  const v3Url = `${baseUrl}/v3/merchants/${merchantId}/items`;
-  console.log("[Clover Catalog Request] GET", v3Url);
+  const v3Path = `/v3/merchants/${merchantId}/items`;
+  const headers = {
+    "Accept":        "application/json",
+    "Authorization": `Bearer ${privToken}`
+  };
 
-  let response = await fetch(v3Url, {
-    headers: { Accept: "application/json", Authorization: `Bearer ${privToken}` },
-  });
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[Clover Catalog Request] GET", `${baseUrl}${v3Path}`);
+  }
+
+  let response = await fetch(`${baseUrl}${v3Path}`, { headers });
 
   if (response.status === 404) {
-    const v2Url = `${baseUrl}/v2/merchants/${merchantId}/items`;
-    console.log("[Clover Catalog Fallback] v3 404, retry v2:", v2Url);
-    response = await fetch(v2Url, {
-      headers: { Accept: "application/json", Authorization: `Bearer ${privToken}` },
-    });
+    const v2Path = `/v2/merchants/${merchantId}/items`;
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[Clover Catalog Fallback] retrying v2:", `${baseUrl}${v2Path}`);
+    }
+    response = await fetch(`${baseUrl}${v2Path}`, { headers });
   }
 
   if (!response.ok) {
+    const txt = await response.text();
     throw new Error(
-      `Clover Catalog Error [${response.status} ${response.statusText}]: ${await response.text()}`
+      `Clover Catalog Error [${response.status} ${response.statusText}]: ${txt}`
     );
   }
 
@@ -182,17 +208,13 @@ export async function fetchCloverItems(): Promise<CloverCatalogItem[]> {
   return rawItems.map(it => ({
     id:      String(it.id),
     name:    String(it.name),
-    price:   Number(it.price) || 0,
-    taxable: Boolean(it.taxable),
+    price:   Number(it.price)   || 0,
+    taxable: Boolean(it.taxable) || false,
   }));
 }
 
-/* ───────────────────  Webhook signature helper  ─────────────────── */
-
 /**
- * Verifies an incoming Clover webhook using HMAC‐SHA256 with your secret.
- * @param payload   raw request body (string)
- * @param signature value of the X-Clover-Signature header
+ * Verify an incoming Clover webhook via HMAC‐SHA256.
  */
 export function verifyCloverSignature(
   payload:   string,
@@ -203,13 +225,12 @@ export function verifyCloverSignature(
     console.error("[CloverClient] Missing CLOVER_WEBHOOK_SECRET");
     return false;
   }
-
   const hmac = createHmac("sha256", secret)
     .update(payload, "utf8")
     .digest("base64");
 
   const sigBuf  = Buffer.from(signature, "base64");
-  const hmacBuf = Buffer.from(hmac, "base64");
+  const hmacBuf = Buffer.from(hmac,    "base64");
   if (sigBuf.length !== hmacBuf.length) {
     return false;
   }
