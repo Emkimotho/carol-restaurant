@@ -1,132 +1,169 @@
 /* ──────────────────────────────────────────────────────────────
    components/Banner/Banner.module.css
    Fluid hero banner  •  zero CLS  •  height capped
-   Looks elegant on phones, laptops, and ultra‑wide 4 K monitors
+   Looks elegant on phones, laptops, and ultra-wide 4 K monitors
    ────────────────────────────────────────────────────────────── */
 
-/* ╔══════════════════════════════════════════════════════════╗ */
-/* ║ 1) Ratio box  +  height clamp                            ║ */
-/* ╚══════════════════════════════════════════════════════════╝ */
+/* 1) Import a highly legible sans-serif for the subtitle */
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap");
 
-.banner { position: relative; width: 100%; }
-
-/* Default intrinsic ratio 16 : 6  (720 ÷ 1920 = 0.375) */
-.banner::after { content: ""; display: block; padding-top: 37.5%; }
-
-/* Cap: never shorter than 280 px, never taller than 600 px, but
-   still respect 70 vh on most laptops (≈ 630 px max).            */
-@media (min-height: 0px) {
-  .banner { max-height: clamp(280px, 70vh, 600px); }
+.banner {
+  position: relative;
+  width: 100%;
 }
 
-/* On ultra‑wide viewports (≥ 1800 px), use a slimmer 16 : 5 ratio
-   so the hero does not look too tall relative to width.           */
+/* 2) Aspect‐ratio box (16 : 6) + height clamp */
+.banner::after {
+  content: "";
+  display: block;
+  padding-top: 37.5%; /* 16:6 ratio */
+}
+@media (min-height: 0) {
+  .banner {
+    max-height: clamp(280px, 70vh, 600px);
+  }
+}
 @media (min-width: 1800px) {
-  .banner::after { padding-top: 31.25%; } /* 600 / 1920 = 0.3125 */
+  .banner::after {
+    padding-top: 31.25%; /* 16:5 for ultra-wide */
+  }
 }
 
-/* ╔══════════════════════════════════════════════════════════╗ */
-/* ║ 2) Gradient overlay (text readability)                   ║ */
-/* ╚══════════════════════════════════════════════════════════╝ */
-
+/* 3) Remove any dark overlay so media stays at full brightness */
 .banner::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0,0,0,.40) 0%,
-    rgba(0,0,0,.70) 100%
-  );
-  z-index: 2; /* above slides, below text */
+  background: none;
+  z-index: 2;
 }
 
-/* Darker overlay on very small phones for extra contrast */
-@media (max-width: 480px) {
-  .banner::before {
-    background: linear-gradient(
-      180deg,
-      rgba(0,0,0,.55) 0%,
-      rgba(0,0,0,.85) 100%
-    );
-  }
-}
-
-/* ╔══════════════════════════════════════════════════════════╗ */
-/* ║ 3) Slides (fade + slight zoom)                           ║ */
-/* ╚══════════════════════════════════════════════════════════╝ */
-
+/* 4) Slides (fade + slight zoom) */
 .bannerImageContainer {
   position: absolute;
   inset: 0;
   transition: opacity .8s ease, transform 1.2s ease;
   will-change: opacity, transform;
 }
-.active   { opacity: 1; transform: scale(1);    z-index: 1; }
-.inactive { opacity: 0; transform: scale(1.05); z-index: 0; pointer-events: none; }
+.active {
+  opacity: 1;
+  transform: scale(1);
+  z-index: 1;
+}
+.inactive {
+  opacity: 0;
+  transform: scale(1.05);
+  z-index: 0;
+  pointer-events: none;
+}
 
-/* ╔══════════════════════════════════════════════════════════╗ */
-/* ║ 4) Content overlay                                       ║ */
-/* ╚══════════════════════════════════════════════════════════╝ */
-
+/* 5) Content overlay */
 .bannerContent {
   position: absolute;
   inset: 0;
-  z-index: 3;                     /* top layer */
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: var(--white);
-  text-shadow: 2px 2px 6px rgba(0,0,0,.5);
   padding: 0 1rem;
   max-width: 960px;
   margin: 0 auto;
+  color: var(--white);
+  text-shadow: 2px 2px 6px rgba(0,0,0,.5);
 }
 
-/* Fluid typography with clamp */
+/* 6) Heading with green fill + letter‐shadow outline */
 .bannerTitle {
   font-family: var(--font-heading);
   font-size: clamp(1.4rem, 4vw, 2.5rem);
   margin-bottom: .4rem;
+  color: green;
+  text-shadow:
+    -2px -2px 0 var(--primary-color),
+     2px -2px 0 var(--primary-color),
+    -2px  2px 0 var(--primary-color),
+     2px  2px 0 var(--primary-color);
+  animation: fadeSlideDown 1s ease-out both;
 }
+
+/* 7) Subtitle: use Roboto, same green fill + letter‐shadow outline, single-line */
 .bannerSubtitle {
-  font-family: var(--font-body);
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.5px;
   font-size: clamp(.9rem, 2.5vw, 1.2rem);
-  max-width: 38ch;
-  margin-top: .4rem;
+  max-width: 100%;          /* allow full width */
+  margin: .4rem auto 0;
+  display: inline-block;
+  color: green;
+  text-shadow:
+    -1px -1px 0 var(--primary-color),
+     1px -1px 0 var(--primary-color),
+    -1px  1px 0 var(--primary-color),
+     1px  1px 0 var(--primary-color);
+  text-align: center;
+  white-space: nowrap;      /* keep on one line */
+  overflow-x: auto;         /* allow horizontal scroll if necessary */
 }
 
-/* ╔══════════════════════════════════════════════════════════╗ */
-/* ║ 5) CTA buttons                                           ║ */
-/* ╚══════════════════════════════════════════════════════════╝ */
+/* Keyframes for headline entrance */
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
+/* 8) Buttons positioned independently */
 .bannerButtons {
+  position: absolute;
+  bottom: 2.5rem;           /* above the slide dots on desktop */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
   display: flex;
-  gap: clamp(.5rem, 2vw, 1rem);
-  flex-wrap: wrap;
-  margin-top: clamp(1rem, 3vw, 1.5rem);
+  gap: clamp(1rem, 2.5vw, 2rem);
 }
 
+/* 9) Button styling: snug padding + responsive font */
 .button {
   font-family: var(--font-body);
-  padding: .75rem 1.5rem;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  padding: .4rem .8rem;
   border-radius: .5rem;
-  font-size: 1rem;
   text-decoration: none;
-  transition: transform .3s ease, background-color .3s ease;
+  transition: transform .3s ease, background-color .3s ease, color .3s ease;
   white-space: nowrap;
 }
-.primaryButton         { background: var(--primary-color);   color: var(--white); }
-.primaryButton:hover   { background: var(--primary-color-hover);   transform: scale(1.05); }
-.secondaryButton       { background: var(--secondary-color); color: var(--white); }
-.secondaryButton:hover { background: var(--secondary-color-hover); transform: scale(1.05); }
+.primaryButton {
+  background: var(--primary-color);
+  color: var(--white);
+}
+.secondaryButton {
+  background: var(--secondary-color);
+  color: var(--white);
+}
+/* Hover: darken background and make text black */
+.button:hover {
+  color: #000;
+}
+.primaryButton:hover {
+  background: var(--primary-color-hover);
+  transform: scale(1.05);
+}
+.secondaryButton:hover {
+  background: var(--secondary-color-hover);
+  transform: scale(1.05);
+}
 
-/* ╔══════════════════════════════════════════════════════════╗ */
-/* ║ 6) Pagination bullets                                    ║ */
-/* ╚══════════════════════════════════════════════════════════╝ */
-
+/* 10) Pagination bullets */
 .bullets {
   position: absolute;
   bottom: 1rem;
@@ -145,23 +182,49 @@
   background: rgba(255,255,255,.5);
   cursor: pointer;
 }
-.bulletActive { background: var(--primary-color); }
-
-/* ╔══════════════════════════════════════════════════════════╗ */
-/* ║ 7) Extra fine‑tuning for narrow screens                  ║ */
-/* ╚══════════════════════════════════════════════════════════╝ */
-
-@media (max-width: 768px) {
-  .banner::after { padding-top: 50%; }   /* 2 : 1 */
+.bulletActive {
+  background: var(--primary-color);
 }
 
+/* 11) Mobile tweaks */
 @media (max-width: 480px) {
-  .banner::after   { padding-top: 56.25%; } /* 16 : 9 */
-  .button          { padding: .6rem 1.2rem; font-size: .9rem; }
+  /* move text up */
+  .bannerContent {
+    justify-content: flex-start;
+    padding-top: 1.5rem;
+  }
+  /* spread buttons to edges */
+  .bannerButtons {
+    left: 1rem;
+    right: 1rem;
+    transform: none;
+    justify-content: space-between;
+    bottom: 1rem;
+  }
+  /* tighter buttons */
+  .button {
+    font-size: 1rem;
+    padding: .3rem .6rem;
+  }
+  /* ensure subtitle remains one line */
+  .bannerSubtitle {
+    font-size: .85rem;
+    white-space: nowrap;
+    overflow-x: auto;
+  }
 }
 
+/* 12) Other responsive ratios */
+@media (max-width: 768px) {
+  .banner::after {
+    padding-top: 50%;
+  }
+}
 @media (max-width: 360px) {
-  .bannerTitle     { font-size: 1.25rem; }
-  .bannerSubtitle  { font-size: .85rem;  }
-  .button          { padding: .45rem .9rem; font-size: .78rem; }
+  .bannerTitle {
+    font-size: 1.25rem;
+  }
+  .bannerSubtitle {
+    font-size: .85rem;
+  }
 }

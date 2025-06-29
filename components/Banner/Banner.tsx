@@ -25,7 +25,8 @@ const DEFAULT_SLIDE: Slide = {
   alt:      "The 19th Hole Restaurant and Bar",
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json() as Promise<Slide[]>);
+const fetcher = (url: string) =>
+  fetch(url).then((r) => r.json() as Promise<Slide[]>);
 
 export default function Banner() {
   const { data } = useSWR<Slide[]>("/api/banner-images", fetcher);
@@ -34,7 +35,7 @@ export default function Banner() {
   const [current, setCurrent] = useState(0);
   useEffect(() => {
     if (slides.length <= 1) return;
-    const t = setInterval(() => setCurrent((p) => (p + 1) % slides.length), 5000);
+    const t = setInterval(() => setCurrent(p => (p + 1) % slides.length), 5000);
     return () => clearInterval(t);
   }, [slides]);
 
@@ -61,7 +62,7 @@ export default function Banner() {
           >
             {s.type === "VIDEO" && s.videoUrl ? (
               <video
-                src={s.videoUrl}   /* ← raw video URL, no transform */
+                src={s.videoUrl}
                 autoPlay
                 muted
                 loop
@@ -83,33 +84,37 @@ export default function Banner() {
         );
       })}
 
-      {/* Text overlay and buttons (unchanged) */}
+      {/* Text overlay */}
       <div className={styles.bannerContent}>
-        <h1 className={styles.bannerTitle}>
-          Welcome to The&nbsp;19<sup>th</sup>&nbsp;Hole&nbsp;at&nbsp;Black&nbsp;Rock
-        </h1>
-        <p className={styles.bannerSubtitle}>
-          Experience the finest dining and entertainment
-        </p>
-        <div className={styles.bannerButtons}>
-          <Link
-            href="/menu"
-            className={`${styles.button} ${styles.primaryButton}`}
-            aria-label="Order Now"
-          >
-            Order Now
-          </Link>
-          <Link
-            href="/reservation"
-            className={`${styles.button} ${styles.secondaryButton}`}
-            aria-label="Book a Table"
-          >
-            Book a Table
-          </Link>
+        <div className={styles.textWrapper}>
+          <h1 className={`${styles.bannerTitle} ${styles.animatedTitle}`}>
+            Welcome to The&nbsp;19<sup>th</sup>&nbsp;Hole&nbsp;at&nbsp;Black&nbsp;Rock
+          </h1>
+          <p className={styles.bannerSubtitle}>
+            Experience the finest dining and entertainment
+          </p>
         </div>
       </div>
 
-      {/* Bullets (unchanged) */}
+      {/* Buttons positioned independently */}
+      <div className={styles.bannerButtons}>
+        <Link
+          href="/menu"
+          className={`${styles.button} ${styles.primaryButton}`}
+          aria-label="Order Now"
+        >
+          Order Now
+        </Link>
+        <Link
+          href="/reservation"
+          className={`${styles.button} ${styles.secondaryButton}`}
+          aria-label="Book a Table"
+        >
+          Book a Table
+        </Link>
+      </div>
+
+      {/* Pagination bullets */}
       {slides.length > 1 && (
         <div
           className={styles.bullets}
