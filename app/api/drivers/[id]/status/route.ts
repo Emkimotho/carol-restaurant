@@ -2,28 +2,26 @@
 
 export const dynamic = 'force-dynamic';
 
-import { NextResponse, NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 import prisma from '@/lib/prisma';
 
 type Params = { id: string };
 
-// Helper to set no-store headers
+// Disable caching on all responses
 const noStoreHeaders = { 'Cache-Control': 'no-store' };
 
 /**
  * GET /api/drivers/[id]/status
- * Returns { isOnline: boolean } for the given driver ID.
+ * Returns { isOnline: boolean }.
  * Only the driver themselves or an admin may fetch this.
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: Params }
 ) {
-  // Await the dynamic params (Next.js15+)
-  const { id: rawId } = await params;
-  const driverId = Number(rawId);
+  // 1️⃣ Validate driver ID
+  const driverId = Number(params.id);
   if (isNaN(driverId)) {
     return NextResponse.json(
       { error: 'Invalid driver ID' },
@@ -31,34 +29,45 @@ export async function GET(
     );
   }
 
-  // Authenticate
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401, headers: noStoreHeaders }
-    );
-  }
-  const sessId = (session.user as any).id;
-  const sessionUserId =
-    typeof sessId === 'string'
-      ? parseInt(sessId, 10)
-      : typeof sessId === 'number'
-      ? sessId
-      : null;
-  if (sessionUserId === null) {
+  // 2️⃣ Authenticate via NextAuth JWT
+  const token = (await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET!,
+  })) as any;
+  if (!token) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401, headers: noStoreHeaders }
     );
   }
 
-  // Authorization: self or admin
-  const rolesRaw = (session.user as any).roles;
-  const roles: string[] = Array.isArray(rolesRaw)
-    ? rolesRaw.map((r) => r.toString().toLowerCase())
-    : [];
+  // 3️⃣ Parse session user ID
+  const rawSub = token.sub;
+  const sessionUserId =
+    typeof rawSub === 'string'
+      ? parseInt(rawSub, 10)
+      : typeof rawSub === 'number'
+      ? rawSub
+      : NaN;
+  if (!sessionUserId) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401, headers: noStoreHeaders }
+    );
+  }
+
+  // 4️⃣ Check roles for authorization
+  const rolesRaw = token.roles;
+  const roles: string[] = [];
+  if (Array.isArray(rolesRaw)) {
+    for (const r of rolesRaw) {
+      if (typeof r === 'string') roles.push(r.toLowerCase());
+    }
+  } else if (typeof rolesRaw === 'string') {
+    roles.push(rolesRaw.toLowerCase());
+  }
   const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+
   if (sessionUserId !== driverId && !isAdmin) {
     return NextResponse.json(
       { error: 'Forbidden' },
@@ -66,7 +75,7 @@ export async function GET(
     );
   }
 
-  // Fetch from DB
+  // 5️⃣ Fetch driver status
   const user = await prisma.user.findUnique({
     where: { id: driverId },
     select: { isOnline: true },
@@ -78,6 +87,7 @@ export async function GET(
     );
   }
 
+  // 6️⃣ Return the status
   return NextResponse.json(
     { isOnline: user.isOnline },
     { headers: noStoreHeaders }
@@ -87,16 +97,14 @@ export async function GET(
 /**
  * PATCH /api/drivers/[id]/status
  * Body: { status: 'online' | 'offline' }
- * Updates the user.isOnline flag for the driver.
- * Only the driver themself or an admin may update.
+ * Only the driver themselves or an admin may update.
  */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Params }
 ) {
-  // Await the dynamic params
-  const { id: rawId } = await params;
-  const driverId = Number(rawId);
+  // 1️⃣ Validate driver ID
+  const driverId = Number(params.id);
   if (isNaN(driverId)) {
     return NextResponse.json(
       { error: 'Invalid driver ID' },
@@ -104,32 +112,45 @@ export async function PATCH(
     );
   }
 
-  // Authenticate
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
+  // 2️⃣ Authenticate via NextAuth JWT
+  const token = (await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET!,
+  })) as any;
+  if (!token) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401, headers: noStoreHeaders }
     );
   }
-  const sessId = (session.user as any).id;
+
+  // 3️⃣ Parse session user ID
+  const rawSub = token.sub;
   const sessionUserId =
-    typeof sessId === 'string'
-      ? parseInt(sessId, 10)
-      : typeof sessId === 'number'
-      ? sessId
-      : null;
-  if (sessionUserId === null) {
+    typeof rawSub === 'string'
+      ? parseInt(rawSub, 10)
+      : typeof rawSub === 'number'
+      ? rawSub
+      : NaN;
+  if (!sessionUserId) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401, headers: noStoreHeaders }
     );
   }
-  const rolesRaw = (session.user as any).roles;
-  const roles: string[] = Array.isArray(rolesRaw)
-    ? rolesRaw.map((r) => r.toString().toLowerCase())
-    : [];
+
+  // 4️⃣ Check roles for authorization
+  const rolesRaw = token.roles;
+  const roles: string[] = [];
+  if (Array.isArray(rolesRaw)) {
+    for (const r of rolesRaw) {
+      if (typeof r === 'string') roles.push(r.toLowerCase());
+    }
+  } else if (typeof rolesRaw === 'string') {
+    roles.push(rolesRaw.toLowerCase());
+  }
   const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+
   if (sessionUserId !== driverId && !isAdmin) {
     return NextResponse.json(
       { error: 'Forbidden' },
@@ -137,7 +158,7 @@ export async function PATCH(
     );
   }
 
-  // Parse body
+  // 5️⃣ Parse and validate request body
   let body: any;
   try {
     body = await request.json();
@@ -154,7 +175,7 @@ export async function PATCH(
     );
   }
 
-  // Update DB
+  // 6️⃣ Update driver status
   try {
     const updated = await prisma.user.update({
       where: { id: driverId },
