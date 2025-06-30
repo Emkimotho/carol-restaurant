@@ -126,6 +126,17 @@ export default function OrdersGrid({
     mutate();
   };
 
+  // PATCH only staffId via generic orders route
+  const patchStaff = async (id: string, staffId: number | null) => {
+    await fetch(`/api/orders/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staff: staffId }),
+    });
+    mutate();
+  };
+
   // POST cash collection
   const createCashCollection = async (orderId: string, amount: number) => {
     if (!serverId) return;
@@ -214,7 +225,6 @@ export default function OrdersGrid({
                       Claim Order
                     </button>
                   )}
-
                   {canPickUp && (
                     <button
                       className={styles.actionBtn}
@@ -225,7 +235,6 @@ export default function OrdersGrid({
                       Picked Up
                     </button>
                   )}
-
                   {canOnWay && (
                     <button
                       className={styles.actionBtn}
@@ -236,7 +245,6 @@ export default function OrdersGrid({
                       On The Way
                     </button>
                   )}
-
                   {canDeliver && (
                     <button
                       className={styles.actionBtn}
@@ -247,7 +255,6 @@ export default function OrdersGrid({
                       Delivered
                     </button>
                   )}
-
                   {!canClaim &&
                     !canPickUp &&
                     !canOnWay &&
@@ -311,15 +318,11 @@ export default function OrdersGrid({
                     serverId && (
                       <button
                         className={styles.actionBtn}
-                        onClick={() =>
-                          patchDriver(order.id, null)
-                        }
+                        onClick={() => patchStaff(order.id, serverId)}
                       >
                         Claim Order
                       </button>
                     )}
-
-
                   {order.status === 'ORDER_READY' &&
                     order.staff &&
                     serverId && (
@@ -332,8 +335,6 @@ export default function OrdersGrid({
                         Pick Up & Deliver
                       </button>
                     )}
-
-
                   {order.status === 'PICKED_UP_BY_DRIVER' &&
                     order.staff &&
                     serverId && (
