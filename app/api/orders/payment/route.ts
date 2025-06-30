@@ -1,43 +1,44 @@
 // File: app/api/orders/payment/route.ts
-
-import { NextResponse }                from "next/server";
-import { cloverFetch, getCloverConfig } from "@/lib/clover";
-import { prisma }                      from "@/lib/prisma";
-
-const { merchantId } = getCloverConfig();
-
+// -----------------------------------------------------------------------------
+// Builds a Clover *Hosted-Checkout* (Invoicing V1) session.
 //
-// “shoppingCart.lineItems” may look like this (example):
-// [
-//   { itemRefUuid: "9JA427599QWEJ", unitQty: 1, taxable: true },
-//   { name: "grilled",    unitQty: 1, price: 1025, taxable: true },
-//   { name: "extra cheese",unitQty: 1, price: 200, taxable: true },
-//   { name: "Delivery Fee",unitQty: 1, price: 500, taxable: false },
-//   { name: "Tip",         unitQty: 1, price: 705, taxable: false },
-// ]
-// We simply forward that entire array to Clover below.
+// • Every taxable catalogue item is tagged with your sales-tax UUID so Clover
+//   charges tax during checkout.
+// • Delivery-fee and Tip remain non-taxable rows.
+// • The checkout is tied to your own orderId via externalPaymentContext.
+// -----------------------------------------------------------------------------
+
+import { NextResponse }                   from "next/server";
+import { cloverFetch, getCloverConfig }  from "@/lib/cloverClient";
+import { prisma }                         from "@/lib/prisma";
+
+// ─── Debug: log out exactly what config we’re using in production ────────
+const config = getCloverConfig();
+console.log("▶️ Clover Config:", config);
+
+const { merchantId, token: authToken } = config;
 
 interface ShoppingCartLine {
-  itemRefUuid?: string;  // present if this is a catalog‐item line
+  itemRefUuid?: string;   // present if this is a catalog-item line
   unitQty: number;
   taxable?: boolean;
-  unitPrice?: number;    // in cents; (we’ll ignore it here, unless you want to use it)
-  name?: string;         // present if this is a “name+price” line (e.g. modifiers, fees)
-  price?: number;        // in cents
+  unitPrice?: number;     // in cents; used if provided
+  name?: string;          // present if this is a “name+price” line
+  price?: number;         // in cents
 }
 
 interface PaymentRequestBody {
-  ourOrderId:   string;
+  ourOrderId: string;
   shoppingCart: {
     lineItems: ShoppingCartLine[];
   };
   customer?: {
-    firstName?:   string;
-    lastName?:    string;
-    email?:       string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
     phoneNumber?: string;
   };
-  // Optional redirects; otherwise we build defaults below
+  // Optional redirects; otherwise defaults are built below
   redirectUrls?: {
     success: string;
     failure: string;
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
       shoppingCart: {
         lineItems: body.shoppingCart.lineItems.map((li) => {
           if (li.itemRefUuid) {
+            // catalog-item row
             const entry: any = {
               itemRefUuid: li.itemRefUuid,
               unitQty:     li.unitQty,
@@ -90,6 +92,7 @@ export async function POST(request: Request) {
             }
             return entry;
           } else {
+            // name+price row (e.g. modifiers, fees)
             return {
               name:    li.name || "",
               unitQty: li.unitQty,
@@ -108,21 +111,22 @@ export async function POST(request: Request) {
     const response = await cloverFetch<{
       href:              string;
       checkoutSessionId: string;
-      expirationTime?:   string;
-      createdTime?:      string;
     }>(`/invoicingcheckoutservice/v1/checkouts`, {
       method:  "POST",
-      headers: { "X-Clover-Merchant-Id": merchantId },
-      body:    JSON.stringify(payload),
+      headers: {
+        "X-Clover-Merchant-Id": merchantId,
+        Authorization:          `Bearer ${authToken}`,
+      },
+      body: JSON.stringify(payload),
     });
 
     console.log("← Clover returned (raw):", response);
 
     // Extract URL and session ID
-    const checkoutUrl    = response.href;
-    const sessionId      = response.checkoutSessionId;
+    const checkoutUrl = response.href;
+    const sessionId   = response.checkoutSessionId;
 
-    // **Persist the checkoutSessionId to your Order record**
+    // ** Persist the checkoutSessionId to your Order record **
     await prisma.order.update({
       where: { orderId: body.ourOrderId },
       data:  { checkoutSessionId: sessionId },
