@@ -1,8 +1,8 @@
-// File: components/SlidingServices.tsx
+// File: components/SlidingServices/SlidingServices.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   FaBuilding,
   FaUtensils,
@@ -57,8 +57,8 @@ const services: Service[] = [
   },
 ];
 
-// Framer Motion variants for simple left–right sliding
-const slidingVariants = {
+// Framer Motion variants for sliding animations
+const slidingVariants: Variants = {
   initial: (dir: number) => ({
     x: dir > 0 ? 300 : -300,
     opacity: 0,
@@ -66,12 +66,19 @@ const slidingVariants = {
   animate: {
     x: 0,
     opacity: 1,
-    transition: { duration: 0.8, ease: "easeInOut" },
+    transition: {
+      duration: 0.8,
+      // Use a valid easing array instead of a string
+      ease: [0.42, 0, 0.58, 1],
+    },
   },
   exit: (dir: number) => ({
     x: dir > 0 ? -300 : 300,
     opacity: 0,
-    transition: { duration: 0.8, ease: "easeInOut" },
+    transition: {
+      duration: 0.8,
+      ease: [0.42, 0, 0.58, 1],
+    },
   }),
 };
 
@@ -79,10 +86,9 @@ const SlidingServices: React.FC = () => {
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(1);
 
-  // longer delay on the first (long) slide
+  // Longer delay on the first slide
   const getDelay = () =>
-    services[current].title ===
-    "Exclusive Event & Corporate Venue"
+    services[current].title === "Exclusive Event & Corporate Venue"
       ? 10000
       : 5000;
 
@@ -96,9 +102,7 @@ const SlidingServices: React.FC = () => {
 
   const handlePrev = () => {
     setDirection(-1);
-    setCurrent((idx) =>
-      idx === 0 ? services.length - 1 : idx - 1
-    );
+    setCurrent((idx) => (idx === 0 ? services.length - 1 : idx - 1));
   };
 
   const handleNext = () => {
@@ -110,7 +114,6 @@ const SlidingServices: React.FC = () => {
     <div className={styles.slidingServices}>
       <h2>Our Services</h2>
 
-      {/* container fixed to prevent vertical shifts */}
       <div
         className={styles.sliderContainer}
         style={{
@@ -119,10 +122,7 @@ const SlidingServices: React.FC = () => {
           minHeight: "220px",
         }}
       >
-        <AnimatePresence
-          custom={direction}
-          initial={false}
-        >
+        <AnimatePresence custom={direction} initial={false}>
           <motion.div
             key={current}
             custom={direction}
@@ -146,16 +146,10 @@ const SlidingServices: React.FC = () => {
       </div>
 
       <div className={styles.controls}>
-        <button
-          onClick={handlePrev}
-          className={styles.controlButton}
-        >
+        <button onClick={handlePrev} className={styles.controlButton}>
           Prev
         </button>
-        <button
-          onClick={handleNext}
-          className={styles.controlButton}
-        >
+        <button onClick={handleNext} className={styles.controlButton}>
           Next
         </button>
       </div>
