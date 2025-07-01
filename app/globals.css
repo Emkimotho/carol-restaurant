@@ -71,6 +71,7 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -419,8 +420,9 @@ body {
 }
 
 input,
-textarea {
-  font-size: 16px;
+textarea,
+select {
+  font-size: 16px !important;
   line-height: 1.4;
 }
 

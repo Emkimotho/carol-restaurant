@@ -6,9 +6,11 @@
    • 2025-06-27 PATCH overhaul ——————————————————————————————
      – Disallows **status rollback** (earlier → HTTP 409)
      – Driver-only calls (`{ driverId }`) update assignment **only**
-       (no auto‐bump), status stays untouched
+       (no auto-bump), status stays untouched
+     – Staff-only calls (`{ staffId }`) update assignment **only**
+       (no auto-bump), status stays untouched
      – All other PATCHes may advance status as allowed, log history,
-       trigger side‐effects (cash, payouts, Clover)
+       trigger side-effects (cash, payouts, Clover)
      – Every change writes an OrderStatusHistory row
    ======================================================================= */
 
@@ -53,21 +55,19 @@ const statusRank: Record<OrderStatus, number> = {
 export async function GET(req: NextRequest) {
   const slug = slugFrom(req);
   const id   = await resolveInternalId(slug);
-  if (!id) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
+  if (!id) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
   try {
     const order = await prisma.order.findUnique({
       where: { id },
       include: {
-        customer:     { select: { firstName: true, lastName: true, email: true } },
-        driver:       { select: { id: true, firstName: true, lastName: true } },
-        staff:        { select: { id: true, firstName: true, lastName: true } },
-        lineItems:    { include: { menuItem: true } },
-        statusHistory:{ orderBy: { timestamp: "asc" },
-                        include: { user: { select: { firstName: true, lastName: true } } } },
-        cashCollection: true,
+        customer:      { select: { firstName: true, lastName: true, email: true } },
+        driver:        { select: { id: true, firstName: true, lastName: true } },
+        staff:         { select: { id: true, firstName: true, lastName: true } },
+        lineItems:     { include: { menuItem: true } },
+        statusHistory: { orderBy: { timestamp: "asc" },
+                         include: { user: { select: { firstName: true, lastName: true } } } },
+        cashCollection:true,
       },
     });
     if (!order) {
@@ -84,9 +84,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const slug    = slugFrom(req);
   const id      = await resolveInternalId(slug);
-  if (!id) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
+  if (!id) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
   const payload = (await req.json()) as Partial<{
     status:   OrderStatus;
@@ -94,10 +92,9 @@ export async function PATCH(req: NextRequest) {
     staffId:  number | null;
   }>;
 
-  // detect driver-only assignment
-  const isDriverOnly =
-    Object.keys(payload).length === 1 &&
-    Object.prototype.hasOwnProperty.call(payload, "driverId");
+  // detect driver-only or staff-only assignment
+  const isDriverOnly = Object.keys(payload).length === 1 && "driverId" in payload;
+  const isStaffOnly  = Object.keys(payload).length === 1 && "staffId"  in payload;
 
   // identify actor
   const session = await getServerSession(authOptions);
@@ -109,10 +106,8 @@ export async function PATCH(req: NextRequest) {
     const u: any = session.user;
     if (u.firstName || u.lastName) {
       changedBy = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
-    } else if (u.name) {
-      changedBy = u.name;
-    } else if (u.email) {
-      changedBy = u.email;
+    } else {
+      changedBy = u.name || u.email || "User";
     }
   }
 
@@ -131,7 +126,7 @@ export async function PATCH(req: NextRequest) {
     });
 
   try {
-    // fetch current
+    // fetch existing
     const existing = await prisma.order.findUnique({
       where: { id },
       select: {
@@ -144,12 +139,9 @@ export async function PATCH(req: NextRequest) {
         deliveryType:  true,
         cloverOrderId: true,
         totalAmount:   true,
-        id:            true,
       },
     });
-    if (!existing) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
+    if (!existing) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
     // prevent backward status change
     if (payload.status) {
@@ -165,15 +157,27 @@ export async function PATCH(req: NextRequest) {
 
     // === driver-only flow ===
     if (isDriverOnly) {
-      // log if driver actually changed
       if (payload.driverId !== existing.driverId) {
         await logHistory(existing.status);
       }
       const updated = await prisma.order.update({
         where: { id },
-        data: { driverId: payload.driverId },
+        data:  { driverId: payload.driverId },
       });
       broadcast({ id, field: "driverId", value: updated.driverId });
+      return NextResponse.json(updated);
+    }
+
+    // === staff-only flow ===
+    if (isStaffOnly) {
+      if (payload.staffId !== existing.staffId) {
+        await logHistory(existing.status);
+      }
+      const updated = await prisma.order.update({
+        where: { id },
+        data:  { staffId: payload.staffId },
+      });
+      broadcast({ id, field: "staffId", value: updated.staffId });
       return NextResponse.json(updated);
     }
 
@@ -183,7 +187,7 @@ export async function PATCH(req: NextRequest) {
     if ("driverId" in payload && payload.driverId !== existing.driverId) {
       await logHistory(existing.status);
     }
-    if ("staffId" in payload && payload.staffId !== existing.staffId) {
+    if ("staffId"  in payload && payload.staffId  !== existing.staffId ) {
       await logHistory(existing.status);
     }
     // log explicit status change
@@ -261,8 +265,8 @@ export async function PATCH(req: NextRequest) {
     if ("driverId" in payload) {
       broadcast({ id, field: "driverId", value: updatedOrder.driverId });
     }
-    if ("staffId" in payload) {
-      broadcast({ id, field: "staffId",  value: updatedOrder.staffId });
+    if ("staffId"  in payload) {
+      broadcast({ id, field: "staffId",  value: updatedOrder.staffId  });
     }
     if (payload.status) {
       broadcast({ id, field: "status", value: updatedOrder.status });
@@ -279,9 +283,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const slug = slugFrom(req);
   const id   = await resolveInternalId(slug);
-  if (!id) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
+  if (!id) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
   try {
     await prisma.cashCollection.deleteMany({ where: { orderId: id } });

@@ -3,14 +3,15 @@
 // Maps each order → purpose-built card:
 //   • Driver dashboards get a compact “driver card” with the exact
 //     action buttons (Claim ▸ Picked-Up ▸ On-The-Way ▸ Delivered).
-//   • Server dashboard keeps the cash-collection flow card.
+//   • Server dashboard keeps the cash-collection flow card + Details button.
 //   • All other roles fall through to the shared <OrderCard/>.
 // Fixes
 // -----
 // ✔ use order.driver?.id instead of non-existent order.driverId  
 // ✔ Accept extended role union ('driver' / 'driverMine' / 'staffMine')  
 // ✔ Narrow role when forwarding to <OrderCard> so TypeScript is happy  
-// ✔ No logic removed—only clarified.
+// ✔ No logic removed—only clarified.  
+// ✔ Added Details button for server orders.  
 // ───────────────────────────────────────────────────────────────────────
 
 'use client';
@@ -132,7 +133,7 @@ export default function OrdersGrid({
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ staff: staffId }),
+      body: JSON.stringify({ staffId }),
     });
     mutate();
   };
@@ -294,6 +295,7 @@ export default function OrdersGrid({
                       : order.status.replace(/_/g, ' ')}
                   </span>
                 </div>
+
                 <div className={styles.cardBody}>
                   <p>
                     <strong>Main:</strong> {order.items?.[0]?.title || '—'}
@@ -307,12 +309,20 @@ export default function OrdersGrid({
                     <small>💰 Total: ${order.totalAmount.toFixed(2)}</small>
                   </p>
                   <p>
-                    <small>
-                      💵 Tip: ${order.tipAmount?.toFixed(2) ?? '0.00'}
-                    </small>
+                    <small>💵 Tip: ${order.tipAmount?.toFixed(2) ?? '0.00'}</small>
                   </p>
                 </div>
+
                 <div className={styles.cardFooter}>
+                  {/* Details button */}
+                  <button
+                    className={styles.detailBtn}
+                    onClick={() => onShowDetail(order)}
+                  >
+                    Details
+                  </button>
+
+                  {/* Claim flow */}
                   {order.status === 'ORDER_READY' &&
                     !order.staff &&
                     serverId && (
@@ -323,6 +333,7 @@ export default function OrdersGrid({
                         Claim Order
                       </button>
                     )}
+
                   {order.status === 'ORDER_READY' &&
                     order.staff &&
                     serverId && (
@@ -335,6 +346,7 @@ export default function OrdersGrid({
                         Pick Up & Deliver
                       </button>
                     )}
+
                   {order.status === 'PICKED_UP_BY_DRIVER' &&
                     order.staff &&
                     serverId && (
@@ -346,10 +358,9 @@ export default function OrdersGrid({
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <button className={styles.actionBtn}>
-                            Drive
-                          </button>
+                          <button className={styles.actionBtn}>Drive</button>
                         </a>
+
                         {order.paymentMethod === 'CASH' ? (
                           <button
                             className={styles.actionBtn}

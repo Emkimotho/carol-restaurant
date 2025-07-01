@@ -1,5 +1,7 @@
 'use client';
 
+// app/components/Auth/Login.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useSession }         from 'next-auth/react';            // ← new
 import { useRouter, useSearchParams } from 'next/navigation';     // ← new

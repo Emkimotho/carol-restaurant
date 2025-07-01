@@ -15,7 +15,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "19th Hole Restaurant and Bar",
   description: "19th Hole Restaurant and Bar at the Black Rock",
-  viewport: "width=device-width, initial-scale=1.0, viewport-fit=cover",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
 };
 
 export default function RootLayout({
@@ -27,10 +27,10 @@ export default function RootLayout({
     <html lang="en">
       <head />
       <body className={inter.className}>
-        {/* ─── 1) Golf‐ball animation listener across the whole app ─── */}
+        {/* ─── 1) Golf-ball animation listener across the whole app ─── */}
         <AddToCartEffect />
 
-        {/* ─── 2) Toast container for react‐toastify to show toasts ─── */}
+        {/* ─── 2) Toast container for react-toastify to show toasts ─── */}
         <ToastContainer
           position="top-center"
           autoClose={1500}
