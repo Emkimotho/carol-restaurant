@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import MenuItemEditor from "@/components/dashboard/AdminDashboard/MenuBuilder/MenuItemEditor";
+import MenuItemEditor from "@/components/dashboard/AdminDashboard/MenuBuilder/MenuItemForm";
 import type { MenuItem, MenuCategory } from "@/utils/types";
 
 const EditMenuItemPage: React.FC = () => {

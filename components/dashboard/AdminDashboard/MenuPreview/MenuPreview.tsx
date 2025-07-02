@@ -5,12 +5,14 @@ import React, { useState, useEffect, FormEvent } from 'react';
 import Image from 'next/image';
 import styles from './MenuPreview.module.css';
 import { toast } from 'react-toastify';
+import { getCloudinaryImageUrl } from '@/lib/cloudinary-client';
 
 interface PreviewItem {
   id: number;
   title: string;
   description: string | null;
-  imageUrl: string;
+  imageUrl?: string;            // legacy/public folder URL
+  cloudinaryPublicId?: string;  // new Cloudinary ID
   displayOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -33,6 +35,7 @@ const MenuPreviewAdmin: React.FC = () => {
       setItems(data);
     } catch (error) {
       console.error('[MenuPreviewAdmin] Error fetching items:', error);
+      toast.error('Could not load preview items.');
     }
   };
 
@@ -107,7 +110,7 @@ const MenuPreviewAdmin: React.FC = () => {
             type="file"
             accept="image/*"
             onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
+              if (e.target.files?.[0]) {
                 setFile(e.target.files[0]);
               }
             }}
@@ -154,28 +157,35 @@ const MenuPreviewAdmin: React.FC = () => {
       <hr className={styles.divider} />
 
       <div className={styles.itemList}>
-        {items.map((item) => (
-          <div key={item.id} className={styles.itemCard}>
-            <Image
-              src={item.imageUrl}
-              alt={item.title}
-              width={300}
-              height={200}
-              className={styles.thumbnail}
-            />
-            <div className={styles.meta}>
-              <h3>{item.title}</h3>
-              <p>{item.description}</p>
-              <small>Order: {item.displayOrder}</small>
+        {items.map((item) => {
+          // build src: Cloudinary if publicId, else fallback to imageUrl, else placeholder
+          const src = item.cloudinaryPublicId
+            ? getCloudinaryImageUrl(item.cloudinaryPublicId, 300, 200)
+            : item.imageUrl || '/images/placeholder.png';
+
+          return (
+            <div key={item.id} className={styles.itemCard}>
+              <Image
+                src={src}
+                alt={item.title}
+                width={300}
+                height={200}
+                className={styles.thumbnail}
+              />
+              <div className={styles.meta}>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <small>Order: {item.displayOrder}</small>
+              </div>
+              <button
+                onClick={() => handleDelete(item.id)}
+                className={`btn btn-secondary ${styles.deleteButton}`}
+              >
+                Delete
+              </button>
             </div>
-            <button
-              onClick={() => handleDelete(item.id)}
-              className={`btn btn-secondary ${styles.deleteButton}`}
-            >
-              Delete
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

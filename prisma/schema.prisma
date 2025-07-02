@@ -711,14 +711,17 @@ model DeliveryCharges {
 }
 
 model MenuPreviewItem {
-  id           Int      @id @default(autoincrement())
-  title        String
-  description  String?
-  imageUrl     String
-  displayOrder Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 Int       @id @default(autoincrement())
+  title              String
+  description        String?
+  imageUrl           String
+  cloudinaryPublicId String?   // ← new, optional
+  displayOrder       Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
+
+
 
 model Subscription {
   id        Int      @id @default(autoincrement())

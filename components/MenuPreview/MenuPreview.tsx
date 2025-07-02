@@ -1,3 +1,4 @@
+// File: components/MenuPreview/MenuPreview.tsx
 "use client";
 
 import React from "react";
@@ -5,12 +6,14 @@ import useSWR from "swr";
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./MenuPreview.module.css";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
 interface PreviewItem {
   id: number;
   title: string;
   description: string | null;
-  imageUrl: string;
+  imageUrl?: string;            // legacy/public URL
+  cloudinaryPublicId?: string;  // new Cloudinary ID
   displayOrder: number;
 }
 
@@ -37,24 +40,42 @@ const MenuPreview: React.FC = () => {
       <div className="container text-center">
         <h2 className={styles.previewTitle}>Menu Preview</h2>
         <div className="row mt-4">
-          {items.map((item) => (
-            <div key={item.id} className="col-md-4 mb-4">
-              <div className={styles.menuItem}>
-                <Image
-                  src={item.imageUrl}
-                  alt={item.title}
-                  width={300}
-                  height={200}
-                  style={{ objectFit: "cover", borderRadius: "8px" }}
-                  className="img-fluid"
-                />
-                <h4 className={styles.itemTitle}>{item.title}</h4>
-                {item.description && (
-                  <p className={styles.itemDesc}>{item.description}</p>
-                )}
+          {items.map((item) => {
+            // pick Cloudinary if available, else fallback to imageUrl, else placeholder
+            const src = item.cloudinaryPublicId
+              ? getCloudinaryImageUrl(item.cloudinaryPublicId, 300, 300)
+              : item.imageUrl || "/images/placeholder.png";
+
+            return (
+              <div key={item.id} className="col-md-4 mb-4">
+                <div className={styles.menuItem}>
+                  <div
+                    style={{
+                      position: "relative",
+                      width: 300,
+                      height: 300,
+                      margin: "0 auto",
+                    }}
+                  >
+                    <Image
+                      src={src}
+                      alt={item.title}
+                      fill
+                      style={{
+                        objectFit: "cover",
+                        borderRadius: "0.5rem",
+                      }}
+                      unoptimized
+                    />
+                  </div>
+                  <h4 className={styles.itemTitle}>{item.title}</h4>
+                  {item.description && (
+                    <p className={styles.itemDesc}>{item.description}</p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <Link href="/menu" className={`${styles.btn} btn mt-4`}>
