@@ -1,8 +1,10 @@
+// File: components/NewsPage.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
 import BlogPost from "./BlogPost";
 import styles from "./BlogPage.module.css";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
 interface NewsPostSummary {
   id: string;
@@ -11,7 +13,8 @@ interface NewsPostSummary {
   excerpt: string;
   date: string;
   author: string;
-  image: string;
+  image?: string;                // legacy/public URL
+  cloudinaryPublicId?: string;   // new Cloudinary ID
   link?: string;
 }
 
@@ -24,11 +27,9 @@ export default function NewsPage() {
   useEffect(() => {
     async function fetchNews() {
       try {
-        // Fetch from your Next.js API with type=news
         const res = await fetch("/api/blog-news?type=news");
         if (!res.ok) throw new Error("Failed to fetch news posts");
-        const data = await res.json();
-        setPosts(data);
+        setPosts(await res.json());
       } catch (error) {
         console.error(error);
       } finally {
@@ -38,7 +39,6 @@ export default function NewsPage() {
     fetchNews();
   }, []);
 
-  // Filter + optional sort
   const filteredPosts = useMemo(() => {
     const term = searchTerm.toLowerCase();
     let filtered = posts.filter(
@@ -70,7 +70,6 @@ export default function NewsPage() {
           className={styles["search-input"]}
           aria-label="Search news"
         />
-
         <label className={styles["sort-label"]}>
           <input
             type="checkbox"
@@ -82,16 +81,25 @@ export default function NewsPage() {
       </div>
 
       <div className={styles["blog-posts-container"]}>
-        {filteredPosts.map((post) => (
-          <BlogPost
-            key={post.slug}
-            post={{
-              ...post,
-              // If you want forced /news route:
-              link: `/news/${post.slug}`,
-            }}
-          />
-        ))}
+        {filteredPosts.map((post) => {
+          // build the proper image URL
+          const imgSrc = post.cloudinaryPublicId
+            ? getCloudinaryImageUrl(post.cloudinaryPublicId, 400, 250)
+            : post.image?.startsWith("http")
+              ? post.image
+              : `/images/${post.image || "placeholder.jpg"}`;
+
+          return (
+            <BlogPost
+              key={post.slug}
+              post={{
+                ...post,
+                image: imgSrc,
+                link: `/news/${post.slug}`,
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );

@@ -5,9 +5,9 @@ import Head from "next/head";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 import styles from "./BlogDetailPage.module.css";
 
-/** Data shape returned by /api/blog-news/[slug]?type=blog */
 interface BlogPostData {
   id: string;
   title: string;
@@ -16,6 +16,7 @@ interface BlogPostData {
   date: string;
   content: string;
   image?: string;
+  cloudinaryPublicId?: string;
 }
 
 interface BlogDetailPageProps {
@@ -31,7 +32,7 @@ export default function BlogDetailPage({ slug }: BlogDetailPageProps) {
       try {
         const res = await fetch(`/api/blog-news/${slug}?type=blog`);
         if (!res.ok) throw new Error("Failed to fetch blog post");
-        const data = await res.json();
+        const data: BlogPostData = await res.json();
         setPost(data);
       } catch (error) {
         console.error(error);
@@ -42,14 +43,23 @@ export default function BlogDetailPage({ slug }: BlogDetailPageProps) {
     fetchPost();
   }, [slug]);
 
-  if (loading) return <div className={styles.loading}>Loading...</div>;
-  if (!post) return <div className={styles.error}>Blog post not found.</div>;
+  if (loading) {
+    return <div className={styles.loading}>Loading...</div>;
+  }
 
-  // Ensure the same image logic:
-  // If DB image is a local file, prepend /images/; else if starts with http, use as-is.
-  const fallbackImage = "/images/placeholder.jpg";
-  let imageSrc = fallbackImage;
-  if (post.image) {
+  if (!post) {
+    return <div className={styles.error}>Blog post not found.</div>;
+  }
+
+  // Determine image source:
+  // 1. Cloudinary if we have a public ID
+  // 2. Absolute URL if image starts with http
+  // 3. Local /images/ if image is a filename
+  // 4. Fallback placeholder
+  let imageSrc = "/images/placeholder.jpg";
+  if (post.cloudinaryPublicId) {
+    imageSrc = getCloudinaryImageUrl(post.cloudinaryPublicId, 800, 400);
+  } else if (post.image) {
     if (post.image.startsWith("http")) {
       imageSrc = post.image;
     } else {
@@ -69,13 +79,14 @@ export default function BlogDetailPage({ slug }: BlogDetailPageProps) {
           <Image
             src={imageSrc}
             alt={post.title}
-            width={800} // Adjust width as needed
-            height={400} // Adjust height as needed
+            width={800}
+            height={400}
             className={styles["header-image"]}
+            unoptimized={!post.cloudinaryPublicId}
           />
           <h1 className={styles["blog-detail-title"]}>{post.title}</h1>
           <p className={styles["blog-detail-meta"]}>
-            By {post.author} | {post.date}
+            By {post.author} | {new Date(post.date).toLocaleDateString()}
           </p>
         </header>
 

@@ -2,11 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import formidable from "formidable";
-import fs from "fs";
-import path from "path";
-import { Readable } from "stream";
-import type { IncomingMessage } from "http";
+import { v2 as cloudinary } from "cloudinary";
 
 export const config = {
   api: {
@@ -14,148 +10,81 @@ export const config = {
   },
 };
 
-const uploadDir = path.join(process.cwd(), "public", "images");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-function bufferToStream(buffer: Buffer): Readable {
-  const stream = new Readable({
-    read() {}, // no-op
-  });
-  stream.push(buffer);
-  stream.push(null);
-  return stream;
-}
-
-// Minimal interface for the bits of Formidable.File we actually use
-interface UploadedFile {
-  newFilename: string;
-  filepath: string;
-}
+// Configure Cloudinary from your environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function GET() {
-  const images = await prisma.galleryImage.findMany({
-    orderBy: { createdAt: "asc" },
-  });
-  return NextResponse.json(images);
+  try {
+    // Return all images in ascending creation order
+    const images = await prisma.galleryImage.findMany({
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        alt: true,
+        title: true,
+        description: true,
+        cloudinaryPublicId: true,
+        imageUrl: true,
+        createdAt: true,
+      },
+    });
+    return NextResponse.json(images);
+  } catch (err) {
+    console.error("GET /api/gallery error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch gallery images" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    // turn body into a stream
-    const buf = Buffer.from(await request.arrayBuffer());
-    const stream = bufferToStream(buf);
+    const form = await request.formData();
+    const fileField    = form.get("file");
+    const altRaw       = form.get("alt");
+    const titleRaw     = form.get("title");
+    const descRaw      = form.get("description");
 
-    // attach headers so Formidable can parse multipart boundaries
-    ;(stream as any).headers = Object.fromEntries(
-      request.headers.entries()
-    );
+    if (!(fileField instanceof Blob) || !altRaw || !titleRaw || !descRaw) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
 
-    return new Promise<NextResponse>((resolve) => {
-      const form = formidable({
-        multiples: false,
-        uploadDir,
-        keepExtensions: true,
-      });
+    const alt         = altRaw.toString().trim();
+    const title       = titleRaw.toString().trim();
+    const description = descRaw.toString().trim();
 
-      form.parse(
-        stream as unknown as IncomingMessage,
-        async (err: any, fields: any, files: any) => {
-          if (err) {
-            console.error("Error parsing form data:", err);
-            return resolve(
-              NextResponse.json(
-                { error: "Error parsing form data" },
-                { status: 500 }
-              )
-            );
-          }
+    // Convert file blob to a data URI
+    const arrayBuffer = await fileField.arrayBuffer();
+    const buffer      = Buffer.from(arrayBuffer);
+    const dataUri     = `data:${fileField.type};base64,${buffer.toString("base64")}`;
 
-          // pull out text fields (may be string or string[])
-          const altRaw = fields.alt;
-          const titleRaw = fields.title;
-          const descRaw = fields.description;
-          const alt = Array.isArray(altRaw) ? altRaw[0] : altRaw;
-          const title = Array.isArray(titleRaw) ? titleRaw[0] : titleRaw;
-          const description = Array.isArray(descRaw)
-            ? descRaw[0]
-            : descRaw;
-
-          if (!alt || !title || !description) {
-            console.error("Missing fields:", { alt, title, description });
-            return resolve(
-              NextResponse.json(
-                { error: "Missing fields" },
-                { status: 400 }
-              )
-            );
-          }
-
-          // grab the file entry
-          let fileEntry = files.file;
-          if (Array.isArray(fileEntry)) fileEntry = fileEntry[0];
-          if (!fileEntry) {
-            console.error("No file uploaded.");
-            return resolve(
-              NextResponse.json(
-                { error: "No file uploaded" },
-                { status: 400 }
-              )
-            );
-          }
-
-          // cast to our UploadedFile
-          const uploaded = fileEntry as UploadedFile;
-          const { newFilename, filepath: oldPath } = uploaded;
-          const newPath = path.join(uploadDir, newFilename);
-
-          // move (or fallback to copy+unlink)
-          try {
-            fs.renameSync(oldPath, newPath);
-          } catch {
-            try {
-              fs.copyFileSync(oldPath, newPath);
-              fs.unlinkSync(oldPath);
-            } catch (copyErr) {
-              console.error("File copy error:", copyErr);
-              return resolve(
-                NextResponse.json(
-                  { error: "File upload error" },
-                  { status: 500 }
-                )
-              );
-            }
-          }
-
-          // persist to DB
-          const fileUrl = `/images/${newFilename}`;
-          try {
-            const image = await prisma.galleryImage.create({
-              data: {
-                src: fileUrl,
-                alt,
-                title,
-                description,
-              },
-            });
-            return resolve(NextResponse.json(image));
-          } catch (dbErr) {
-            console.error("Database error:", dbErr);
-            return resolve(
-              NextResponse.json(
-                { error: "Database error" },
-                { status: 500 }
-              )
-            );
-          }
-        }
-      );
+    // Upload to Cloudinary into "gallery" folder
+    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+      folder:    "gallery",
+      resource_type: "image",
     });
-  } catch (outerErr) {
-    console.error("Outer error in POST handler:", outerErr);
+
+    // Persist in database
+    const image = await prisma.galleryImage.create({
+      data: {
+        alt,
+        title,
+        description,
+        cloudinaryPublicId: uploadResult.public_id,
+        imageUrl:           uploadResult.secure_url,
+      },
+    });
+
+    return NextResponse.json(image, { status: 201 });
+  } catch (err) {
+    console.error("POST /api/gallery error:", err);
     return NextResponse.json(
-      { error: "Unexpected error" },
+      { error: "Failed to upload gallery image" },
       { status: 500 }
     );
   }
@@ -163,27 +92,33 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const url = new URL(request.url);
+    const url    = new URL(request.url);
     const idParam = url.searchParams.get("id");
     if (!idParam) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
     const id = parseInt(idParam, 10);
-    const image = await prisma.galleryImage.delete({
-      where: { id },
-    });
 
-    // delete the file on disk
-    const filePath = path.join(process.cwd(), "public", image.src);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Lookup existing to get its public ID
+    const existing = await prisma.galleryImage.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    return NextResponse.json(image);
-  } catch (delErr) {
-    console.error("Delete error:", delErr);
+    // Remove from Cloudinary if we have a public ID
+    if (existing.cloudinaryPublicId) {
+      await cloudinary.uploader.destroy(existing.cloudinaryPublicId, {
+        resource_type: "image",
+      });
+    }
+
+    // Delete DB record
+    const deleted = await prisma.galleryImage.delete({ where: { id } });
+    return NextResponse.json(deleted, { status: 200 });
+  } catch (err) {
+    console.error("DELETE /api/gallery error:", err);
     return NextResponse.json(
-      { error: "Failed to delete image" },
+      { error: "Failed to delete gallery image" },
       { status: 500 }
     );
   }

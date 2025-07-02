@@ -2,7 +2,9 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import styles from "./UserCard.module.css";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
 export interface UserCardProps {
   id: number;
@@ -12,7 +14,7 @@ export interface UserCardProps {
   position?: string;
   roles: string[];  // e.g. ["STAFF","DRIVER","SERVER","CASHIER"]
   status: "ACTIVE" | "SUSPENDED" | "BANNED";
-  photoUrl?: string;
+  photoPublicId?: string;          // now using Cloudinary public ID
   licenseNumber?: string;
   carMakeModel?: string;
   onEdit: () => void;
@@ -36,7 +38,7 @@ const UserCard: React.FC<UserCardProps> = ({
   phone,
   roles,
   status,
-  photoUrl,
+  photoPublicId,
   licenseNumber,
   carMakeModel,
   onStatusChange,
@@ -47,8 +49,17 @@ const UserCard: React.FC<UserCardProps> = ({
   return (
     <div className={styles.card}>
       {/* Avatar */}
-      {photoUrl ? (
-        <img src={photoUrl} alt={name} className={styles.avatar} />
+      {photoPublicId ? (
+        <div className={styles.avatarWrapper}>
+          <Image
+            src={getCloudinaryImageUrl(photoPublicId, 120, 120)}
+            alt={name}
+            width={120}
+            height={120}
+            className={styles.avatar}
+            unoptimized
+          />
+        </div>
       ) : (
         <div className={styles.avatarPlaceholder}>{name[0]}</div>
       )}

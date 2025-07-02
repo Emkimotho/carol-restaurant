@@ -625,17 +625,14 @@ model Ticket {
 /* 6.  Gallery, Site‑wide tables, Marketing, etc.                               */
 /* ============================================================================ */
 model GalleryImage {
-  id                   Int      @id @default(autoincrement())
-  cloudinaryPublicId   String?  @unique
-  imageUrl             String?  // secure_url returned by Cloudinary
-  alt                  String
-  title                String
-  description          String
-  createdAt            DateTime @default(now())
-
-  @@map("gallery_images")
+  id                 Int      @id @default(autoincrement())
+  cloudinaryPublicId String   @unique
+  imageUrl           String
+  alt                String
+  title              String
+  description        String
+  createdAt          DateTime @default(now())
 }
-
 
 model OpeningHour {
   id    Int    @id @default(autoincrement())
@@ -682,17 +679,24 @@ model Reservation {
 }
 
 model BlogNews {
-  id        String   @id @default(cuid())
-  title     String
-  slug      String   @unique
-  excerpt   String
-  content   String
-  author    String
-  date      DateTime
-  type      String
-  image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  title               String
+  slug                String   @unique
+  excerpt             String
+  content             String
+  author              String
+  date                DateTime
+  type                String
+
+  /// Cloudinary public ID for the blog image
+  blogImagePublicId   String?  @unique
+  /// Secure URL returned by Cloudinary
+  imageUrl            String?
+  /// Legacy fallback if you still need local uploads
+  legacyImage         String?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model Recommendation {

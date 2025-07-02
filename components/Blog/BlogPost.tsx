@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 import styles from "./BlogPost.module.css";
 
 interface BlogPostProps {
@@ -13,30 +14,29 @@ interface BlogPostProps {
     excerpt: string;
     date: string;
     author: string;
-    image?: string;
+    image?: string;               // legacy/public URL or filename
+    cloudinaryPublicId?: string;  // optional Cloudinary public ID
     link?: string;
     type?: "blog" | "news";
   };
 }
 
 export default function BlogPost({ post }: BlogPostProps) {
-  // Decide the link
-  let href = post.link;
-  if (!href) {
-    href = post.type === "news"
-      ? `/news/${post.slug}`
-      : `/blog/${post.slug}`;
-  }
+  // Determine href
+  const href =
+    post.link ||
+    (post.type === "news" ? `/news/${post.slug}` : `/blog/${post.slug}`);
 
-  // Build a valid image path or URL
-  const fallbackImage = "/images/placeholder.jpg";
-  let imageSrc = fallbackImage;
-  if (post.image) {
-    if (post.image.startsWith("http")) {
-      imageSrc = post.image;
-    } else {
-      imageSrc = `/images/${post.image}`;
-    }
+  // Determine image source
+  const placeholder = "/images/placeholder.jpg";
+  let imageSrc = placeholder;
+
+  if (post.cloudinaryPublicId) {
+    imageSrc = getCloudinaryImageUrl(post.cloudinaryPublicId, 800, 450);
+  } else if (post.image) {
+    imageSrc = post.image.startsWith("http")
+      ? post.image
+      : `/images/${post.image}`;
   }
 
   // Format date
@@ -56,6 +56,7 @@ export default function BlogPost({ post }: BlogPostProps) {
           height={450}
           className={styles["blog-post-image"]}
           loading="lazy"
+          unoptimized
         />
       </div>
 

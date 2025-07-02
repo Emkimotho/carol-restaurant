@@ -8,6 +8,10 @@ import styles from "./RegisterUser.module.css";
 type RoleOption = "STAFF" | "DRIVER" | "SERVER" | "CASHIER";
 const ALL_ROLES: RoleOption[] = ["STAFF", "DRIVER", "SERVER", "CASHIER"];
 
+// These env vars must be set in your NEXT_PUBLIC_ namespace
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
+const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
+
 export default function RegisterUserForm() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -41,9 +45,7 @@ export default function RegisterUserForm() {
   };
 
   const toggleRole = (r: RoleOption) =>
-    setRoles(rs =>
-      rs.includes(r) ? rs.filter(x => x !== r) : [...rs, r]
-    );
+    setRoles(rs => (rs.includes(r) ? rs.filter(x => x !== r) : [...rs, r]));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,41 +54,72 @@ export default function RegisterUserForm() {
     // Basic validation
     if (!form.firstName || !form.lastName || !form.email) {
       toast.error("First, last name and email are required.");
-      return setLoading(false);
+      setLoading(false);
+      return;
     }
     if (!roles.length) {
       toast.error("Select at least one role.");
-      return setLoading(false);
+      setLoading(false);
+      return;
     }
     if (
       roles.includes("DRIVER") &&
       (!form.licenseNumber || !form.carMakeModel)
     ) {
       toast.error("Driver must have license and vehicle info.");
-      return setLoading(false);
+      setLoading(false);
+      return;
     }
 
     try {
-      const data = new FormData();
-      data.append("firstName", form.firstName);
-      data.append("lastName", form.lastName);
-      data.append("email", form.email);
-      data.append("phone", form.phone);
-      data.append("position", form.position);
-      roles.forEach(r => data.append("roles", r));
-      if (roles.includes("DRIVER")) {
-        data.append("licenseNumber", form.licenseNumber);
-        data.append("carMakeModel", form.carMakeModel);
-      }
-      if (photoFile) data.append("photo", photoFile);
+      let photoUrl: string | undefined;
+      // 1) If a file is selected, upload it to Cloudinary
+      if (photoFile) {
+        const cloudData = new FormData();
+        cloudData.append("file", photoFile);
+        cloudData.append("upload_preset", UPLOAD_PRESET);
 
+        const cloudRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`,
+          { method: "POST", body: cloudData }
+        );
+        if (!cloudRes.ok) {
+          throw new Error("Photo upload failed");
+        }
+        const cloudJson = await cloudRes.json();
+        photoUrl = cloudJson.secure_url;
+      }
+
+      // 2) Build payload to your own API
+      const payload: any = {
+        firstName: form.firstName,
+        lastName:  form.lastName,
+        email:     form.email,
+        phone:     form.phone,
+        position:  form.position,
+        roles,
+      };
+      if (roles.includes("DRIVER")) {
+        payload.licenseNumber = form.licenseNumber;
+        payload.carMakeModel  = form.carMakeModel;
+      }
+      if (photoUrl) {
+        payload.photoUrl = photoUrl;
+      }
+
+      // 3) Send to your backend
       const res = await fetch("/api/registeruser", {
         method: "POST",
-        body: data,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error((await res.json()).message);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Registration failed");
+      }
 
       toast.success("User created & emailed.");
+      // reset
       setForm({
         firstName: "",
         lastName: "",
@@ -99,6 +132,7 @@ export default function RegisterUserForm() {
       setRoles([]);
       setPhotoFile(null);
     } catch (err: any) {
+      console.error(err);
       toast.error(err.message || "Registration failed.");
     } finally {
       setLoading(false);
@@ -194,6 +228,7 @@ export default function RegisterUserForm() {
       )}
 
       <button
+        type="submit"
         className={styles.submitButton}
         disabled={loading}
       >

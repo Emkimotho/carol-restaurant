@@ -1,22 +1,37 @@
+// File: app/api/blog-news/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { v2 as cloudinary } from "cloudinary";
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+// configure Cloudinary from env
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 /**
  * GET /api/blog-news?type=blog|news
  * If no "type", returns all.
  */
 export async function GET(request: NextRequest) {
-  const type = request.nextUrl.searchParams.get("type");
+  const type = request.nextUrl.searchParams.get("type") ?? undefined;
   const validTypes = ["blog", "news"];
 
   try {
-    let whereClause = {};
-    if (type && validTypes.includes(type)) {
-      whereClause = { type };
-    }
+    const where = type && validTypes.includes(type)
+      ? { type }
+      : {};
 
     const posts = await prisma.blogNews.findMany({
-      where: whereClause,
+      where,
       orderBy: { date: "desc" },
       select: {
         id: true,
@@ -26,14 +41,15 @@ export async function GET(request: NextRequest) {
         author: true,
         date: true,
         type: true,
-        image: true,
+        blogImagePublicId: true,
+        imageUrl: true,
       },
     });
 
-    return NextResponse.json(posts, { status: 200 });
-  } catch (error: any) {
-    console.error("Error fetching blog-news list:", error);
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return NextResponse.json(posts);
+  } catch (err: any) {
+    console.error("GET /api/blog-news error:", err);
+    return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }
 
@@ -44,41 +60,61 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    const title = formData.get("title") as string;
-    const excerpt = formData.get("excerpt") as string;
-    const content = formData.get("content") as string;
-    const author = formData.get("author") as string;
-    const date = formData.get("date") as string;
-    const type = formData.get("type") as string;
+    // required fields
+    const title   = (formData.get("title")   as string).trim();
+    const excerpt = (formData.get("excerpt") as string).trim();
+    const content = (formData.get("content") as string).trim();
+    const author  = (formData.get("author")  as string).trim();
+    const dateStr = (formData.get("date")    as string).trim();
+    const type    = (formData.get("type")    as string).trim();
 
-    // Generate a slug from title
+    if (!title || !excerpt || !content || !author || !dateStr || !type) {
+      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+    }
+
+    // slugify title
     const slug = title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)+/g, "");
 
-    let imageName: string | undefined;
+    // handle optional image upload
+    let blogImagePublicId: string | null = null;
+    let imageUrl: string | null = null;
+
     const imageFile = formData.get("image") as File | null;
-    if (imageFile && imageFile.name) {
-      imageName = imageFile.name;
+    if (imageFile && imageFile.size > 0) {
+      // read as data URI
+      const buf = Buffer.from(await imageFile.arrayBuffer());
+      const dataUri = `data:${imageFile.type};base64,${buf.toString("base64")}`;
+
+      const uploadRes = await cloudinary.uploader.upload(dataUri, {
+        folder: "blog-news",
+        public_id: slug,
+        overwrite: true,
+      });
+
+      blogImagePublicId = uploadRes.public_id;
+      imageUrl            = uploadRes.secure_url;
     }
 
-    const newPost = await prisma.blogNews.create({
+    const post = await prisma.blogNews.create({
       data: {
         title,
+        slug,
         excerpt,
         content,
         author,
-        date: new Date(date),
+        date: new Date(dateStr),
         type,
-        slug,
-        image: imageName || null,
+        blogImagePublicId,
+        imageUrl,
       },
     });
 
-    return NextResponse.json(newPost, { status: 201 });
-  } catch (error: any) {
-    console.error("Error creating new post:", error);
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    return NextResponse.json(post, { status: 201 });
+  } catch (err: any) {
+    console.error("POST /api/blog-news error:", err);
+    return NextResponse.json({ message: err.message }, { status: 500 });
   }
 }

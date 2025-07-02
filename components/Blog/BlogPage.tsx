@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import BlogPost from "./BlogPost";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 import styles from "./BlogPage.module.css";
 
 interface BlogPostSummary {
@@ -11,7 +12,8 @@ interface BlogPostSummary {
   excerpt: string;
   date: string;
   author: string;
-  image: string;
+  image?: string;                 // legacy/public URL or filename
+  cloudinaryPublicId?: string;    // optional Cloudinary public ID
   link?: string;
 }
 
@@ -24,10 +26,9 @@ export default function BlogPage() {
   useEffect(() => {
     async function fetchPosts() {
       try {
-        // Fetch blog posts from your Next.js API
         const res = await fetch("/api/blog-news?type=blog");
         if (!res.ok) throw new Error("Failed to fetch blog posts");
-        const data = await res.json();
+        const data: BlogPostSummary[] = await res.json();
         setPosts(data);
       } catch (error) {
         console.error(error);
@@ -38,7 +39,6 @@ export default function BlogPage() {
     fetchPosts();
   }, []);
 
-  // Filter + optional sort
   const filteredPosts = useMemo(() => {
     const term = searchTerm.toLowerCase();
     let filtered = posts.filter(
@@ -82,9 +82,27 @@ export default function BlogPage() {
       </div>
 
       <div className={styles["blog-posts-container"]}>
-        {filteredPosts.map((post) => (
-          <BlogPost key={post.slug} post={post} />
-        ))}
+        {filteredPosts.map((post) => {
+          // determine thumbnail URL
+          const thumbSrc = post.cloudinaryPublicId
+            ? getCloudinaryImageUrl(post.cloudinaryPublicId, 300, 200)
+            : post.image?.startsWith("http")
+            ? post.image
+            : post.image
+            ? `/images/${post.image}`
+            : "/images/placeholder.png";
+
+          return (
+            <BlogPost
+              key={post.slug}
+              post={{
+                ...post,
+                link: `/blog/${post.slug}`,
+                image: thumbSrc,
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );
