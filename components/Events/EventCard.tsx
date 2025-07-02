@@ -7,14 +7,8 @@ import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import FaqModal from "@/components/Events/FaqModal";
 import { EventData } from "@/app/events/page";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 import styles from "./Events.module.css";
-
-// Helper to normalize image paths (assumes files reside in public/images)
-const resolveImagePath = (image?: string) => {
-  if (!image) return "";
-  if (image.startsWith("/images/")) return image;
-  return `/images/${image.replace(/^uploads\//, "")}`;
-};
 
 interface BookingInitResponse {
   bookingId?: string;
@@ -24,6 +18,21 @@ interface RsvpResponse {
   reserved?: { adultCount: number; kidCount: number };
   message?: string;
 }
+
+const resolveImageSrc = (event: EventData) => {
+  // 1) Cloudinary
+  if ((event as any).cloudinaryPublicId) {
+    return getCloudinaryImageUrl(
+      (event as any).cloudinaryPublicId,
+      400,
+      300
+    );
+  }
+  // 2) fallback to local /uploads or /images
+  if (event.image?.startsWith("/images/")) return event.image;
+  if (event.image) return `/images/${event.image.replace(/^uploads\//, "")}`;
+  return "";
+};
 
 export default function EventCard({ event }: { event: EventData }) {
   const router = useRouter();
@@ -61,12 +70,11 @@ export default function EventCard({ event }: { event: EventData }) {
   const [payerEmail, setPayerEmail] = useState<string>("");
   const [loadingBooking, setLoadingBooking] = useState<boolean>(false);
 
-  // Free-event RSVP state (no ticket codes)
+  // Free-event RSVP state
   const [rsvpName, setRsvpName] = useState<string>("");
   const [rsvpEmail, setRsvpEmail] = useState<string>("");
   const [freeAdultCount, setFreeAdultCount] = useState<number>(0);
   const [freeKidCount, setFreeKidCount] = useState<number>(0);
-  // After successful RSVP, reserved counts:
   const [reserved, setReserved] = useState<{ adultCount: number; kidCount: number } | null>(null);
   const [loadingRsvp, setLoadingRsvp] = useState<boolean>(false);
 
@@ -76,10 +84,8 @@ export default function EventCard({ event }: { event: EventData }) {
   const totalPrice = adultCount * event.adultPrice + kidCount * event.kidPrice;
   const totalFreeTickets = freeAdultCount + freeKidCount;
 
-  // Clamp helper
   const clampNonNegative = (value: number) => (value >= 0 ? value : 0);
 
-  // Handle free-event RSVP
   const handleFreeRSVP = async () => {
     if (loadingRsvp) return;
     const name = rsvpName.trim();
@@ -96,7 +102,6 @@ export default function EventCard({ event }: { event: EventData }) {
       toast.error("This event requires payment; RSVP not allowed.");
       return;
     }
-    // Optionally: check availableTickets before calling API
     if (
       typeof event.availableTickets === "number" &&
       event.availableTickets < totalFreeTickets
@@ -122,13 +127,11 @@ export default function EventCard({ event }: { event: EventData }) {
         toast.error("RSVP failed: " + (data.message ?? "Unknown error"));
         return;
       }
-      // Expect data.reserved from backend; if missing, fall back to local counts
       const reservedCounts = data.reserved
         ? data.reserved
         : { adultCount: freeAdultCount, kidCount: freeKidCount };
       setReserved(reservedCounts);
       toast.success("RSVP confirmed! Thank you.");
-      // Clear form fields
       setRsvpName("");
       setRsvpEmail("");
       setFreeAdultCount(0);
@@ -141,7 +144,6 @@ export default function EventCard({ event }: { event: EventData }) {
     }
   };
 
-  // Handle paid booking: send to booking-init then redirect to summary page
   const handleBook = async () => {
     if (loadingBooking) return;
     const name = payerName.trim();
@@ -164,7 +166,6 @@ export default function EventCard({ event }: { event: EventData }) {
 
     setLoadingBooking(true);
     try {
-      // Call booking-init endpoint (create booking in PENDING_PAYMENT)
       const res = await fetch(`/api/events/${event.id}/booking-init`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -182,7 +183,6 @@ export default function EventCard({ event }: { event: EventData }) {
       }
       if (data.bookingId) {
         toast.success("Booking created! Redirecting to summary...");
-        // Redirect to summary page for confirmation / Stripe session
         router.push(`/events/summary/${data.bookingId}`);
       } else {
         toast.error("Booking initialization did not return an ID.");
@@ -195,7 +195,6 @@ export default function EventCard({ event }: { event: EventData }) {
     }
   };
 
-  // If free RSVP completed, show inline thank-you panel with reserved counts
   if (event.isFree && reserved) {
     return (
       <div className={styles.thankYouPanel}>
@@ -204,8 +203,7 @@ export default function EventCard({ event }: { event: EventData }) {
           We have reserved {reserved.adultCount} adult ticket
           {reserved.adultCount !== 1 ? "s" : ""}
           {reserved.kidCount > 0 &&
-            ` and ${reserved.kidCount} kid ticket${reserved.kidCount !== 1 ? "s" : ""}`}
-          .
+            ` and ${reserved.kidCount} kid ticket${reserved.kidCount !== 1 ? "s" : ""}`}.
         </p>
         <p>Please check your email for details. No ticket codes are needed for free events.</p>
       </div>
@@ -215,9 +213,9 @@ export default function EventCard({ event }: { event: EventData }) {
   return (
     <div className={styles.eventCard}>
       <div className={styles.eventImageWrapper}>
-        {event.image ? (
+        {resolveImageSrc(event) ? (
           <Image
-            src={resolveImagePath(event.image)}
+            src={resolveImageSrc(event)}
             alt={event.title}
             width={400}
             height={300}
@@ -272,7 +270,6 @@ export default function EventCard({ event }: { event: EventData }) {
           <p className={styles.adultsOnly}>Adults Only</p>
         )}
 
-        {/* FAQs button */}
         {event.faqs?.length ? (
           <>
             <button
@@ -292,7 +289,6 @@ export default function EventCard({ event }: { event: EventData }) {
             <p>This event has expired.</p>
           </div>
         ) : event.isFree ? (
-          // Free-event RSVP form
           <div className={styles.bookingForm}>
             <h3>RSVP for Free Event</h3>
             <div className={styles.formGroup}>
@@ -346,7 +342,6 @@ export default function EventCard({ event }: { event: EventData }) {
             </button>
           </div>
         ) : (
-          // Paid booking form
           <div className={styles.bookingForm}>
             <h3>Book Your Tickets</h3>
             <div className={styles.formGroup}>

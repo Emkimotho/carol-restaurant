@@ -1,8 +1,21 @@
 // File: app/api/events/route.ts
-// GET  /api/events — list all events (incl. start/end times, kidPriceInfo, FAQs)
-// POST /api/events — create a new event (with times, pricing descriptor, image, FAQs)
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { v2 as cloudinary } from "cloudinary";
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key:    process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +35,8 @@ export async function GET(request: Request) {
       kidPrice: ev.kidPrice,
       kidPriceInfo: ev.kidPriceInfo,
       availableTickets: ev.availableTickets,
-      image: ev.image,
+      imageUrl: ev.imageUrl,
+      cloudinaryPublicId: ev.cloudinaryPublicId,
       isFree: ev.isFree,
       adultOnly: ev.adultOnly,
       faqs: ev.faqs.map((fq) => ({
@@ -44,12 +58,14 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
 
+    // Required text fields
     const title       = formData.get("title")?.toString();
     const description = formData.get("description")?.toString();
     if (!title || !description) {
       return NextResponse.json({ message: "Missing title or description" }, { status: 400 });
     }
 
+    // Address fields
     const street = formData.get("street")?.toString();
     const city   = formData.get("city")?.toString();
     const state  = formData.get("state")?.toString();
@@ -59,6 +75,7 @@ export async function POST(request: Request) {
     }
     const location = `${street}, ${city}, ${state} ${zip}`;
 
+    // Date/time
     const dateRaw      = formData.get("date")?.toString();
     const startTimeRaw = formData.get("startTime")?.toString();
     const endTimeRaw   = formData.get("endTime")?.toString();
@@ -76,6 +93,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Invalid date or startTime format" }, { status: 400 });
     }
 
+    // Pricing & tickets
     const adultPrice       = parseFloat(formData.get("adultPrice")?.toString()    || "0");
     const kidPrice         = parseFloat(formData.get("kidPrice")?.toString()      || "0");
     const availableTickets = parseInt  (formData.get("availableTickets")?.toString() || "0");
@@ -84,12 +102,7 @@ export async function POST(request: Request) {
     const isFree    = formData.get("isFree")    === "true";
     const adultOnly = formData.get("adultOnly") === "true";
 
-    let imageUrl: string | null = null;
-    const imageFile = formData.get("image");
-    if (imageFile instanceof File) {
-      imageUrl = imageFile.name;
-    }
-
+    // FAQs JSON
     let faqsData: { question: string; answer: string }[] = [];
     const faqsRaw = formData.get("faqs")?.toString();
     if (faqsRaw) {
@@ -100,6 +113,27 @@ export async function POST(request: Request) {
       }
     }
 
+    // Image upload
+    let imageUrl: string | null = null;
+    let cloudinaryPublicId: string | null = null;
+    const imageFile = formData.get("image");
+    if (imageFile instanceof Blob) {
+      // convert to base64 data URI
+      const arrayBuffer = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const dataUri = `data:${imageFile.type};base64,${buffer.toString("base64")}`;
+
+      // upload
+      const uploadResult = await cloudinary.uploader.upload(dataUri, {
+        folder: "events",
+        public_id: `${Date.now()}`,
+        overwrite: true,
+      });
+      imageUrl = uploadResult.secure_url;
+      cloudinaryPublicId = uploadResult.public_id;
+    }
+
+    // Persist event
     const event = await prisma.event.create({
       data: {
         title,
@@ -112,7 +146,8 @@ export async function POST(request: Request) {
         kidPrice,
         kidPriceInfo,
         availableTickets,
-        image: imageUrl,
+        imageUrl,
+        cloudinaryPublicId,
         isFree,
         adultOnly,
         faqs: {
@@ -122,6 +157,7 @@ export async function POST(request: Request) {
           })),
         },
       },
+      include: { faqs: true },
     });
 
     return NextResponse.json({ event }, { status: 201 });

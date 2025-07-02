@@ -770,24 +770,30 @@ const EventManager: React.FC = () => {
               />
 
               <div className={styles.formGroup}>
-                <label htmlFor="imageUpload" className={styles.inputLabel}>
-                  Upload Event Image
-                </label>
-                <input
-                  id="imageUpload"
-                  type="file"
-                  accept="image/*"
-                  className={styles.fileInput}
-                  onChange={handleImageChange}
-                />
-                {imagePreview && (
-                  <img
-                    src={imagePreview}
-                    alt="Image Preview"
-                    className={styles.imagePreview}
-                  />
-                )}
-              </div>
+  <label htmlFor="imageUpload" className={styles.inputLabel}>
+    Upload Event Image
+  </label>
+  <input
+    id="imageUpload"
+    type="file"
+    accept="image/*"
+    className={styles.fileInput}
+    onChange={handleImageChange}
+  />
+  {imagePreview && (
+    <div className={styles.imagePreviewWrapper}>
+      <Image
+        src={imagePreview}
+        alt="Image Preview"
+        width={300}
+        height={200}
+        style={{ objectFit: "cover", borderRadius: "0.5rem" }}
+        unoptimized
+        className={styles.imagePreview}
+      />
+    </div>
+  )}
+</div>
 
               <button
                 className={styles.button}
