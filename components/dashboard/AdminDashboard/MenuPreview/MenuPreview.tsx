@@ -158,20 +158,29 @@ const MenuPreviewAdmin: React.FC = () => {
 
       <div className={styles.itemList}>
         {items.map((item) => {
-          // build src: Cloudinary if publicId, else fallback to imageUrl, else placeholder
+          // pick Cloudinary if available, else fallback to imageUrl, else placeholder
           const src = item.cloudinaryPublicId
-            ? getCloudinaryImageUrl(item.cloudinaryPublicId, 300, 200)
+            ? getCloudinaryImageUrl(item.cloudinaryPublicId, 300, 300)
             : item.imageUrl || '/images/placeholder.png';
 
           return (
             <div key={item.id} className={styles.itemCard}>
-              <Image
-                src={src}
-                alt={item.title}
-                width={300}
-                height={200}
-                className={styles.thumbnail}
-              />
+              <div
+                style={{
+                  position: 'relative',
+                  width: 300,
+                  height: 300,
+                  margin: '0 auto',
+                }}
+              >
+                <Image
+                  src={src}
+                  alt={item.title}
+                  fill
+                  style={{ objectFit: 'cover', borderRadius: '0.5rem' }}
+                  unoptimized
+                />
+              </div>
               <div className={styles.meta}>
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>

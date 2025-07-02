@@ -4,7 +4,7 @@
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import styles from "./ItemDetailPage.module.css"; // re‐use existing CSS
+import styles from "./ItemDetailPage.module.css"; // re-use existing CSS
 
 import type { MenuItem as MenuItemType } from "@/utils/types";
 import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";

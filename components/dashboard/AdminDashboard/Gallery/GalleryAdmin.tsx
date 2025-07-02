@@ -1,13 +1,16 @@
+// File: components/GalleryAdmin/GalleryAdmin.tsx
 "use client";
 
 import React, { useState, useEffect, FormEvent } from "react";
 import Image from "next/image";
 import styles from "./GalleryAdmin.module.css";
 import { toast } from "react-toastify";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
 interface GalleryImage {
   id: number;
-  src: string;
+  url?: string;                  // legacy/public-folder URL
+  cloudinaryPublicId?: string;   // new Cloudinary ID
   alt: string;
   title: string;
   description: string;
@@ -25,10 +28,11 @@ const GalleryAdmin: React.FC = () => {
     try {
       const res = await fetch("/api/gallery");
       if (!res.ok) throw new Error("Failed to fetch images");
-      const data = await res.json();
+      const data: GalleryImage[] = await res.json();
       setImages(data);
     } catch (error) {
       console.error("Error fetching images:", error);
+      toast.error("Could not load gallery images.");
     }
   };
 
@@ -43,6 +47,7 @@ const GalleryAdmin: React.FC = () => {
       return;
     }
     setLoading(true);
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append(
@@ -65,13 +70,15 @@ const GalleryAdmin: React.FC = () => {
         setDescription("");
         fetchImages();
       } else {
-        toast.error("Failed to upload image.");
+        const err = await res.json();
+        toast.error(`Upload failed: ${err.error || "Unknown error"}`);
       }
     } catch (error) {
       console.error(error);
       toast.error("An error occurred during upload.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleDelete = async (id: number) => {
@@ -99,9 +106,7 @@ const GalleryAdmin: React.FC = () => {
             type="file"
             accept="image/*"
             onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                setFile(e.target.files[0]);
-              }
+              if (e.target.files?.[0]) setFile(e.target.files[0]);
             }}
             required
           />
@@ -111,7 +116,7 @@ const GalleryAdmin: React.FC = () => {
           <input
             type="text"
             value={alt}
-            placeholder="Enter key words here separated by commas for better Google search"
+            placeholder="Enter keywords for SEO"
             onChange={(e) => setAlt(e.target.value)}
             required
           />
@@ -137,23 +142,33 @@ const GalleryAdmin: React.FC = () => {
           {loading ? "Uploading..." : "Upload Image"}
         </button>
       </form>
+
       <div className={styles.imageList}>
-        {images.map((img) => (
-          <div key={img.id} className={styles.imageItem}>
-            <Image
-              src={img.src}
-              alt={img.alt}
-              width={300}
-              height={200}
-              className={styles.galleryImage}
-            />
-            <div className={styles.meta}>
-              <h3>{img.title}</h3>
-              <p>{img.description}</p>
+        {images.map((img) => {
+          const src = img.cloudinaryPublicId
+            ? getCloudinaryImageUrl(img.cloudinaryPublicId, 300, 200)
+            : img.url || "/images/placeholder.png";
+
+          return (
+            <div key={img.id} className={styles.imageItem}>
+              <div style={{ position: "relative", width: 300, height: 200 }}>
+                <Image
+                  src={src}
+                  alt={img.alt}
+                  fill
+                  style={{ objectFit: "cover" }}
+                  unoptimized
+                  className={styles.galleryImage}
+                />
+              </div>
+              <div className={styles.meta}>
+                <h3>{img.title}</h3>
+                <p>{img.description}</p>
+              </div>
+              <button onClick={() => handleDelete(img.id)}>Delete</button>
             </div>
-            <button onClick={() => handleDelete(img.id)}>Delete</button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

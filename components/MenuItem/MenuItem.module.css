@@ -22,11 +22,13 @@
 }
 
 /* ================================================================== */
-/*  Image container (forced square)                                   */
+/*  Image container (forced square, max 300×300, centered)            */
 /* ================================================================== */
 .photo {
   position: relative;
   width: 100%;
+  max-width: 300px;                /* cap at preview size */
+  margin: 0 auto;                  /* center within card */
   aspect-ratio: 1 / 1;             /* 1:1 square */
   overflow: hidden;
 }

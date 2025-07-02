@@ -44,8 +44,8 @@ export default function MenuItem({
   const src = item.cloudinaryPublicId
     ? getCloudinaryImageUrl(item.cloudinaryPublicId, IMAGE_SIZE, IMAGE_SIZE)
     : item.imageUrl
-    ? item.imageUrl
-    : item.image || "";
+      ? item.imageUrl
+      : item.image || "";
 
   /* ----------------------- click handler -------------------------- */
   function handleAddClick() {

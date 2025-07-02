@@ -1,4 +1,5 @@
 // File: app/api/gallery/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import formidable from "formidable";
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     const stream = bufferToStream(buf);
 
     // attach headers so Formidable can parse multipart boundaries
-    (stream as any).headers = Object.fromEntries(
+    ;(stream as any).headers = Object.fromEntries(
       request.headers.entries()
     );
 
