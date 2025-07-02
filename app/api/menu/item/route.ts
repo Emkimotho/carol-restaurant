@@ -1,16 +1,13 @@
 /* ------------------------------------------------------------------ */
 /*  File: app/api/menu/item/route.ts                                  */
 /* ------------------------------------------------------------------ */
-/*  • GET  /api/menu/item        → list items w/ nesting               */
-/*  • POST /api/menu/item        → create item (cloverItemId optional) */
+/*  • GET  /api/menu/item        → list items w/ nesting             */
+/*  • POST /api/menu/item        → create item (with Cloudinary IDs) */
 /* ------------------------------------------------------------------ */
 
-import { NextResponse } from "next/server";
-import { prisma }       from "@/lib/prisma";
+import { NextResponse, NextRequest } from "next/server";
+import { prisma }                   from "@/lib/prisma";
 
-/* ================================================================== */
-/*  GET  /api/menu/item                                               */
-/* ================================================================== */
 export async function GET() {
   try {
     const items = await prisma.menuItem.findMany({
@@ -38,23 +35,21 @@ export async function GET() {
   }
 }
 
-/* ================================================================== */
-/*  POST /api/menu/item                                               */
-/* ================================================================== */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     const {
       title,
       description,
       price,
-      image,
       hasSpiceLevel,
       showInGolfMenu,
       categoryId,
       optionGroups,
       cloverItemId,
       stock,
+      cloudinaryPublicId,  // renamed from publicId
+      imageUrl,            // renamed from secureUrl
     } = data;
 
     /* -------- basic validation ------------------------------------ */
@@ -67,9 +62,15 @@ export async function POST(request: Request) {
     if (!categoryId || typeof categoryId !== "string") {
       return NextResponse.json({ message: "categoryId is required" }, { status: 400 });
     }
-    if (cloverItemId !== undefined && typeof cloverItemId !== "string") {
+    if (cloudinaryPublicId && typeof cloudinaryPublicId !== "string") {
       return NextResponse.json(
-        { message: "cloverItemId, if provided, must be a string" },
+        { message: "cloudinaryPublicId, if provided, must be a string" },
+        { status: 400 }
+      );
+    }
+    if (imageUrl && typeof imageUrl !== "string") {
+      return NextResponse.json(
+        { message: "imageUrl, if provided, must be a string" },
         { status: 400 }
       );
     }
@@ -122,13 +123,14 @@ export async function POST(request: Request) {
         title,
         description,
         price,
-        image,
-        hasSpiceLevel:  Boolean(hasSpiceLevel),
-        showInGolfMenu: Boolean(showInGolfMenu),
+        hasSpiceLevel:       Boolean(hasSpiceLevel),
+        showInGolfMenu:      Boolean(showInGolfMenu),
         categoryId,
-        cloverItemId: cloverItemId ?? null, // now optional
-        stock: stock ?? 0,
-        optionGroups: optionGroupsCreate,
+        cloverItemId:        cloverItemId ?? null,
+        stock:               stock ?? 0,
+        optionGroups:        optionGroupsCreate,
+        cloudinaryPublicId:  cloudinaryPublicId ?? null,
+        imageUrl:            imageUrl ?? null,
       },
       include: {
         category: true,

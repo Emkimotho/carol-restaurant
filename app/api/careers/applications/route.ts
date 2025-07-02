@@ -1,112 +1,128 @@
-/* =======================================================================
-   File: app/api/careers/applications/route.ts
-   -----------------------------------------------------------------------
-   • GET  – return all applications (unchanged)
-   • POST – now handles BOTH JSON *and* multipart/form-data:
-       – Accepts <input type="file" name="resumeUrl"> (or "attachment")
-       – Saves the file to /public/uploads/resumes
-       – Persists the public URL in Prisma
-       – Fires e-mails to the applicant and HR
-   ---------------------------------------------------------------------- */
+// File: app/api/careers/applications/route.ts
 
-import { NextResponse } from "next/server";
-import { prisma }       from "@/lib/prisma";
-import sendEmail        from "@/services/EmailService";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma }                  from "@/lib/prisma";
+import sendEmail                   from "@/services/EmailService";
+import { v2 as cloudinary }        from "cloudinary";
 
-import fs   from "fs/promises";
-import path from "path";
-import { v4 as uuid } from "uuid";
+export const config = { api: { bodyParser: false } };
 
-/* Where résumé files will live (under /public so Next can serve them) */
-const UPLOAD_DIR = path.join(process.cwd(), "public/uploads/resumes");
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key:    process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
+});
 
-/* =================================================================== */
-/*  GET /api/careers/applications                                      */
-/* =================================================================== */
-export async function GET() {
+/* ===================================================================
+   GET /api/careers/applications
+   =================================================================== */
+export async function GET(_: NextRequest) {
   try {
     const applications = await prisma.application.findMany({
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json({ applications });
+    return NextResponse.json({ applications }, { status: 200 });
   } catch (err: any) {
     console.error("[GET /applications] error:", err);
     return NextResponse.json(
-      { message: err.message ?? "Internal server error" },
+      { message: "Internal server error" },
       { status: 500 }
     );
   }
 }
 
-/* =================================================================== */
-/*  POST /api/careers/applications                                     */
-/* =================================================================== */
-export async function POST(request: Request) {
-  try {
-    const cType = request.headers.get("content-type") || "";
+/* ===================================================================
+   POST /api/careers/applications
+   • Accepts JSON or multipart/form-data
+   • Uploads resume to Cloudinary via data URI (supports images, PDFs,
+     Word, Excel, etc.)
+   • Persists the secure URL in Prisma
+   • Sends emails to applicant and HR
+   =================================================================== */
+export async function POST(request: NextRequest) {
+  const contentType = request.headers.get("content-type") || "";
 
-    /* ───────────── 1. Extract fields ───────────── */
-    let firstName: string | undefined;
-    let lastName:  string | undefined;
-    let email:     string | undefined;
-    let jobTitle:  string | undefined;
-    let resumeUrl: string | undefined;
+  let firstName: string;
+  let lastName:  string;
+  let email:     string;
+  let jobTitle:  string;
+  let resumeUrl: string;
 
-    /* -- A) JSON ---------------------------------------------------------------- */
-    if (cType.includes("application/json")) {
-      ({ firstName, lastName, email, jobTitle, resumeUrl } = await request.json());
-    }
-
-    /* -- B) multipart/form-data -------------------------------------------------- */
-    else if (cType.includes("multipart/form-data")) {
-      const form = await request.formData();
-
-      firstName = form.get("firstName") as string | undefined;
-      lastName  = form.get("lastName")  as string | undefined;
-      email     = form.get("email")     as string | undefined;
-      jobTitle  = form.get("jobTitle")  as string | undefined;
-
-      /* Accept either <input name="resumeUrl"> or "attachment" for the file */
-      const file = (form.get("resumeUrl") || form.get("attachment")) as
-        | File
-        | string
-        | null;
-
-      if (typeof file === "string") {
-        /* Front-end already sent a URL – keep it */
-        resumeUrl = file;
-      } else if (file instanceof File) {
-        /* Save the uploaded file to /public/uploads/resumes */
-        await fs.mkdir(UPLOAD_DIR, { recursive: true });
-
-        const ext = path.extname(file.name) || ".bin";
-        const filename = `${uuid()}${ext}`;
-        const filepath = path.join(UPLOAD_DIR, filename);
-
-        /* Write file contents */
-        const buffer = Buffer.from(await file.arrayBuffer());
-        await fs.writeFile(filepath, buffer);
-
-        /* Public URL that <a href> can open */
-        resumeUrl = `/uploads/resumes/${filename}`;
-      }
-    } else {
+  /* -------- JSON payload -------- */
+  if (contentType.includes("application/json")) {
+    try {
+      const body = await request.json();
+      ({ firstName, lastName, email, jobTitle, resumeUrl } = body);
+    } catch (err: any) {
       return NextResponse.json(
-        { error: "Unsupported Content-Type" },
-        { status: 415 }
+        { message: "Invalid JSON body" },
+        { status: 400 }
       );
     }
+  }
+  /* -------- multipart/form-data payload -------- */
+  else if (contentType.includes("multipart/form-data")) {
+    const form = await request.formData();
 
-    /* ───────────── 2. Validation ───────────── */
-    if (!firstName || !lastName || !email || !jobTitle || !resumeUrl) {
+    firstName = form.get("firstName")?.toString() ?? "";
+    lastName  = form.get("lastName")?.toString()  ?? "";
+    email     = form.get("email")?.toString()     ?? "";
+    jobTitle  = form.get("jobTitle")?.toString()  ?? "";
+
+    // file input field may be named "resumeUrl" or "attachment"
+    const file =
+      (form.get("resumeUrl")  as File | null) ||
+      (form.get("attachment") as File | null);
+
+    if (!file) {
       return NextResponse.json(
-        { error: "Missing one or more required fields" },
+        { message: "No file uploaded" },
         { status: 400 }
       );
     }
 
-    /* ───────────── 3. Save to Prisma ───────────── */
-    const application = await prisma.application.create({
+    // Read file into Buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer      = Buffer.from(arrayBuffer);
+
+    // Build a data URI so Cloudinary can detect raw vs image automatically
+    const dataUri = `data:${file.type};base64,${buffer.toString("base64")}`;
+
+    try {
+      const result: any = await cloudinary.uploader.upload(dataUri, {
+        folder:        "resumes",
+        resource_type: "auto",
+      });
+      resumeUrl = result.secure_url;
+    } catch (uploadErr: any) {
+      console.error("[Cloudinary] upload error:", uploadErr);
+      return NextResponse.json(
+        { message: "Failed to upload resume" },
+        { status: 500 }
+      );
+    }
+  }
+  /* -------- unsupported content type -------- */
+  else {
+    return NextResponse.json(
+      { message: "Unsupported Content-Type" },
+      { status: 415 }
+    );
+  }
+
+  /* -------- validation -------- */
+  if (!firstName || !lastName || !email || !jobTitle || !resumeUrl) {
+    return NextResponse.json(
+      { message: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
+  /* -------- save to database -------- */
+  let application;
+  try {
+    application = await prisma.application.create({
       data: {
         applicantName: `${firstName} ${lastName}`,
         email,
@@ -114,39 +130,37 @@ export async function POST(request: Request) {
         resumeUrl,
       },
     });
-
-    /* ───────────── 4. E-mail notifications (fire-and-forget) ───────────── */
-    const applicantSubj = `Your application for ${jobTitle}`;
-    const applicantHtml = `
-      <p>Hi ${firstName},</p>
-      <p>Thank you for applying for the <strong>${jobTitle}</strong> position at 19th-Hole Restaurant.
-         Our hiring team will review your application and contact you soon.</p>
-      <p>Best regards,<br/>19th-Hole HR Team</p>
-    `;
-    sendEmail(email, applicantSubj, applicantSubj, applicantHtml).catch(console.error);
-
-    const hrEmail = process.env.ADMIN_EMAIL;
-    if (hrEmail) {
-      const hrSubj = `New application – ${firstName} ${lastName} (${jobTitle})`;
-      const hrHtml = `
-        <p>A new job application has been submitted.</p>
-        <ul>
-          <li><strong>Name:</strong> ${firstName} ${lastName}</li>
-          <li><strong>Email:</strong> ${email}</li>
-          <li><strong>Job Title:</strong> ${jobTitle}</li>
-          <li><strong>Résumé:</strong> <a href="${resumeUrl}">View</a></li>
-        </ul>
-      `;
-      sendEmail(hrEmail, hrSubj, hrSubj, hrHtml).catch(console.error);
-    }
-
-    /* ───────────── 5. Respond OK ───────────── */
-    return NextResponse.json(application);
-  } catch (err: any) {
-    console.error("[POST /applications] error:", err);
+  } catch (dbErr: any) {
+    console.error("[POST /applications] prisma error:", dbErr);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { message: "Database error" },
       { status: 500 }
     );
   }
+
+  /* -------- email notifications -------- */
+  const subjA = `Your application for ${jobTitle}`;
+  const htmlA = `
+    <p>Hi ${firstName},</p>
+    <p>Thank you for applying for the <strong>${jobTitle}</strong> position. We will review your application and contact you soon.</p>
+    <p>Best regards,<br/>19th-Hole HR Team</p>
+  `;
+  sendEmail(email, subjA, subjA, htmlA).catch(console.error);
+
+  const hrEmail = process.env.ADMIN_EMAIL;
+  if (hrEmail) {
+    const subjHR = `New application – ${firstName} ${lastName}`;
+    const htmlHR = `
+      <p>A new job application has been submitted:</p>
+      <ul>
+        <li><strong>Name:</strong> ${firstName} ${lastName}</li>
+        <li><strong>Email:</strong> ${email}</li>
+        <li><strong>Position:</strong> ${jobTitle}</li>
+        <li><strong>Résumé:</strong> <a href="${resumeUrl}">Download</a></li>
+      </ul>
+    `;
+    sendEmail(hrEmail, subjHR, subjHR, htmlHR).catch(console.error);
+  }
+
+  return NextResponse.json({ application }, { status: 201 });
 }

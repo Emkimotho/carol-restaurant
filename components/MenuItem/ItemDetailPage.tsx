@@ -1,3 +1,5 @@
+// File: components/MenuItem/ItemDetailPage.tsx
+
 "use client";
 
 import React from "react";
@@ -7,19 +9,20 @@ import styles from "./ItemDetailPage.module.css";
 import { useItemDetail } from "./useItemDetail";
 import RecommendationsSection from "./RecommendationsSection";
 import type { MenuItem as MenuItemType } from "@/utils/types";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
-/* ------------------------------------------------------------------ */
-/*  Props – now only sameCategory (+ item & isPreview)                 */
-/* ------------------------------------------------------------------ */
 interface ItemDetailPageProps {
-  item: MenuItemType;
-  sameCategory?: MenuItemType[];   // dynamic suggestions
+  item: MenuItemType & {
+    cloudinaryPublicId?: string;
+    imageUrl?: string;
+  };
+  sameCategory?: (MenuItemType & {
+    cloudinaryPublicId?: string;
+    imageUrl?: string;
+  })[];
   isPreview?: boolean;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Component                                                          */
-/* ------------------------------------------------------------------ */
 export default function ItemDetailPage({
   item,
   sameCategory = [],
@@ -29,32 +32,48 @@ export default function ItemDetailPage({
   const {
     router,
     searchParams,
-    quantity, handleQuantityIncrease, handleQuantityDecrease,
-    spiceLevel, setSpiceLevel,
-    specialInstructions, setSpecialInstructions,
-    selectedOptions, handleOptionChange, handleNestedOptionChange,
-    calculateTotalPrice, handleAddToCart, handleBackToMenu,
+    quantity,
+    handleQuantityIncrease,
+    handleQuantityDecrease,
+    spiceLevel,
+    setSpiceLevel,
+    specialInstructions,
+    setSpecialInstructions,
+    selectedOptions,
+    handleOptionChange,
+    handleNestedOptionChange,
+    calculateTotalPrice,
+    handleAddToCart,
+    handleBackToMenu,
   } = useItemDetail(item, isPreview);
 
   /* Local helpers */
   const provenance = (searchParams.get("from") || "").toLowerCase();
   const recommendations = sameCategory.filter((m) => m.id !== item.id);
 
-  /* ----------------------------------------------------------------
-   *  JSX – image, options, pricing, quantity, instructions, buttons
-   *  (all original logic retained)
-   * ---------------------------------------------------------------- */
+  /* Build Cloudinary-backed image src or fallback to any existing URL */
+  const IMAGE_WIDTH = 500;
+  const IMAGE_HEIGHT = 400;
+  const src = item.cloudinaryPublicId
+    ? getCloudinaryImageUrl(item.cloudinaryPublicId, IMAGE_WIDTH, IMAGE_HEIGHT)
+    : item.imageUrl
+    ? item.imageUrl
+    : item.image || "";
+
+  // Debug: log the computed image URL
+  console.log("📸 ItemDetailPage image src →", src);
+
   return (
     <div className={styles.detailPageContainer}>
       <div className={styles.mainContent}>
         {/* ——— Image ——— */}
         <div className={styles.imageContainer}>
-          {item.image && (
+          {src && (
             <Image
-              src={item.image}
+              src={src}
               alt={item.title}
-              width={500}
-              height={400}
+              width={IMAGE_WIDTH}
+              height={IMAGE_HEIGHT}
               unoptimized
               className={styles.itemImage}
             />
@@ -266,7 +285,7 @@ export default function ItemDetailPage({
                 onClick={handleAddToCart}
                 disabled={isPreview}
               >
-                {isPreview ? "Add to Cart" : "Add to Cart"}
+                Add to Cart
               </button>
             </div>
             <button
@@ -274,13 +293,13 @@ export default function ItemDetailPage({
               className={styles.btnBackToMenu}
               onClick={handleBackToMenu}
             >
-              {isPreview ? "Back to Menu" : "Back"}
+              Back
             </button>
           </div>
         </div>
       </div>
 
-                      {/* ---------- Recommendations ---------- */}
+      {/* ---------- Recommendations ---------- */}
       {recommendations.length > 0 && (
         <RecommendationsSection
           title="You may also like ..."

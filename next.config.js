@@ -33,6 +33,7 @@ const nextConfig = {
   /* 2 — Image optimisation
        Use remotePatterns to allow <Image> to fetch from these hosts */
   images: {
+    // for Next 13+, remotePatterns is preferred
     remotePatterns: [
       {
         protocol: "https",
@@ -46,8 +47,10 @@ const nextConfig = {
         port: "",
         pathname: "/**",
       },
-      // add more remotePatterns entries as needed
+      // add more as-needed
     ],
+    // you can still whitelist simple domains if you like
+    domains: ["res.cloudinary.com", "images.ctfassets.net"],
   },
 
   /* 3 — Output target (ideal for Docker / standalone hosting) */

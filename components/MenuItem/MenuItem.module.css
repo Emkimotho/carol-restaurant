@@ -1,12 +1,10 @@
-/* ------------------------------------------------------------------ */
-/*  File: components/MenuItem/MenuItem.module.css                     */
-/* ------------------------------------------------------------------ */
+/* File: components/MenuItem/MenuItem.module.css */
 
 /* ================================================================== */
 /*  Card container                                                    */
 /* ================================================================== */
 .container {
-  position: relative;              /* NEW → for ribbon / badges      */
+  position: relative;              /* for ribbon / badges */
   display: flex;
   flex-direction: column;
   background-color: var(--white);
@@ -14,29 +12,30 @@
   border-radius: 8px;
   overflow: hidden;
   transition: box-shadow 0.3s ease, transform 0.2s ease;
-  min-height: 420px;               /* ★ new → keeps grid even        */
-  cursor: pointer;                 /* ★ new → entire card clickable  */
+  min-height: 420px;               /* keeps grid even */
+  cursor: pointer;                 /* entire card clickable */
 }
 
 .container:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);     /* ★ new subtle lift on hover     */
+  transform: translateY(-2px);     /* subtle lift */
 }
 
 /* ================================================================== */
-/*  Image container (forced 300 × 300)                                */
+/*  Image container (forced square)                                   */
 /* ================================================================== */
 .photo {
+  position: relative;
   width: 100%;
+  aspect-ratio: 1 / 1;             /* 1:1 square */
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .photo img {
-  width: 300px;
-  height: 300px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
 }
@@ -56,7 +55,7 @@
 }
 
 .title {
-  font-size: clamp(1.2rem, 1.6vw, 1.5rem);   /* ★ updated – responsive */
+  font-size: clamp(1.2rem, 1.6vw, 1.5rem); /* responsive */
   color: var(--primary-color);
   margin-bottom: 0.5rem;
   font-family: var(--font-heading);
@@ -64,7 +63,7 @@
 
 .description {
   font-size: 1rem;
-  color: var(--gray, #666);                  /* ★ fallback colour      */
+  color: var(--gray, #666);        /* fallback color */
   flex-grow: 1;
   font-family: var(--font-body);
 }
@@ -88,12 +87,10 @@
   cursor: pointer;
   width: 100%;
   text-align: center;
-  transition:
-    background-color 0.3s ease,
-    transform        0.3s ease;
+  transition: background-color 0.3s ease, transform 0.3s ease;
   font-family: var(--font-body);
-  outline: 2px solid transparent;           /* ★ new – focus ring base */
-  outline-offset: 2px;                      /* ★ new */
+  outline: 2px solid transparent;  /* focus ring base */
+  outline-offset: 2px;
 }
 
 .btnAddToCart:hover {
@@ -107,7 +104,7 @@
   transform: none;
 }
 
-.btnAddToCart:focus-visible {               /* ★ new – accessibility  */
+.btnAddToCart:focus-visible {      /* accessibility */
   outline: 2px dashed var(--primary-color);
 }
 
@@ -123,14 +120,12 @@
 }
 
 /* ================================================================== */
-/*  2-button popup styles (kept intact)                               */
+/*  2-button popup styles                                             */
 /* ================================================================== */
 .orderChoiceOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.5);
   z-index: 9999;
   display: flex;
@@ -139,7 +134,7 @@
 }
 
 .orderChoiceModal {
-  background: #fff;
+  background: var(--white);
   border-radius: 8px;
   padding: 2rem 1.5rem;
   width: 95%;
@@ -158,7 +153,7 @@
 
 .orderChoiceModal p {
   font-size: 1rem;
-  color: var(--dark-gray, #444);           /* ★ fallback */
+  color: var(--dark-gray, #444);   /* fallback */
   margin-bottom: 1.5rem;
   line-height: 1.4;
   font-family: var(--font-body);
@@ -180,29 +175,29 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s ease, transform 0.3s ease;
-  outline: 2px solid transparent;         /* ★ new focus-ring base    */
+  outline: 2px solid transparent;  /* focus-ring base */
   outline-offset: 2px;
 }
 
 .btnChoice {
   background-color: var(--secondary-color);
-  color: #fff;
+  color: var(--white);
 }
 .btnChoice:hover {
   background-color: var(--secondary-color-hover);
   transform: scale(1.03);
 }
 .btnChoice:focus-visible,
-.btnCloseChoice:focus-visible {           /* ★ new */
+.btnCloseChoice:focus-visible {
   outline: 2px dashed var(--secondary-color);
 }
 
 .btnCloseChoice {
-  background-color: #666;
-  color: #fff;
+  background-color: var(--dark-gray, #666);
+  color: var(--white);
 }
 .btnCloseChoice:hover {
-  background-color: #555;
+  background-color: var(--dark-gray-hover, #555);
   transform: scale(1.02);
 }
 
@@ -211,10 +206,8 @@
 /* ================================================================== */
 .golfBadge {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 32px;
-  height: 32px;
+  top: 8px; left: 8px;
+  width: 32px; height: 32px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
   display: flex;
@@ -226,7 +219,7 @@
 }
 
 .golfBadgeRed {
-  color: var(--secondary-color);          /* sleek red */
+  color: var(--secondary-color);
 }
 
 /* ================================================================== */
@@ -234,9 +227,8 @@
 /* ================================================================== */
 .soldOut {
   position: absolute;
-  top: 10px;
-  right: -35px;
-  background: #dc2626;                    /* Tailwind red-600 */
+  top: 10px; right: -35px;
+  background: #dc2626;              /* red-600 */
   color: #fff;
   padding: 0.25rem 2.1rem;
   font-size: 0.75rem;
@@ -246,7 +238,7 @@
   z-index: 2;
 }
 
-@media (max-width: 350px) {               /* ★ new small-card tweak   */
+@media (max-width: 350px) {
   .soldOut {
     font-size: 0.65rem;
     padding: 0.2rem 1.6rem;
@@ -259,10 +251,10 @@
 .spicy {
   margin-left: 0.3rem;
   font-size: 0.9rem;
-  vertical-align: text-top;              /* ★ aligns with baseline   */
+  vertical-align: text-top;         /* aligns baseline */
 }
 
 /* ================================================================== */
 /*  Fade-in utility (referenced by Menu.module.css)                   */
 /* ================================================================== */
-/* (No changes here – kept for future reference) */
+/* (unchanged) */

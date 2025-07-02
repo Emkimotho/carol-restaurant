@@ -83,23 +83,27 @@ export async function PUT(
       title?: string;
       description?: string;
       price?: number;
-      image?: string;
       hasSpiceLevel?: boolean;
       showInGolfMenu?: boolean;
       categoryId?: string;
       stock?: number;
       isAlcohol?: boolean;
+      cloudinaryPublicId?: string;
+      imageUrl?: string;
     } = {};
 
     if (body.title          !== undefined) updateData.title          = String(body.title).trim();
     if (body.description    !== undefined) updateData.description    = String(body.description);
     if (body.price          !== undefined) updateData.price          = Number(body.price);
-    if (body.image          !== undefined) updateData.image          = String(body.image);
     if (body.hasSpiceLevel  !== undefined) updateData.hasSpiceLevel  = Boolean(body.hasSpiceLevel);
     if (body.showInGolfMenu !== undefined) updateData.showInGolfMenu = Boolean(body.showInGolfMenu);
     if (body.categoryId     !== undefined) updateData.categoryId     = String(body.categoryId);
     if (body.stock          !== undefined) updateData.stock          = Number(body.stock);
-    if (body.hasAlcohol     !== undefined) updateData.isAlcohol      = Boolean(body.hasAlcohol);
+    if (body.isAlcohol      !== undefined) updateData.isAlcohol      = Boolean(body.isAlcohol);
+
+    // **New**: handle Cloudinary image fields
+    if (body.cloudinaryPublicId !== undefined) updateData.cloudinaryPublicId = String(body.cloudinaryPublicId);
+    if (body.imageUrl           !== undefined) updateData.imageUrl           = String(body.imageUrl);
 
     /* -------- normalize incoming optionGroups data ---------------- */
     type IncomingNestedChoice = {
@@ -281,7 +285,7 @@ export async function PUT(
                 label:           choice.label,
                 priceAdjustment: choice.priceAdjustment ?? 0,
               },
-            });  
+            });
             const nested = choice.nestedOptionGroup;
             const newNested = await prisma.nestedOptionGroup.create({
               data: {
@@ -345,9 +349,7 @@ export async function PUT(
               for (const enc of existingNested.filter(
                 (e) => !incomingNestedIds.includes(e.id)
               )) {
-                await prisma.nestedOptionChoice.delete({
-                  where: { id: enc.id },
-                });
+                await prisma.nestedOptionChoice.delete({ where: { id: enc.id } });
               }
               for (const nc of ng.choices) {
                 if (!nc.id) {
@@ -392,9 +394,7 @@ export async function PUT(
               prisma.nestedOptionChoice.deleteMany({
                 where: { nestedGroupId: dbChoice.nestedOptionGroup.id },
               }),
-              prisma.nestedOptionGroup.delete({
-                where: { id: dbChoice.nestedOptionGroup.id },
-              }),
+              prisma.nestedOptionGroup.delete({ where: { id: dbChoice.nestedOptionGroup.id } }),
             ]);
           }
         }

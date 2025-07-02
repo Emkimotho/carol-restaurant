@@ -62,19 +62,29 @@ export interface MenuItemOptionGroup {
  * A menu item available for ordering.
  */
 export interface MenuItem {
-  id:             string;
-  title:          string;
-  description?:   string;
-  price:          number;
-  image?:         string;
-  hasSpiceLevel:  boolean;
+  id:                   string;
+  title:                string;
+  description?:         string;
+  price:                number;
+
+  /** Legacy image URL (e.g., before Cloudinary) */
+  image?:               string;
+  /** Secure URL returned by Cloudinary upload */
+  imageUrl?:            string;
+  /** Public ID for Cloudinary transforms */
+  cloudinaryPublicId?:  string;
+
+  hasSpiceLevel:        boolean;
   /** Matches Prisma's `isAlcohol` field */
-  isAlcohol:      boolean;
-  showInGolfMenu?: boolean;
-  category:       MenuCategory;
-  optionGroups?:  MenuItemOptionGroup[];
-  cloverItemId?:   string;  
-  stock:          number;
+  isAlcohol:            boolean;
+  showInGolfMenu?:      boolean;
+
+  category:             MenuCategory;
+  optionGroups?:        MenuItemOptionGroup[];
+
+  /** Optional Clover sync identifier */
+  cloverItemId?:        string;
+  stock:                number;
 }
 
 /**

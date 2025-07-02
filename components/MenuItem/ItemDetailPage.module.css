@@ -26,12 +26,13 @@
   overflow: hidden;
   border-radius: 10px;
   box-shadow: var(--box-shadow-primary);
+  aspect-ratio: 5 / 4;       /* enforce 500×400 ratio */
 }
 
 .itemImage {
   width: 100%;
-  height: auto;
-  object-fit: cover;
+  height: 100%;             /* fill the container */
+  object-fit: cover;        /* crop and cover */
 }
 
 /* Right column: info */
@@ -77,7 +78,7 @@
   font-size: 0.95rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem; /* increased spacing for larger inputs */
+  gap: 0.75rem;
 }
 
 /* Checkbox & radio sizing */
@@ -176,6 +177,7 @@
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
+
 .btnCircle:hover {
   background-color: var(--primary-color);
   transform: scale(1.05);
@@ -292,6 +294,7 @@
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease;
 }
+
 .btnBackToMenu:hover {
   background-color: var(--secondary-color-hover);
   transform: scale(1.03);
@@ -328,6 +331,7 @@
   border-radius: 50%;
   transition: transform 0.3s ease;
 }
+
 .drinkImage:hover {
   transform: scale(1.1);
 }

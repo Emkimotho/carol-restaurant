@@ -1,23 +1,29 @@
 /* ------------------------------------------------------------------ */
 /*  File: components/MenuItem/MenuItem.tsx                            */
 /* ------------------------------------------------------------------ */
-/*  • Red ⛳︎ badge for Golf‑menu cards (prop‑driven)                  */
-/*  • “Sold out” ribbon when stock === 0                              */
-/*  • 🌶️ icon when hasSpiceLevel === true                            */
-/*  • Closed‑store schedule flow, alt text, price formatting          */
+/*  • Red ⛳︎ badge for Golf-menu cards (prop-driven)                  */
+/*  • “Sold out” ribbon when stock === 0                              */
+/*  • 🌶️ icon when hasSpiceLevel === true                            */
+/*  • Closed-store schedule flow, alt text, price formatting          */
+/*  • Uses Cloudinary public_id via getCloudinaryImageUrl            */
 /* ------------------------------------------------------------------ */
 
 "use client";
 
-import React      from "react";
-import Image      from "next/image";
+import React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import styles     from "./MenuItem.module.css";
+import styles from "./MenuItem.module.css";
 
 import type { MenuItem as MenuItemType } from "@/utils/types";
+// ← updated to import from the client‐safe URL builder
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
 interface MenuItemProps {
-  item: MenuItemType;
+  item: MenuItemType & {
+    cloudinaryPublicId?: string;
+    imageUrl?: string;
+  };
   allowAddToCart: boolean;
   restaurantOpen: boolean;
   onStartOrder?: (itemId: string) => void;
@@ -50,27 +56,35 @@ export default function MenuItem({
 
   const isSoldOut = item.stock === 0;
 
+  // Build the image src: use Cloudinary if we have a publicId, otherwise fallback to imageUrl, then item.image
+  const IMAGE_SIZE = 300;
+  const src = item.cloudinaryPublicId
+    ? getCloudinaryImageUrl(item.cloudinaryPublicId, IMAGE_SIZE, IMAGE_SIZE)
+    : item.imageUrl
+      ? item.imageUrl
+      : item.image || "";
+
   return (
     <div className={styles.container}>
-      {/* Golf‑flag badge (red) */}
+      {/* Golf-flag badge (red) */}
       {showGolfFlag && (
         <div className={`${styles.golfBadge} ${styles.golfBadgeRed}`}>⛳︎</div>
       )}
 
-      {/* Sold‑out ribbon */}
+      {/* Sold-out ribbon */}
       {isSoldOut && <div className={styles.soldOut}>Sold&nbsp;out</div>}
 
       {/* Product photo */}
       <div className={styles.photo}>
-        {item.image && (
+        {src && (
           <Image
-            src={item.image}
+            src={src}
             alt={item.title}
-            width={300}
-            height={300}
+            width={IMAGE_SIZE}
+            height={IMAGE_SIZE}
             className={styles.itemImage}
             placeholder="empty"      /* change to 'blur' if you add a blurDataURL */
-            unoptimized              /* keeping the original behaviour */
+            unoptimized              /* Cloudinary already optimizes */
           />
         )}
       </div>
@@ -101,7 +115,7 @@ export default function MenuItem({
             {isSoldOut ? "Unavailable" : "Start Order"}
           </button>
         ) : (
-          <p className={styles.textMuted}>In‑restaurant purchase only</p>
+          <p className={styles.textMuted}>In-restaurant purchase only</p>
         )}
       </div>
     </div>

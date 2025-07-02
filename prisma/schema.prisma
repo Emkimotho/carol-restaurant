@@ -146,6 +146,8 @@ model MenuItem {
   description    String?
   price          Float
   image          String?
+  cloudinaryPublicId String?   // for SDK‐driven transforms
+  imageUrl           String?   // store the raw secure_url
   hasSpiceLevel  Boolean  @default(false)
   showInGolfMenu Boolean  @default(false)
   isAlcohol      Boolean  @default(false)
@@ -553,6 +555,7 @@ model Application {
   email         String    @default("")
   jobTitle      String
   resumeUrl     String
+  resumePublicId String?   // Cloudinary public_id for any file type
   careerId      String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt

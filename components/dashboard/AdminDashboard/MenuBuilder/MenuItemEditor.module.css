@@ -1,3 +1,8 @@
+/* File: components/dashboard/AdminDashboard/MenuBuilder/MenuItemEditor.module.css */
+
+/* ------------------------------------------------------------------
+   Form container
+   ------------------------------------------------------------------ */
 .form {
   background-color: var(--white);
   padding: 1.5rem;
@@ -11,6 +16,9 @@
   gap: 1rem;
 }
 
+/* ------------------------------------------------------------------
+   Standard field wrapper
+   ------------------------------------------------------------------ */
 .field {
   display: flex;
   flex-direction: column;
@@ -23,6 +31,7 @@
   font-family: var(--font-body);
 }
 
+/* text / number / file inputs, textarea, selects */
 .field input[type="text"],
 .field input[type="number"],
 .field input[type="file"],
@@ -41,10 +50,38 @@
   resize: vertical;
 }
 
+/* ------------------------------------------------------------------
+   Money-input wrapper (dollar sign + input)
+   ------------------------------------------------------------------ */
+.moneyInput {
+  display: flex;
+  align-items: center;
+}
+
+.dollar {
+  font-size: 1rem;
+  margin-right: 0.25rem;
+  color: var(--foreground);
+}
+
+/* ------------------------------------------------------------------
+   Validation error messages
+   ------------------------------------------------------------------ */
+.error {
+  color: var(--error-color, #dc2626);
+  font-size: 0.875rem;
+}
+
+/* ------------------------------------------------------------------
+   Option-groups section
+   ------------------------------------------------------------------ */
 .optionGroups {
   margin-top: 1rem;
 }
 
+/* ------------------------------------------------------------------
+   Primary submit button
+   ------------------------------------------------------------------ */
 .submitButton {
   align-self: flex-start;
   background-color: var(--primary-color);
@@ -54,6 +91,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
+  font-family: var(--font-body);
   transition: background-color 0.3s ease;
 }
 
@@ -61,6 +99,9 @@
   background-color: var(--primary-color-hover);
 }
 
+/* ------------------------------------------------------------------
+   “Add Option Group” button
+   ------------------------------------------------------------------ */
 .addButton {
   background-color: var(--secondary-color);
   color: var(--white);
@@ -68,10 +109,58 @@
   padding: 0.5rem 0.75rem;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.95rem;
+  font-family: var(--font-body);
   margin-top: 0.5rem;
   transition: background-color 0.3s ease;
 }
 
 .addButton:hover {
   background-color: var(--secondary-color-hover);
+}
+
+/* ------------------------------------------------------------------
+   Buttons row (Save & Preview)
+   ------------------------------------------------------------------ */
+.buttonsRow {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* ------------------------------------------------------------------
+   Clear-draft row & button
+   ------------------------------------------------------------------ */
+.clearDraftRow {
+  margin-top: 1rem;
+  text-align: right;
+}
+
+.clearDraftButton {
+  background: transparent;
+  border: none;
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ------------------------------------------------------------------
+   File-upload preview container (if you want custom styling)
+   ------------------------------------------------------------------ */
+.uploadPreview {
+  margin-top: 0.5rem;
+  max-width: 200px;
+}
+
+/* ------------------------------------------------------------------
+   Disabled state for buttons (e.g. while uploading)
+   ------------------------------------------------------------------ */
+.submitButton:disabled,
+.addButton:disabled,
+.clearDraftButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

@@ -1,9 +1,10 @@
 /* ------------------------------------------------------------------ */
 /*  File: components/Menu/Menu.tsx                                    */
 /* ------------------------------------------------------------------ */
-/*  • Keeps track of last‑visited category per section (localStorage). */
+/*  • Keeps track of last-visited category per section (localStorage). */
 /*  • When a user clicks a dish we append  ?from=main  or  ?from=golf  */
-/*    so the Item‑detail page knows which flow to use.                */
+/*    so the Item-detail page knows which flow to use.                */
+/*  • Default to ASAP when store is open (no pop-up).                 */
 /* ------------------------------------------------------------------ */
 
 "use client";
@@ -15,17 +16,17 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import dynamic      from "next/dynamic";
+import dynamic from "next/dynamic";
 import { Tabs, Tab } from "react-bootstrap";
 import { useRouter } from "next/navigation";
-import { toast }     from "react-toastify";
-import styles        from "./Menu.module.css";
+import { toast } from "react-toastify";
+import styles from "./Menu.module.css";
 
-import { useQuery, useQueryClient }       from "@tanstack/react-query";
-import { CartContext }                    from "@/contexts/CartContext";
-import { OpeningHoursContext }            from "@/contexts/OpeningHoursContext";
-import MenuItemComponent                  from "@/components/MenuItem/MenuItem";
-import MenuTimingBar                      from "@/components/MenuTimingBar/MenuTimingBar";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CartContext } from "@/contexts/CartContext";
+import { OpeningHoursContext } from "@/contexts/OpeningHoursContext";
+import MenuItemComponent from "@/components/MenuItem/MenuItem";
+import MenuTimingBar from "@/components/MenuTimingBar/MenuTimingBar";
 import type {
   MenuItem as MenuItemType,
   MenuCategory,
@@ -44,17 +45,17 @@ interface MenuProps {
 
 /* =================================================================== */
 export default function Menu({ slug }: MenuProps) {
-  const router       = useRouter();
-  const queryClient  = useQueryClient();
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   /* ------------------------ context ------------------------------ */
-  const { orderStatus, setOrderStatus, setScheduledTime } =
+  const { setOrderStatus, setScheduledTime } =
     useContext(CartContext)!;
   const { isOpen } = useContext(OpeningHoursContext)!;
 
   /* ------------------------ state -------------------------------- */
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [showModal,      setShowModal]      = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   /* remember last category per section (by id) */
   const [lastCat, setLastCat] = useState<{ MainMenu: string; GolfMenu: string }>(
@@ -64,7 +65,7 @@ export default function Menu({ slug }: MenuProps) {
     try {
       const raw = localStorage.getItem("lastMenuCategories");
       if (raw) setLastCat(JSON.parse(raw));
-    } catch {/* ignore */ }
+    } catch { /* ignore */ }
   }, []);
 
   const persistLast = useCallback(
@@ -104,7 +105,7 @@ export default function Menu({ slug }: MenuProps) {
   const mainItems = useMemo(
     () =>
       menuItems.filter(
-        (m) => m.category?.type === "MainMenu" && m.category.hidden === false
+        (m) => m.category?.type === "MainMenu" && !m.category.hidden
       ),
     [menuItems]
   );
@@ -119,7 +120,7 @@ export default function Menu({ slug }: MenuProps) {
       menuItems.filter(
         (m) =>
           (m.category?.type === "GolfMenu" || m.showInGolfMenu) &&
-          m.category.hidden === false
+          !m.category.hidden
       ),
     [menuItems]
   );
@@ -130,29 +131,29 @@ export default function Menu({ slug }: MenuProps) {
   }, [golfItems]);
 
   /* -------------- routing helpers ------------------------------- */
-  const activeSection  = slug[0] || "MainMenu";
-  const mainDefaultId  = lastCat.MainMenu || mainCats[0]?.id || "";
-  const golfDefaultId  = lastCat.GolfMenu || golfCats[0]?.id || "";
-  const activeCatId    =
+  const activeSection = slug[0] || "MainMenu";
+  const mainDefaultId = lastCat.MainMenu || mainCats[0]?.id || "";
+  const golfDefaultId = lastCat.GolfMenu || golfCats[0]?.id || "";
+  const activeCatId =
     activeSection === "MainMenu"
       ? slug[1] || mainDefaultId
       : slug[1] || golfDefaultId;
 
-  /* -- top‑level tabs (Main vs Golf) -- */
+  /* -- top-level tabs (Main vs Golf) -- */
   const handleSection = (k: string | null) => {
     if (!k) return;
     const catId = k === "MainMenu" ? mainDefaultId : golfDefaultId;
     router.push(`/menu/${k}/${encodeURIComponent(catId)}`);
   };
 
-  /* -- sub‑tabs inside MAIN -- */
+  /* -- sub-tabs inside MAIN -- */
   const handleMain = (id: string | null) => {
     if (!id) return;
     persistLast("MainMenu", id);
     router.push(`/menu/MainMenu/${encodeURIComponent(id)}`);
   };
 
-  /* -- sub‑tabs inside GOLF -- */
+  /* -- sub-tabs inside GOLF -- */
   const handleGolf = (id: string | null) => {
     if (!id) return;
     persistLast("GolfMenu", id);
@@ -160,20 +161,22 @@ export default function Menu({ slug }: MenuProps) {
   };
 
   /* ----------------------------------------------------------------
-   *  Item‑click routing helpers
+   *  Item-click routing helpers
    * ---------------------------------------------------------------- */
-  /* MAIN flow: may show schedule modal if it’s the user’s first time */
+  /* MAIN flow: direct to ASAP if open, otherwise show schedule modal */
   const startMain = (id: string) => {
-    const dest = `/menuitem/${id}?from=main`;
-
     setSelectedItemId(id);
 
-    if (orderStatus !== "none") {
-      router.push(dest);
-      return;
+    if (!isOpen) {
+      // Closed → let user pick ASAP or scheduled time
+      setShowModal(true);
+    } else {
+      // Open → default to ASAP
+      setOrderStatus("asap");
+      setScheduledTime(new Date().toISOString());
+      toast.success("ASAP order set!");
+      router.push(`/menuitem/${id}?schedule=asap&from=main`);
     }
-    /* first‑time users see the modal */
-    setShowModal(true);
   };
 
   /* GOLF flow: always direct (if kitchen open) */
@@ -209,20 +212,24 @@ export default function Menu({ slug }: MenuProps) {
 
   /* --------------------- render ------------------------------- */
   if (isLoading) return <p className="text-center">Loading…</p>;
-  if (error)     return <p className="text-center">Error: {(error as Error).message}</p>;
+  if (error)
+    return <p className="text-center">Error: {(error as Error).message}</p>;
 
   return (
     <div className={`container py-5 ${styles.menuWrapper}`}>
       {activeSection === "MainMenu" && <MenuTimingBar />}
       <h1 className="text-center mb-4">Our Menu</h1>
 
-      <ScheduleOrderModal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        isStoreOpen={isOpen}
-        onASAP={isOpen ? handleASAP : undefined}
-        onSchedule={handleSchedule}
-      />
+      {/* Schedule modal only appears if store is closed */}
+      {!isOpen && (
+        <ScheduleOrderModal
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          isStoreOpen={isOpen}
+          onASAP={handleASAP}
+          onSchedule={handleSchedule}
+        />
+      )}
 
       <Tabs
         activeKey={activeSection}

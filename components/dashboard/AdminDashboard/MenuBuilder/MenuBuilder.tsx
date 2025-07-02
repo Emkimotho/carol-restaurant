@@ -1,7 +1,6 @@
-/* ------------------------------------------------------------------
-   File: components/dashboard/AdminDashboard/MenuBuilder/MenuBuilder.tsx
-
-   • Admin UI for Categories & Items
+// File: components/dashboard/AdminDashboard/MenuBuilder/MenuBuilder.tsx
+/*
+   Admin UI for Categories & Items
    • Supports:
        – selecting category type  (MainMenu | GolfMenu)
        – “Hidden on public menu”  checkbox when creating/editing
@@ -13,12 +12,11 @@
 import React, { useState, useEffect } from "react";
 import CategoryList   from "./CategoryList";
 import MenuItemList   from "./MenuItemList";
-import MenuItemEditor from "./MenuItemEditor";
+import MenuItemForm   from "./MenuItemForm";
 import ItemDetailPage from "@/components/MenuItem/ItemDetailPage";
 import styles         from "./MenuBuilder.module.css";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast }         from "react-toastify";
-
 import type { MenuCategory, MenuItem } from "@/utils/types";
 
 const MenuBuilder: React.FC = () => {
@@ -233,7 +231,7 @@ const MenuBuilder: React.FC = () => {
           )}
         </div>
 
-        <MenuItemEditor
+        <MenuItemForm
           categoryId={selectedCategory}
           editingItem={editingItem}
           onSaved={handleSaved}
@@ -246,7 +244,7 @@ const MenuBuilder: React.FC = () => {
         <div className={styles.previewModal}>
           <div className={styles.previewContent}>
             <ItemDetailPage item={previewItem} isPreview />
-             <button onClick={() => setPreviewItem(null)}>Close Preview</button>
+            <button onClick={() => setPreviewItem(null)}>Close Preview</button>
           </div>
         </div>
       )}
