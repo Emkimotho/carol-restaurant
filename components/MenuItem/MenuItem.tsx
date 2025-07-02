@@ -1,5 +1,4 @@
-/* ------------------------------------------------------------------ */
-/*  File: components/MenuItem/MenuItem.tsx                            */
+// File: components/MenuItem/MenuItem.tsx
 /* ------------------------------------------------------------------ */
 /*  • Red ⛳︎ badge for Golf-menu cards (prop-driven)                  */
 /*  • “Sold out” ribbon when stock === 0                              */
@@ -16,7 +15,6 @@ import { useRouter } from "next/navigation";
 import styles from "./MenuItem.module.css";
 
 import type { MenuItem as MenuItemType } from "@/utils/types";
-// ← updated to import from the client‐safe URL builder
 import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
 interface MenuItemProps {
@@ -39,6 +37,15 @@ export default function MenuItem({
   showGolfFlag = false,
 }: MenuItemProps) {
   const router = useRouter();
+  const isSoldOut = item.stock === 0;
+  const IMAGE_SIZE = 300;
+
+  // Build the image src: use Cloudinary if we have a publicId, otherwise fallback to imageUrl, then item.image
+  const src = item.cloudinaryPublicId
+    ? getCloudinaryImageUrl(item.cloudinaryPublicId, IMAGE_SIZE, IMAGE_SIZE)
+    : item.imageUrl
+    ? item.imageUrl
+    : item.image || "";
 
   /* ----------------------- click handler -------------------------- */
   function handleAddClick() {
@@ -54,16 +61,6 @@ export default function MenuItem({
     }
   }
 
-  const isSoldOut = item.stock === 0;
-
-  // Build the image src: use Cloudinary if we have a publicId, otherwise fallback to imageUrl, then item.image
-  const IMAGE_SIZE = 300;
-  const src = item.cloudinaryPublicId
-    ? getCloudinaryImageUrl(item.cloudinaryPublicId, IMAGE_SIZE, IMAGE_SIZE)
-    : item.imageUrl
-      ? item.imageUrl
-      : item.image || "";
-
   return (
     <div className={styles.container}>
       {/* Golf-flag badge (red) */}
@@ -75,7 +72,7 @@ export default function MenuItem({
       {isSoldOut && <div className={styles.soldOut}>Sold&nbsp;out</div>}
 
       {/* Product photo */}
-      <div className={styles.photo}>
+      <div className={styles.photo} onClick={handleAddClick}>
         {src && (
           <Image
             src={src}

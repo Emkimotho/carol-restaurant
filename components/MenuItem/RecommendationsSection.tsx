@@ -1,15 +1,15 @@
-// File: components/dashboard/AdminDashboard/MenuBuilder/RecommendationsSection.tsx
-
+// File: components/MenuItem/RecommendationsSection.tsx
 "use client";
 
+import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import styles from "./ItemDetailPage.module.css";   // re-use existing CSS
+import styles from "./ItemDetailPage.module.css"; // re‐use existing CSS
 
 import type { MenuItem as MenuItemType } from "@/utils/types";
 import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
-interface Props {
+interface RecommendationsSectionProps {
   /** Heading to display above the thumbnails */
   title: string;
   /** Array of menu items to show (must already exclude the current item) */
@@ -25,23 +25,21 @@ export default function RecommendationsSection({
   title,
   items,
   provenance,
-}: Props) {
+}: RecommendationsSectionProps) {
   const router = useRouter();
-
-  const THUMB_SIZE = 100;
+  const THUMB_SIZE = 150;
 
   return (
     <div className={styles.recommendations}>
       <h3 className={styles.recommendationsTitle}>{title}</h3>
-
       <div className={styles.drinkList}>
         {items.map((rec) => {
-          // build a Cloudinary-backed thumbnail or fallback to any URL
+          // choose Cloudinary thumbnail or fallback
           const src = rec.cloudinaryPublicId
             ? getCloudinaryImageUrl(rec.cloudinaryPublicId, THUMB_SIZE, THUMB_SIZE)
             : rec.imageUrl
-              ? rec.imageUrl
-              : rec.image || "";
+            ? rec.imageUrl
+            : rec.image || "";
 
           return (
             <div
