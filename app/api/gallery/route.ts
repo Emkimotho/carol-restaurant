@@ -17,9 +17,11 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+/**
+ * GET /api/gallery
+ */
 export async function GET() {
   try {
-    // Return all images in ascending creation order
     const images = await prisma.galleryImage.findMany({
       orderBy: { createdAt: "asc" },
       select: {
@@ -42,6 +44,9 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/gallery
+ */
 export async function POST(request: Request) {
   try {
     const form = await request.formData();
@@ -51,25 +56,28 @@ export async function POST(request: Request) {
     const descRaw      = form.get("description");
 
     if (!(fileField instanceof Blob) || !altRaw || !titleRaw || !descRaw) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     const alt         = altRaw.toString().trim();
     const title       = titleRaw.toString().trim();
     const description = descRaw.toString().trim();
 
-    // Convert file blob to a data URI
+    // Convert to data URI
     const arrayBuffer = await fileField.arrayBuffer();
     const buffer      = Buffer.from(arrayBuffer);
     const dataUri     = `data:${fileField.type};base64,${buffer.toString("base64")}`;
 
-    // Upload to Cloudinary into "gallery" folder
+    // Upload
     const uploadResult = await cloudinary.uploader.upload(dataUri, {
-      folder:    "gallery",
+      folder:        "gallery",
       resource_type: "image",
     });
 
-    // Persist in database
+    // Persist in DB, including required cloudinaryPublicId
     const image = await prisma.galleryImage.create({
       data: {
         alt,
@@ -90,30 +98,35 @@ export async function POST(request: Request) {
   }
 }
 
+/**
+ * DELETE /api/gallery?id=#
+ */
 export async function DELETE(request: Request) {
   try {
-    const url    = new URL(request.url);
+    const url     = new URL(request.url);
     const idParam = url.searchParams.get("id");
     if (!idParam) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
     const id = parseInt(idParam, 10);
 
-    // Lookup existing to get its public ID
-    const existing = await prisma.galleryImage.findUnique({ where: { id } });
+    // Find existing record
+    const existing = await prisma.galleryImage.findUnique({
+      where: { id },
+    });
     if (!existing) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
 
-    // Remove from Cloudinary if we have a public ID
-    if (existing.cloudinaryPublicId) {
-      await cloudinary.uploader.destroy(existing.cloudinaryPublicId, {
-        resource_type: "image",
-      });
-    }
+    // Remove from Cloudinary
+    await cloudinary.uploader.destroy(existing.cloudinaryPublicId, {
+      resource_type: "image",
+    });
 
     // Delete DB record
-    const deleted = await prisma.galleryImage.delete({ where: { id } });
+    const deleted = await prisma.galleryImage.delete({
+      where: { id },
+    });
     return NextResponse.json(deleted, { status: 200 });
   } catch (err) {
     console.error("DELETE /api/gallery error:", err);
