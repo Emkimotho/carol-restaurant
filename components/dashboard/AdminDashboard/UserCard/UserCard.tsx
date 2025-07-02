@@ -14,7 +14,7 @@ export interface UserCardProps {
   position?: string;
   roles: string[];  // e.g. ["STAFF","DRIVER","SERVER","CASHIER"]
   status: "ACTIVE" | "SUSPENDED" | "BANNED";
-  photoPublicId?: string;          // now using Cloudinary public ID
+  photoPublicId?: string;          // Cloudinary public ID
   licenseNumber?: string;
   carMakeModel?: string;
   onEdit: () => void;
@@ -46,23 +46,26 @@ const UserCard: React.FC<UserCardProps> = ({
   onDelete,
   onToggleRole,
 }) => {
+  // Build avatar: Cloudinary if available, else placeholder initial
+  const avatar = photoPublicId
+    ? (
+      <div className={styles.avatarWrapper}>
+        <Image
+          src={getCloudinaryImageUrl(photoPublicId, 120, 120)}
+          alt={name}
+          width={120}
+          height={120}
+          className={styles.avatar}
+          unoptimized
+        />
+      </div>
+    )
+    : <div className={styles.avatarPlaceholder}>{name[0]}</div>;
+
   return (
     <div className={styles.card}>
       {/* Avatar */}
-      {photoPublicId ? (
-        <div className={styles.avatarWrapper}>
-          <Image
-            src={getCloudinaryImageUrl(photoPublicId, 120, 120)}
-            alt={name}
-            width={120}
-            height={120}
-            className={styles.avatar}
-            unoptimized
-          />
-        </div>
-      ) : (
-        <div className={styles.avatarPlaceholder}>{name[0]}</div>
-      )}
+      {avatar}
 
       {/* User Info */}
       <div className={styles.info}>

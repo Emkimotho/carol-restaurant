@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import UserCard from "../UserCard/UserCard";
+import UserCard, { UserCardProps } from "../UserCard/UserCard";
 import styles from "./UserManagement.module.css";
 
 interface DbUser {
@@ -15,15 +15,16 @@ interface DbUser {
   status: "ACTIVE" | "SUSPENDED" | "BANNED";
   roles: string[];
   position?: string;
-  staffProfile?: { photoUrl?: string; position?: string };
+  // Now including Cloudinary public IDs:
+  staffProfile?: { photoPublicId?: string; position?: string };
   driverProfile?: {
-    photoUrl?: string;
+    photoPublicId?: string;
     licenseNumber?: string;
     carMakeModel?: string;
   };
 }
 
-const UserManagement: React.FC = () => {
+export default function UserManagement() {
   const [users, setUsers]     = useState<DbUser[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +36,7 @@ const UserManagement: React.FC = () => {
       if (!res.ok) throw new Error("Failed to load users");
       const { users: raw } = await res.json();
 
-      const mapped = (raw as any[])
+      const mapped: DbUser[] = (raw as any[])
         .map((u) => ({
           id:            u.id,
           email:         u.email,
@@ -45,10 +46,16 @@ const UserManagement: React.FC = () => {
           status:        u.status,
           roles:         u.roles.map((r: any) => r.role.name),
           position:      u.staffProfile?.position ?? "",
-          staffProfile:  u.staffProfile,
-          driverProfile: u.driverProfile,
+          staffProfile:  {
+            photoPublicId:  u.staffProfile?.photoPublicId ?? null,
+            position:      u.staffProfile?.position,
+          },
+          driverProfile: {
+            photoPublicId:  u.driverProfile?.photoPublicId ?? null,
+            licenseNumber: u.driverProfile?.licenseNumber,
+            carMakeModel:  u.driverProfile?.carMakeModel,
+          },
         }))
-        // just in case: filter out any remaining ADMIN
         .filter((u) => !u.roles.includes("ADMIN"));
 
       setUsers(mapped);
@@ -103,8 +110,11 @@ const UserManagement: React.FC = () => {
   const editUser = (id: number) =>
     (window.location.href = `/dashboard/admin-dashboard/edit-user/${id}`);
 
-  // Toggle role (will re‐POST full roles array)
-  const toggleRole = async (userId: number, role: string) => {
+  // Toggle role (re-POST full roles array)
+  const toggleRole = async (
+    userId: number,
+    role: UserCardProps["onToggleRole"] extends (r: infer R) => any ? R : never
+  ) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
     const has = user.roles.includes(role);
@@ -137,30 +147,33 @@ const UserManagement: React.FC = () => {
         <p>No users found.</p>
       ) : (
         <div className={styles.userGrid}>
-          {users.map((u) => (
-            <UserCard
-              key={u.id}
-              id={u.id}
-              name={`${u.firstName} ${u.lastName}`}
-              email={u.email}
-              phone={u.phone}
-              position={u.position}
-              roles={u.roles}
-              status={u.status}
-              photoUrl={u.staffProfile?.photoUrl ?? u.driverProfile?.photoUrl}
-              // **Pass driver fields explicitly**
-              licenseNumber={u.driverProfile?.licenseNumber}
-              carMakeModel={u.driverProfile?.carMakeModel}
-              onStatusChange={(action) => changeStatus(u.id, action)}
-              onEdit={() => editUser(u.id)}
-              onDelete={() => deleteUser(u.id)}
-              onToggleRole={(role) => toggleRole(u.id, role)}
-            />
-          ))}
+          {users.map((u) => {
+            // Pick the Cloudinary public ID from either profile
+            const photoPublicId =
+              u.staffProfile?.photoPublicId ?? u.driverProfile?.photoPublicId;
+
+            return (
+              <UserCard
+                key={u.id}
+                id={u.id}
+                name={`${u.firstName} ${u.lastName}`}
+                email={u.email}
+                phone={u.phone}
+                position={u.position}
+                roles={u.roles}
+                status={u.status}
+                photoPublicId={photoPublicId}
+                licenseNumber={u.driverProfile?.licenseNumber}
+                carMakeModel={u.driverProfile?.carMakeModel}
+                onStatusChange={(action) => changeStatus(u.id, action)}
+                onEdit={() => editUser(u.id)}
+                onDelete={() => deleteUser(u.id)}
+                onToggleRole={(role) => toggleRole(u.id, role)}
+              />
+            );
+          })}
         </div>
       )}
     </div>
   );
-};
-
-export default UserManagement;
+}
