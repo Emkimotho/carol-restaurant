@@ -16,20 +16,14 @@ export async function GET(req: Request) {
     const url        = new URL(req.url);
     const rolesParam = url.searchParams.get("roles") ?? "";
 
-    // Base filter: no ADMIN users
+    // Exclude any ADMIN users
     const excludeAdmin = {
-      roles: {
-        none: {
-          role: { name: RoleName.ADMIN }
-        }
-      }
+      roles: { none: { role: { name: RoleName.ADMIN } } }
     };
 
-    let whereClause: object;
-
+    let whereClause;
     if (rolesParam.trim()) {
-      // Parse requested roles
-      const wantedRoles = rolesParam
+      const wanted = rolesParam
         .split(",")
         .map(r => r.trim().toUpperCase())
         .filter(r => !!r) as RoleName[];
@@ -37,17 +31,10 @@ export async function GET(req: Request) {
       whereClause = {
         AND: [
           excludeAdmin,
-          {
-            roles: {
-              some: {
-                role: { name: { in: wantedRoles } }
-              }
-            }
-          }
+          { roles: { some: { role: { name: { in: wanted } } } } }
         ]
       };
     } else {
-      // No roles filter: just exclude ADMIN
       whereClause = excludeAdmin;
     }
 
@@ -58,13 +45,18 @@ export async function GET(req: Request) {
           select: { role: { select: { name: true } } }
         },
         staffProfile: {
-          select: { photoUrl: true, position: true }
+          select: {
+            photoPublicId: true,
+            photoUrl:      true,
+            position:      true
+          }
         },
         driverProfile: {
           select: {
-            photoUrl:      true,
-            licenseNumber: true,
-            carMakeModel:  true
+            photoPublicId:  true,
+            photoUrl:       true,
+            licenseNumber:  true,
+            carMakeModel:   true
           }
         }
       },

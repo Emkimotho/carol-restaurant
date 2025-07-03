@@ -51,6 +51,11 @@ model User {
   verificationToken         String?         @db.VarChar(255)
   verificationTokenExpiry   DateTime?
   status                    AccountStatus   @default(ACTIVE)
+
+  /// Cloudinary photo for any user
+  photoPublicId  String?   @unique
+  photoUrl       String?   // secure_url
+
   isOnline                  Boolean         @default(false)
   createdAt                 DateTime        @default(now())
   updatedAt                 DateTime        @updatedAt

@@ -6,15 +6,15 @@
   box-shadow: var(--box-shadow-primary);
   padding: 1rem 1rem 4.4rem; /* bottom padding for 2-row bar */
   display: grid;
-  grid-template-columns: 80px 1fr;
+  grid-template-columns: 120px 1fr;  /* widened from 80px to 120px */
   gap: 1rem;
   position: relative;
 }
 
 .avatar,
 .avatarPlaceholder {
-  width: 80px;
-  height: 80px;
+  width: 120px;     /* match the 120×120 Image src */
+  height: 120px;
   border-radius: 8px;
   background: var(--border-color);
   object-fit: cover;

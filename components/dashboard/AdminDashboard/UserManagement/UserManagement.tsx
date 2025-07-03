@@ -15,20 +15,23 @@ interface DbUser {
   status: "ACTIVE" | "SUSPENDED" | "BANNED";
   roles: string[];
   position?: string;
-  // Now including Cloudinary public IDs:
-  staffProfile?: { photoPublicId?: string; position?: string };
+  staffProfile?: {
+    photoPublicId?: string;
+    photoUrl?: string;
+    position?: string;
+  };
   driverProfile?: {
     photoPublicId?: string;
+    photoUrl?: string;
     licenseNumber?: string;
     carMakeModel?: string;
   };
 }
 
 export default function UserManagement() {
-  const [users, setUsers]     = useState<DbUser[]>([]);
+  const [users, setUsers] = useState<DbUser[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch all non-admin users
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -36,27 +39,38 @@ export default function UserManagement() {
       if (!res.ok) throw new Error("Failed to load users");
       const { users: raw } = await res.json();
 
-      const mapped: DbUser[] = (raw as any[])
-        .map((u) => ({
-          id:            u.id,
-          email:         u.email,
-          phone:         u.phone,
-          firstName:     u.firstName,
-          lastName:      u.lastName,
-          status:        u.status,
-          roles:         u.roles.map((r: any) => r.role.name),
-          position:      u.staffProfile?.position ?? "",
-          staffProfile:  {
-            photoPublicId:  u.staffProfile?.photoPublicId ?? null,
+      const mapped: DbUser[] = (raw as any[]).map((u) => {
+        // normalize role names (handles both shapes: { role: { name } } and { name })
+        const roleNames: string[] = Array.isArray(u.roles)
+          ? u.roles.map((r: any) =>
+              typeof r.name === "string"
+                ? r.name
+                : r.role?.name ?? ""
+            )
+          : [];
+
+        return {
+          id: u.id,
+          email: u.email,
+          phone: u.phone,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          status: u.status,
+          roles: roleNames,
+          position: u.staffProfile?.position ?? "",
+          staffProfile: {
+            photoPublicId: u.staffProfile?.photoPublicId,
+            photoUrl:      u.staffProfile?.photoUrl,
             position:      u.staffProfile?.position,
           },
           driverProfile: {
-            photoPublicId:  u.driverProfile?.photoPublicId ?? null,
+            photoPublicId: u.driverProfile?.photoPublicId,
+            photoUrl:      u.driverProfile?.photoUrl,
             licenseNumber: u.driverProfile?.licenseNumber,
             carMakeModel:  u.driverProfile?.carMakeModel,
           },
-        }))
-        .filter((u) => !u.roles.includes("ADMIN"));
+        };
+      }).filter(u => !u.roles.includes("ADMIN"));
 
       setUsers(mapped);
     } catch (e: any) {
@@ -70,11 +84,7 @@ export default function UserManagement() {
     fetchUsers();
   }, []);
 
-  // Suspend / unsuspend / ban
-  const changeStatus = async (
-    id: number,
-    action: "suspend" | "unsuspend" | "ban"
-  ) => {
+  const changeStatus = async (id: number, action: "suspend" | "unsuspend" | "ban") => {
     try {
       const res = await fetch(`/api/users/${id}`, {
         method: "PATCH",
@@ -90,7 +100,6 @@ export default function UserManagement() {
     }
   };
 
-  // Delete
   const deleteUser = async (id: number) => {
     if (!confirm("Delete this user?")) return;
     try {
@@ -106,11 +115,9 @@ export default function UserManagement() {
     }
   };
 
-  // Navigate to edit page
   const editUser = (id: number) =>
     (window.location.href = `/dashboard/admin-dashboard/edit-user/${id}`);
 
-  // Toggle role (re-POST full roles array)
   const toggleRole = async (
     userId: number,
     role: UserCardProps["onToggleRole"] extends (r: infer R) => any ? R : never
@@ -148,9 +155,10 @@ export default function UserManagement() {
       ) : (
         <div className={styles.userGrid}>
           {users.map((u) => {
-            // Pick the Cloudinary public ID from either profile
             const photoPublicId =
               u.staffProfile?.photoPublicId ?? u.driverProfile?.photoPublicId;
+            const photoUrl      =
+              u.staffProfile?.photoUrl      ?? u.driverProfile?.photoUrl;
 
             return (
               <UserCard
@@ -163,6 +171,7 @@ export default function UserManagement() {
                 roles={u.roles}
                 status={u.status}
                 photoPublicId={photoPublicId}
+                photoUrl={photoUrl}
                 licenseNumber={u.driverProfile?.licenseNumber}
                 carMakeModel={u.driverProfile?.carMakeModel}
                 onStatusChange={(action) => changeStatus(u.id, action)}

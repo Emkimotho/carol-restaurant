@@ -14,7 +14,10 @@ export interface UserCardProps {
   position?: string;
   roles: string[];  // e.g. ["STAFF","DRIVER","SERVER","CASHIER"]
   status: "ACTIVE" | "SUSPENDED" | "BANNED";
-  photoPublicId?: string;          // Cloudinary public ID
+  /** Cloudinary public ID, if available */
+  photoPublicId?: string;
+  /** Legacy or direct URL (e.g. "/uploads/...") */
+  photoUrl?: string;
   licenseNumber?: string;
   carMakeModel?: string;
   onEdit: () => void;
@@ -39,6 +42,7 @@ const UserCard: React.FC<UserCardProps> = ({
   roles,
   status,
   photoPublicId,
+  photoUrl,
   licenseNumber,
   carMakeModel,
   onStatusChange,
@@ -46,26 +50,35 @@ const UserCard: React.FC<UserCardProps> = ({
   onDelete,
   onToggleRole,
 }) => {
-  // Build avatar: Cloudinary if available, else placeholder initial
-  const avatar = photoPublicId
-    ? (
-      <div className={styles.avatarWrapper}>
-        <Image
-          src={getCloudinaryImageUrl(photoPublicId, 120, 120)}
-          alt={name}
-          width={120}
-          height={120}
-          className={styles.avatar}
-          unoptimized
-        />
-      </div>
-    )
-    : <div className={styles.avatarPlaceholder}>{name[0]}</div>;
+  // Decide which avatar source to use
+  let avatarSrc: string | undefined;
+  let unoptimized = false;
+
+  if (photoPublicId) {
+    // Cloudinary URL at 120×120
+    avatarSrc = getCloudinaryImageUrl(photoPublicId, 120, 120);
+    unoptimized = true; // skip Next.js optimization for external CDN
+  } else if (photoUrl) {
+    avatarSrc = photoUrl;
+  }
 
   return (
     <div className={styles.card}>
       {/* Avatar */}
-      {avatar}
+      {avatarSrc ? (
+        <div className={styles.avatarWrapper}>
+          <Image
+            src={avatarSrc}
+            alt={name}
+            width={120}
+            height={120}
+            className={styles.avatar}
+            unoptimized={unoptimized}
+          />
+        </div>
+      ) : (
+        <div className={styles.avatarPlaceholder}>{name[0]}</div>
+      )}
 
       {/* User Info */}
       <div className={styles.info}>
@@ -119,7 +132,6 @@ const UserCard: React.FC<UserCardProps> = ({
       {/* Actions */}
       <div className={styles.buttonBar}>
         <div className={styles.row}>
-          {/* For active users: suspend or ban */}
           {status === "ACTIVE" && (
             <>
               <button
@@ -136,8 +148,6 @@ const UserCard: React.FC<UserCardProps> = ({
               </button>
             </>
           )}
-
-          {/* For suspended users: enable (unsuspend) or ban */}
           {status === "SUSPENDED" && (
             <>
               <button
@@ -154,8 +164,6 @@ const UserCard: React.FC<UserCardProps> = ({
               </button>
             </>
           )}
-
-          {/* For banned users: unban (unsuspend) */}
           {status === "BANNED" && (
             <button
               className={styles.enable}
@@ -165,7 +173,6 @@ const UserCard: React.FC<UserCardProps> = ({
             </button>
           )}
 
-          {/* Always show Edit & Delete */}
           <button className={styles.edit} onClick={onEdit}>
             Edit
           </button>

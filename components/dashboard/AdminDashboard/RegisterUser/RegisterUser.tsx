@@ -8,7 +8,7 @@ import styles from "./RegisterUser.module.css";
 type RoleOption = "STAFF" | "DRIVER" | "SERVER" | "CASHIER";
 const ALL_ROLES: RoleOption[] = ["STAFF", "DRIVER", "SERVER", "CASHIER"];
 
-// These env vars must be set in your NEXT_PUBLIC_ namespace
+// These must be defined in your NEXT_PUBLIC_ env
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
 
@@ -27,9 +27,12 @@ export default function RegisterUserForm() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
 
-  // Preview uploaded photo
+  // Generate a preview when the user selects a file
   useEffect(() => {
-    if (!photoFile) return setPreviewUrl("");
+    if (!photoFile) {
+      setPreviewUrl("");
+      return;
+    }
     const url = URL.createObjectURL(photoFile);
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
@@ -37,7 +40,7 @@ export default function RegisterUserForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target;
-    if (name === "photo" && files) {
+    if (name === "photo" && files?.[0]) {
       setPhotoFile(files[0]);
     } else {
       setForm(f => ({ ...f, [name]: value }));
@@ -51,9 +54,9 @@ export default function RegisterUserForm() {
     e.preventDefault();
     setLoading(true);
 
-    // Basic validation
+    // 1) Client-side validation
     if (!form.firstName || !form.lastName || !form.email) {
-      toast.error("First, last name and email are required.");
+      toast.error("First name, last name and email are required.");
       setLoading(false);
       return;
     }
@@ -62,18 +65,15 @@ export default function RegisterUserForm() {
       setLoading(false);
       return;
     }
-    if (
-      roles.includes("DRIVER") &&
-      (!form.licenseNumber || !form.carMakeModel)
-    ) {
-      toast.error("Driver must have license and vehicle info.");
+    if (roles.includes("DRIVER") && (!form.licenseNumber || !form.carMakeModel)) {
+      toast.error("Driver must have license & vehicle info.");
       setLoading(false);
       return;
     }
 
     try {
-      let photoUrl: string | undefined;
-      // 1) If a file is selected, upload it to Cloudinary
+      // 2) Upload photo to Cloudinary (if provided)
+      let uploadedPhotoUrl: string | undefined;
       if (photoFile) {
         const cloudData = new FormData();
         cloudData.append("file", photoFile);
@@ -84,42 +84,43 @@ export default function RegisterUserForm() {
           { method: "POST", body: cloudData }
         );
         if (!cloudRes.ok) {
-          throw new Error("Photo upload failed");
+          const errText = await cloudRes.text();
+          throw new Error("Photo upload failed: " + errText);
         }
         const cloudJson = await cloudRes.json();
-        photoUrl = cloudJson.secure_url;
+        uploadedPhotoUrl = cloudJson.secure_url as string;
       }
 
-      // 2) Build payload to your own API
-      const payload: any = {
-        firstName: form.firstName,
-        lastName:  form.lastName,
-        email:     form.email,
-        phone:     form.phone,
-        position:  form.position,
+      // 3) Build JSON payload for your backend
+      const payload: Record<string, any> = {
+        firstName: form.firstName.trim(),
+        lastName:  form.lastName.trim(),
+        email:     form.email.trim(),
+        phone:     form.phone.trim(),
+        position:  form.position.trim(),
         roles,
       };
       if (roles.includes("DRIVER")) {
-        payload.licenseNumber = form.licenseNumber;
-        payload.carMakeModel  = form.carMakeModel;
+        payload.licenseNumber = form.licenseNumber.trim();
+        payload.carMakeModel  = form.carMakeModel.trim();
       }
-      if (photoUrl) {
-        payload.photoUrl = photoUrl;
+      if (uploadedPhotoUrl) {
+        payload.photoUrl = uploadedPhotoUrl;
       }
 
-      // 3) Send to your backend
-      const res = await fetch("/api/registeruser", {
+      // 4) Send to your own API
+      const apiRes = await fetch("/api/registeruser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const err = await res.json();
+      if (!apiRes.ok) {
+        const err = await apiRes.json();
         throw new Error(err.message || "Registration failed");
       }
 
-      toast.success("User created & emailed.");
-      // reset
+      toast.success("User created & email sent!");
+      // reset form
       setForm({
         firstName: "",
         lastName: "",
@@ -131,9 +132,9 @@ export default function RegisterUserForm() {
       });
       setRoles([]);
       setPhotoFile(null);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Registration failed.");
+    } catch (error: any) {
+      console.error("Registration Error:", error);
+      toast.error(error.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -179,14 +180,14 @@ export default function RegisterUserForm() {
 
       <fieldset className={styles.rolesFieldset}>
         <legend>Assign Roles</legend>
-        {ALL_ROLES.map(r => (
-          <label key={r} className={styles.roleLabel}>
+        {ALL_ROLES.map(role => (
+          <label key={role} className={styles.roleLabel}>
             <input
               type="checkbox"
-              checked={roles.includes(r)}
-              onChange={() => toggleRole(r)}
+              checked={roles.includes(role)}
+              onChange={() => toggleRole(role)}
             />{" "}
-            {r}
+            {role}
           </label>
         ))}
       </fieldset>
@@ -220,11 +221,7 @@ export default function RegisterUserForm() {
         />
       </label>
       {previewUrl && (
-        <img
-          src={previewUrl}
-          alt="Preview"
-          className={styles.previewImage}
-        />
+        <img src={previewUrl} alt="Preview" className={styles.previewImage} />
       )}
 
       <button

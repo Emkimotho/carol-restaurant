@@ -1,7 +1,6 @@
 // File: app/api/registeruser/route.ts
 // ────────────────────────────────────────────────────────────────────
-//  • Accepts multipart/form-data
-//  • Uploads photo to Cloudinary under “profiles” folder
+//  • Accepts application/json (client pre-uploads photo to Cloudinary)
 //  • Inserts user + profiles in Prisma
 //  • Generates one-time reset-link (no temp password)
 //  • Sends link via central EmailService
@@ -11,132 +10,135 @@ import { NextResponse } from "next/server";
 import { PrismaClient, RoleName } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import sendEmail from "@/services/EmailService";
-import { v2 as cloudinary } from "cloudinary";
 import { randomUUID } from "crypto";
 
 const prisma = new PrismaClient();
 
-// configure Cloudinary from your .env
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-export const config = { api: { bodyParser: false } };
-
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    // 1. parse form
-    const form           = await req.formData();
-    const roles          = form.getAll("roles").map(r => String(r).toUpperCase()) as RoleName[];
-    const firstName      = String(form.get("firstName") || "").trim();
-    const lastName       = String(form.get("lastName")  || "").trim();
-    const email          = String(form.get("email")     || "").trim();
-    const phone          = String(form.get("phone")     || "").trim();
-    const position       = form.get("position")        ? String(form.get("position")).trim()    : null;
-    const licenseNumber  = form.get("licenseNumber")   ? String(form.get("licenseNumber")).trim() : null;
-    const carMakeModel   = form.get("carMakeModel")    ? String(form.get("carMakeModel")).trim()  : null;
-    const fileField      = form.get("photo")           as Blob | null;
+    // 1. parse JSON
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      roles,
+      position,
+      licenseNumber,
+      carMakeModel,
+      photoUrl
+    } = (await request.json()) as {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string;
+      roles: string[];
+      position?: string;
+      licenseNumber?: string;
+      carMakeModel?: string;
+      photoUrl?: string;
+    };
 
-    // 2. validate basics
-    if (!firstName || !lastName || !email || roles.length === 0) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+    // 2. validate required fields
+    if (
+      !firstName?.trim() ||
+      !lastName?.trim() ||
+      !email?.trim() ||
+      !Array.isArray(roles) ||
+      roles.length === 0
+    ) {
+      return NextResponse.json(
+        { message: "Missing required fields" },
+        { status: 400 }
+      );
     }
-    // ensure roles are valid
-    const validRoles = roles.filter(r => Object.values(RoleName).includes(r as any));
+
+    // 3. normalize & validate roles
+    const validRoles = roles
+      .map((r) => r.toUpperCase())
+      .filter((r) => Object.values(RoleName).includes(r as RoleName)) as RoleName[];
+
     if (validRoles.length !== roles.length) {
-      return NextResponse.json({ message: "Invalid roles provided" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Invalid roles provided" },
+        { status: 400 }
+      );
     }
 
-    // 3. upload photo to Cloudinary (optional)
-    let photoUrl: string | null = null;
-    let photoPublicId: string | null = null;
-    if (fileField && fileField.size) {
-      const arrayBuffer = await fileField.arrayBuffer();
-      const b64 = Buffer.from(arrayBuffer).toString("base64");
-      const dataUri = `data:${fileField.type};base64,${b64}`;
-      const upload = await cloudinary.uploader.upload(dataUri, {
-        folder: "profiles",
-        public_id: randomUUID(),
-        overwrite: true,
-      });
-      photoPublicId = upload.public_id;
-      photoUrl       = upload.secure_url;
-    }
+    // 4. create placeholder password + hash
+    const placeholder = randomUUID();
+    const hashedPwd = await bcrypt.hash(placeholder, 10);
 
-    // 4. create dummy password + hash
-    const placeholder       = randomUUID();
-    const hashedPlaceholder = await bcrypt.hash(placeholder, 10);
-
-    // 5. create one-time reset token
-    const resetPlain  = randomUUID();
-    const resetHash   = await bcrypt.hash(resetPlain, 10);
+    // 5. create one-time reset token + hash + expiry
+    const resetPlain = randomUUID();
+    const resetHash = await bcrypt.hash(resetPlain, 10);
     const resetExpiry = new Date(Date.now() + 60 * 60 * 1000);
 
     // 6. create user
     const user = await prisma.user.create({
       data: {
-        email,
-        password:       hashedPlaceholder,
-        firstName,
-        lastName,
-        phone,
-        isVerified:     true,
-        resetToken:     resetHash,
+        email: email.trim(),
+        password: hashedPwd,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone?.trim() || null,
+        isVerified: true,
+        resetToken: resetHash,
         resetTokenExpiry: resetExpiry,
         roles: {
-          create: validRoles.map(roleName => ({
-            role: { connect: { name: roleName } }
+          create: validRoles.map((roleName) => ({
+            role: { connect: { name: roleName } },
           })),
         },
       },
     });
 
-    // 7. upsert staff profile if needed
-    if (validRoles.includes("STAFF")) {
+    // 7. upsert StaffProfile ANY time there’s a photoUrl
+    if (photoUrl) {
       await prisma.staffProfile.upsert({
-        where:  { userId: user.id },
+        where: { userId: user.id },
         update: {
-          photoUrl:       photoUrl   || "",
-          photoPublicId:  photoPublicId || "",
-          position:       position   || "",
+          photoUrl,
+          photoPublicId: null,        // we’re only passing URL here
+          position: position?.trim() || "",
         },
         create: {
-          userId:         user.id,
-          photoUrl:       photoUrl   || "",
-          photoPublicId:  photoPublicId || "",
-          position:       position   || "",
+          userId: user.id,
+          photoUrl,
+          photoPublicId: null,
+          position: position?.trim() || "",
         },
       });
     }
 
-    // 8. upsert driver profile if needed
-    if (validRoles.includes("DRIVER")) {
+    // 8. upsert DriverProfile if DRIVER role assigned
+    if (validRoles.includes(RoleName.DRIVER)) {
       await prisma.driverProfile.upsert({
-        where:  { userId: user.id },
+        where: { userId: user.id },
         update: {
-          photoUrl,
-          photoPublicId,
-          licenseNumber: licenseNumber || "",
-          carMakeModel:  carMakeModel  || "",
+          photoUrl: photoUrl || null,
+          photoPublicId: null,
+          licenseNumber: licenseNumber?.trim() || "",
+          carMakeModel: carMakeModel?.trim() || "",
         },
         create: {
-          userId:        user.id,
-          photoUrl,
-          photoPublicId,
-          licenseNumber: licenseNumber || "",
-          carMakeModel:  carMakeModel  || "",
+          userId: user.id,
+          photoUrl: photoUrl || null,
+          photoPublicId: null,
+          licenseNumber: licenseNumber?.trim() || "",
+          carMakeModel: carMakeModel?.trim() || "",
         },
       });
     }
 
-    // 9. build and send reset email
-    const baseUrl   = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-    const resetLink = `${baseUrl}/reset-password?token=${resetPlain}&email=${encodeURIComponent(email)}`;
-    const subject   = "Welcome to 19th-Hole – Set Your Password";
-    const text      = `Hi ${firstName},\n\nAn administrator created an account for you.\nPlease click the link below to choose your password (valid for one hour):\n${resetLink}\n\nRegards,\n19th-Hole Team`;
-    const html      = `<p>Hi ${firstName},</p>
+    // 9. send reset-password email
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const resetLink = `${baseUrl}/reset-password?token=${resetPlain}&email=${encodeURIComponent(
+      email
+    )}`;
+    const subject = "Welcome to 19th-Hole – Set Your Password";
+    const text = `Hi ${firstName},\n\nAn administrator created an account for you.\nPlease click the link below to choose your password (valid for one hour):\n${resetLink}\n\nRegards,\n19th-Hole Team`;
+    const html = `<p>Hi ${firstName},</p>
 <p>An administrator created an account for you.</p>
 <p>Please click <a href="${resetLink}">here</a> to choose your password (valid for one hour).</p>
 <p>Regards,<br/>19th-Hole Team</p>`;
