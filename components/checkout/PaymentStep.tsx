@@ -288,14 +288,16 @@ const PaymentStep: React.FC = () => {
           </label>
         )}
       </div>
-
-      {isGolfOrder && isCash && (
-        <div className={styles.cashAmountInput}>
-          <label htmlFor="cashAmount">Cash Amount (you’ll bring)</label>
-          <input id="cashAmount" type="number" min="0" step="0.01" value={cashAmount}
-            onChange={e => setCashAmount(parseFloat(e.target.value) || 0)} />
-        </div>
-      )}
+{isGolfOrder && isCash && (
+  <div className={styles.cashAmountInput}>
+    <label>Cash Amount (you’ll bring)</label>
+    <input
+      type="text"
+      value={order.totalAmount.toFixed(2)}
+      readOnly
+    />
+  </div>
+)}
 
       {order.containsAlcohol && (
         <div className={styles.formGroup}>

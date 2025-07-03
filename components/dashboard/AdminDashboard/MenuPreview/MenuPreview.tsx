@@ -18,6 +18,8 @@ interface PreviewItem {
   updatedAt: string;
 }
 
+const MAX_ITEMS = 3;
+
 const MenuPreviewAdmin: React.FC = () => {
   const [items, setItems] = useState<PreviewItem[]>([]);
   const [file, setFile] = useState<File | null>(null);
@@ -46,12 +48,19 @@ const MenuPreviewAdmin: React.FC = () => {
   // Handle form submission (new preview item)
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // guard against over-add
+    if (items.length >= MAX_ITEMS) {
+      toast.error(`You can only have up to ${MAX_ITEMS} preview items. Delete one to add another.`);
+      return;
+    }
+
     if (!file) {
       toast.error('Please select an image to upload.');
       return;
     }
-    setLoading(true);
 
+    setLoading(true);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', title);
@@ -99,66 +108,75 @@ const MenuPreviewAdmin: React.FC = () => {
     }
   };
 
+  const atLimit = items.length >= MAX_ITEMS;
+
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>Menu Preview Admin</h2>
 
+      {atLimit && (
+        <div className={styles.limitBanner}>
+          {`${items.length} of ${MAX_ITEMS} slots used. Delete an item to add another.`}
+        </div>
+      )}
+
       <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.field}>
-          <label>Upload Image:</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              if (e.target.files?.[0]) {
-                setFile(e.target.files[0]);
-              }
-            }}
-            required
-          />
-        </div>
+        <fieldset disabled={atLimit || loading} className={styles.fieldset}>
+          <div className={styles.field}>
+            <label>Upload Image:</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  setFile(e.target.files[0]);
+                }
+              }}
+              required
+            />
+          </div>
 
-        <div className={styles.field}>
-          <label>Title:</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Menu item name"
-            required
-          />
-        </div>
+          <div className={styles.field}>
+            <label>Title:</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Menu item name"
+              required
+            />
+          </div>
 
-        <div className={styles.field}>
-          <label>Description:</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Short description (optional)"
-          />
-        </div>
+          <div className={styles.field}>
+            <label>Description:</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Short description (optional)"
+            />
+          </div>
 
-        <div className={styles.field}>
-          <label>Display Order:</label>
-          <input
-            type="number"
-            value={displayOrder}
-            onChange={(e) => setDisplayOrder(parseInt(e.target.value, 10))}
-            min={0}
-            required
-          />
-        </div>
+          <div className={styles.field}>
+            <label>Display Order:</label>
+            <input
+              type="number"
+              value={displayOrder}
+              onChange={(e) => setDisplayOrder(parseInt(e.target.value, 10))}
+              min={0}
+              required
+            />
+          </div>
 
-        <button type="submit" disabled={loading} className="btn">
-          {loading ? 'Uploading…' : 'Upload Preview Item'}
-        </button>
+          <button type="submit" className="btn">
+            {loading ? 'Uploading…' : 'Upload Preview Item'}
+          </button>
+        </fieldset>
       </form>
 
       <hr className={styles.divider} />
 
       <div className={styles.itemList}>
         {items.map((item) => {
-          // pick Cloudinary if available, else fallback to imageUrl, else placeholder
           const src = item.cloudinaryPublicId
             ? getCloudinaryImageUrl(item.cloudinaryPublicId, 300, 300)
             : item.imageUrl || '/images/placeholder.png';

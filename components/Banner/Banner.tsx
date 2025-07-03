@@ -84,7 +84,7 @@ export default function Banner() {
         );
       })}
 
-      {/* Text overlay */}
+      {/*
       <div className={styles.bannerContent}>
         <div className={styles.textWrapper}>
           <h1 className={`${styles.bannerTitle} ${styles.animatedTitle}`}>
@@ -95,6 +95,7 @@ export default function Banner() {
           </p>
         </div>
       </div>
+      */}
 
       {/* Buttons positioned independently */}
       <div className={styles.bannerButtons}>

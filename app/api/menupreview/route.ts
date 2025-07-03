@@ -17,6 +17,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Maximum number of preview items allowed
+const MAX_ITEMS = 3;
+
 export async function GET() {
   try {
     const items = await prisma.menuPreviewItem.findMany({
@@ -44,6 +47,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    // Enforce max-items limit
+    const existingCount = await prisma.menuPreviewItem.count();
+    if (existingCount >= MAX_ITEMS) {
+      return NextResponse.json(
+        { error: `Cannot add more than ${MAX_ITEMS} preview items.` },
+        { status: 400 }
+      );
+    }
+
     const form = await request.formData();
     const fileField = form.get("file");
     const titleRaw = form.get("title");
@@ -66,7 +78,7 @@ export async function POST(request: Request) {
     // Upload to Cloudinary under 'menupreview' folder
     const uploadResult = await cloudinary.uploader.upload(dataUri, {
       folder: "menupreview",
-      public_id: `${Date.now()}`,       // or any nicer naming
+      public_id: `${Date.now()}`, // simple timestamp naming
       overwrite: true,
     });
 
