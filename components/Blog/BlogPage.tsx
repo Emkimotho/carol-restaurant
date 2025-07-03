@@ -1,3 +1,4 @@
+// File: components/BlogPage.tsx
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -12,8 +13,9 @@ interface BlogPostSummary {
   excerpt: string;
   date: string;
   author: string;
-  image?: string;                 // legacy/public URL or filename
-  cloudinaryPublicId?: string;    // optional Cloudinary public ID
+  cloudinaryPublicId?: string; // new Cloudinary ID
+  imageUrl?: string;           // secure URL from Cloudinary
+  legacyImage?: string;        // legacy/public URL or filename
   link?: string;
 }
 
@@ -28,8 +30,7 @@ export default function BlogPage() {
       try {
         const res = await fetch("/api/blog-news?type=blog");
         if (!res.ok) throw new Error("Failed to fetch blog posts");
-        const data: BlogPostSummary[] = await res.json();
-        setPosts(data);
+        setPosts(await res.json());
       } catch (error) {
         console.error(error);
       } finally {
@@ -83,14 +84,19 @@ export default function BlogPage() {
 
       <div className={styles["blog-posts-container"]}>
         {filteredPosts.map((post) => {
-          // determine thumbnail URL
-          const thumbSrc = post.cloudinaryPublicId
-            ? getCloudinaryImageUrl(post.cloudinaryPublicId, 300, 200)
-            : post.image?.startsWith("http")
-            ? post.image
-            : post.image
-            ? `/images/${post.image}`
-            : "/images/placeholder.png";
+          // build thumbnail src: 1) transform Cloudinary ID, 2) stored URL, 3) legacyImage, 4) placeholder
+          let thumbSrc: string;
+          if (post.cloudinaryPublicId) {
+            thumbSrc = getCloudinaryImageUrl(post.cloudinaryPublicId, 300, 200);
+          } else if (post.imageUrl) {
+            thumbSrc = post.imageUrl;
+          } else if (post.legacyImage) {
+            thumbSrc = post.legacyImage.startsWith("http")
+              ? post.legacyImage
+              : `/images/${post.legacyImage}`;
+          } else {
+            thumbSrc = "/images/placeholder.png";
+          }
 
           return (
             <BlogPost
@@ -98,7 +104,7 @@ export default function BlogPage() {
               post={{
                 ...post,
                 link: `/blog/${post.slug}`,
-                image: thumbSrc,
+                legacyImage: thumbSrc,
               }}
             />
           );

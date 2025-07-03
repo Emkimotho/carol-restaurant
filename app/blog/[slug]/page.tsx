@@ -1,9 +1,19 @@
+// File: app/blog/[slug]/page.tsx
+
+import React from "react";
 import BlogDetailPage from "@/components/Blog/BlogDetailPage";
 
-/**
- * Must be async to properly use dynamic params in Next.js 13/15.
- */
-export default async function BlogSlugPage(context: { params: { slug: string } }) {
-  const { slug } = context.params; // Access the slug inside the function body
+interface Params {
+  slug: string;
+}
+
+export default async function BlogSlugPage({
+  params,
+}: {
+  params: Promise<Params>;
+}) {
+  // Await the dynamic params before destructuring
+  const { slug } = await params;
+
   return <BlogDetailPage slug={slug} />;
 }

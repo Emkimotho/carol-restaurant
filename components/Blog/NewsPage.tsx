@@ -13,9 +13,9 @@ interface NewsPostSummary {
   excerpt: string;
   date: string;
   author: string;
-  image?: string;                // legacy/public URL
-  cloudinaryPublicId?: string;   // new Cloudinary ID
-  link?: string;
+  cloudinaryPublicId?: string;
+  imageUrl?: string;
+  legacyImage?: string;
 }
 
 export default function NewsPage() {
@@ -82,19 +82,25 @@ export default function NewsPage() {
 
       <div className={styles["blog-posts-container"]}>
         {filteredPosts.map((post) => {
-          // build the proper image URL
-          const imgSrc = post.cloudinaryPublicId
-            ? getCloudinaryImageUrl(post.cloudinaryPublicId, 400, 250)
-            : post.image?.startsWith("http")
-              ? post.image
-              : `/images/${post.image || "placeholder.jpg"}`;
+          let imgSrc: string;
+          if (post.cloudinaryPublicId) {
+            imgSrc = getCloudinaryImageUrl(post.cloudinaryPublicId, 400, 250);
+          } else if (post.imageUrl) {
+            imgSrc = post.imageUrl;
+          } else if (post.legacyImage) {
+            imgSrc = post.legacyImage.startsWith("http")
+              ? post.legacyImage
+              : `/images/${post.legacyImage}`;
+          } else {
+            imgSrc = "/images/placeholder.jpg";
+          }
 
           return (
             <BlogPost
               key={post.slug}
               post={{
                 ...post,
-                image: imgSrc,
+                legacyImage: imgSrc,
                 link: `/news/${post.slug}`,
               }}
             />

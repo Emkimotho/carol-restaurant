@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * PUT /api/events/:eventId
- * Updates an existing event, including times, pricing info, image, and FAQs.
+ * Updates an existing event, including times, pricing info, image fields, and FAQs.
  */
 export async function PUT(
   request: Request,
@@ -15,26 +15,30 @@ export async function PUT(
     const { eventId } = await params;
     const contentType = request.headers.get("content-type") || "";
 
+    // 1) Parse either application/json or multipart/form-data
     let input: any;
     if (contentType.includes("application/json")) {
       input = await request.json();
     } else {
       const formData = await request.formData();
       input = Object.fromEntries(formData.entries());
+      // FAQs may arrive as stringified JSON
       if (typeof input.faqs === "string") {
         try {
           input.faqs = JSON.parse(input.faqs);
         } catch {
-          return NextResponse.json({ message: "Invalid FAQs format" }, { status: 400 });
+          return NextResponse.json(
+            { message: "Invalid FAQs format" },
+            { status: 400 }
+          );
         }
       }
     }
 
-    // — Basic text fields —
+    // 2) Coerce all possible inputs to strings/numbers
     const title       = input.title?.toString();
     const description = input.description?.toString();
 
-    // — Address → location —
     const street = input.street?.toString();
     const city   = input.city?.toString();
     const state  = input.state?.toString();
@@ -44,7 +48,6 @@ export async function PUT(
         ? `${street}, ${city}, ${state} ${zip}`
         : undefined;
 
-    // — Date & Times —
     const dateRaw      = input.date?.toString();
     const startTimeRaw = input.startTime?.toString();
     const endTimeRaw   = input.endTime?.toString();
@@ -56,12 +59,11 @@ export async function PUT(
         ? new Date(`${dateRaw}T${startTime}`)
         : undefined;
 
-    // — Pricing & Tickets —
-    const adultPrice       =
+    const adultPrice =
       input.adultPrice !== undefined
         ? parseFloat(input.adultPrice.toString())
         : undefined;
-    const kidPrice         =
+    const kidPrice =
       input.kidPrice !== undefined
         ? parseFloat(input.kidPrice.toString())
         : undefined;
@@ -71,7 +73,6 @@ export async function PUT(
         ? parseInt(input.availableTickets.toString())
         : undefined;
 
-    // — Flags —
     const isFree =
       input.isFree !== undefined
         ? input.isFree === true || input.isFree === "true"
@@ -81,43 +82,54 @@ export async function PUT(
         ? input.adultOnly === true || input.adultOnly === "true"
         : undefined;
 
-    // — Image upload (filename only) —
-    let image: string | undefined;
-    if (input.image) {
-      image = input.image.toString();
-    }
+    // 3) Legacy filename field
+    const image = input.image?.toString();
 
-    // — FAQs array (already parsed) —
-    const faqsData: { question: string; answer: string }[] = Array.isArray(input.faqs)
+    // 4) Cloudinary fields
+    const cloudinaryPublicId = input.cloudinaryPublicId?.toString();
+    const imageUrl           = input.imageUrl?.toString();
+
+    // 5) FAQs array
+    const faqsData: Array<{ question: string; answer: string }> = Array.isArray(input.faqs)
       ? input.faqs
       : [];
 
+    // 6) Build update payload, only including fields that were provided
+    const data: any = {
+      ...(title        && { title }),
+      ...(description  && { description }),
+      ...(location     && { location }),
+      ...(date         && { date }),
+      ...(startTime    && { startTime }),
+      ...(endTime      && { endTime }),
+      ...(adultPrice   !== undefined && { adultPrice }),
+      ...(kidPrice     !== undefined && { kidPrice }),
+      ...(kidPriceInfo && { kidPriceInfo }),
+      ...(availableTickets !== undefined && { availableTickets }),
+      ...(isFree       !== undefined && { isFree }),
+      ...(adultOnly    !== undefined && { adultOnly }),
+
+      // legacy
+      ...(image && { image }),
+
+      // Cloudinary
+      ...(cloudinaryPublicId && { cloudinaryPublicId }),
+      ...(imageUrl           && { imageUrl }),
+
+      // replace FAQs wholesale
+      faqs: {
+        deleteMany: {},
+        create: faqsData.map((fq) => ({
+          question: fq.question,
+          answer:   fq.answer,
+        })),
+      },
+    };
+
+    // 7) Perform update
     const updated = await prisma.event.update({
       where: { id: eventId },
-      data: {
-        // only include a field if we parsed a value
-        ...(title        && { title }),
-        ...(description  && { description }),
-        ...(location     && { location }),
-        ...(date         && { date }),
-        ...(startTime    && { startTime }),
-        ...(endTime      && { endTime }),
-        ...(adultPrice   !== undefined && { adultPrice }),
-        ...(kidPrice     !== undefined && { kidPrice }),
-        ...(kidPriceInfo && { kidPriceInfo }),
-        ...(availableTickets !== undefined && { availableTickets }),
-        ...(image        && { image }),
-        ...(isFree       !== undefined && { isFree }),
-        ...(adultOnly    !== undefined && { adultOnly }),
-        // replace FAQs wholesale
-        faqs: {
-          deleteMany: {},
-          create: faqsData.map((fq) => ({
-            question: fq.question,
-            answer:   fq.answer,
-          })),
-        },
-      },
+      data,
       include: { faqs: true },
     });
 

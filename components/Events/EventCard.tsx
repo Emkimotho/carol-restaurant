@@ -19,26 +19,33 @@ interface RsvpResponse {
   message?: string;
 }
 
-const resolveImageSrc = (event: EventData) => {
-  // 1) Cloudinary
-  if ((event as any).cloudinaryPublicId) {
-    return getCloudinaryImageUrl(
-      (event as any).cloudinaryPublicId,
-      400,
-      300
-    );
+// Resolve the best image source
+const resolveImageSrc = (event: EventData): string => {
+  // 1) If you've stored the full secure URL, use it:
+  if ((event as any).imageUrl) {
+    return (event as any).imageUrl;
   }
-  // 2) fallback to local /uploads or /images
-  if (event.image?.startsWith("/images/")) return event.image;
-  if (event.image) return `/images/${event.image.replace(/^uploads\//, "")}`;
+  // 2) Otherwise if you have a Cloudinary public ID, generate a resized URL
+  const publicId = (event as any).cloudinaryPublicId as string | undefined;
+  if (publicId) {
+    return getCloudinaryImageUrl(publicId, 400, 300);
+  }
+  // 3) Legacy local‐upload fallback
+  if ((event as any).image?.startsWith("/images/")) {
+    return (event as any).image;
+  }
+  if ((event as any).image) {
+    return `/images/${(event as any).image.replace(/^uploads\//, "")}`;
+  }
+  // 4) No image at all
   return "";
 };
 
 export default function EventCard({ event }: { event: EventData }) {
   const router = useRouter();
 
-  // Parse dates/times
-  const datePart = event.date.split("T")[0];
+  // ── Parse & format date/time ────────────────────────────────────────────────
+  const [datePart] = event.date.split("T");
   const startRaw = event.startTime ?? (event as any).time;
   const endRaw = event.endTime ?? (event as any).time;
   const startDateTime = new Date(`${datePart}T${startRaw}`);
@@ -46,7 +53,6 @@ export default function EventCard({ event }: { event: EventData }) {
   const now = new Date();
   const isPastEvent = endDateTime < now;
 
-  // Formatted strings
   const formattedDate = new Date(event.date).toLocaleDateString();
   const formattedStart = startDateTime.toLocaleTimeString([], {
     hour: "2-digit",
@@ -59,53 +65,50 @@ export default function EventCard({ event }: { event: EventData }) {
     hour12: true,
   });
 
-  // Duration in hours
   const durationMs = endDateTime.getTime() - startDateTime.getTime();
-  const durationHrs = Math.round((durationMs / 3600000) * 10) / 10;
+  const durationHrs = Math.round((durationMs / 3_600_000) * 10) / 10;
 
-  // Paid booking state
-  const [adultCount, setAdultCount] = useState<number>(0);
-  const [kidCount, setKidCount] = useState<number>(0);
-  const [payerName, setPayerName] = useState<string>("");
-  const [payerEmail, setPayerEmail] = useState<string>("");
-  const [loadingBooking, setLoadingBooking] = useState<boolean>(false);
+  // ── Booking state ────────────────────────────────────────────────────────────
+  const [adultCount, setAdultCount] = useState(0);
+  const [kidCount, setKidCount] = useState(0);
+  const [payerName, setPayerName] = useState("");
+  const [payerEmail, setPayerEmail] = useState("");
+  const [loadingBooking, setLoadingBooking] = useState(false);
 
-  // Free-event RSVP state
-  const [rsvpName, setRsvpName] = useState<string>("");
-  const [rsvpEmail, setRsvpEmail] = useState<string>("");
-  const [freeAdultCount, setFreeAdultCount] = useState<number>(0);
-  const [freeKidCount, setFreeKidCount] = useState<number>(0);
+  // ── RSVP (free event) state ─────────────────────────────────────────────────
+  const [rsvpName, setRsvpName] = useState("");
+  const [rsvpEmail, setRsvpEmail] = useState("");
+  const [freeAdultCount, setFreeAdultCount] = useState(0);
+  const [freeKidCount, setFreeKidCount] = useState(0);
   const [reserved, setReserved] = useState<{ adultCount: number; kidCount: number } | null>(null);
-  const [loadingRsvp, setLoadingRsvp] = useState<boolean>(false);
+  const [loadingRsvp, setLoadingRsvp] = useState(false);
 
-  // FAQ modal state
-  const [showFaqs, setShowFaqs] = useState<boolean>(false);
+  // ── FAQ modal ───────────────────────────────────────────────────────────────
+  const [showFaqs, setShowFaqs] = useState(false);
 
   const totalPrice = adultCount * event.adultPrice + kidCount * event.kidPrice;
   const totalFreeTickets = freeAdultCount + freeKidCount;
 
-  const clampNonNegative = (value: number) => (value >= 0 ? value : 0);
+  const clampNonNegative = (v: number) => (v >= 0 ? v : 0);
 
+  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleFreeRSVP = async () => {
     if (loadingRsvp) return;
     const name = rsvpName.trim();
     const email = rsvpEmail.trim();
     if (!name || !email || totalFreeTickets <= 0) {
-      toast.error("Please fill out name, email, and select at least one ticket.");
+      toast.error("Please fill name, email, and select at least one ticket.");
       return;
     }
     if (isPastEvent) {
-      toast.error("This event has already passed; RSVP not allowed.");
+      toast.error("This event has passed; RSVP not allowed.");
       return;
     }
     if (!event.isFree) {
       toast.error("This event requires payment; RSVP not allowed.");
       return;
     }
-    if (
-      typeof event.availableTickets === "number" &&
-      event.availableTickets < totalFreeTickets
-    ) {
+    if (typeof event.availableTickets === "number" && event.availableTickets < totalFreeTickets) {
       toast.error("Not enough tickets available for RSVP.");
       return;
     }
@@ -115,29 +118,22 @@ export default function EventCard({ event }: { event: EventData }) {
       const res = await fetch(`/api/events/${event.id}/rsvp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          adultCount: freeAdultCount,
-          kidCount: freeKidCount,
-        }),
+        body: JSON.stringify({ name, email, adultCount: freeAdultCount, kidCount: freeKidCount }),
       });
       const data = (await res.json()) as RsvpResponse;
       if (!res.ok) {
         toast.error("RSVP failed: " + (data.message ?? "Unknown error"));
-        return;
+      } else {
+        const reservedCounts = data.reserved ?? { adultCount: freeAdultCount, kidCount: freeKidCount };
+        setReserved(reservedCounts);
+        toast.success("RSVP confirmed! Thank you.");
+        setRsvpName("");
+        setRsvpEmail("");
+        setFreeAdultCount(0);
+        setFreeKidCount(0);
       }
-      const reservedCounts = data.reserved
-        ? data.reserved
-        : { adultCount: freeAdultCount, kidCount: freeKidCount };
-      setReserved(reservedCounts);
-      toast.success("RSVP confirmed! Thank you.");
-      setRsvpName("");
-      setRsvpEmail("");
-      setFreeAdultCount(0);
-      setFreeKidCount(0);
-    } catch (error: any) {
-      console.error("Error submitting RSVP:", error);
+    } catch (err: any) {
+      console.error("Error submitting RSVP:", err);
       toast.error("Error submitting RSVP.");
     } finally {
       setLoadingRsvp(false);
@@ -149,17 +145,14 @@ export default function EventCard({ event }: { event: EventData }) {
     const name = payerName.trim();
     const email = payerEmail.trim();
     if (!name || !email || adultCount + kidCount <= 0) {
-      toast.error("Please select tickets and fill in your name and email.");
+      toast.error("Please select tickets and fill out name and email.");
       return;
     }
     if (isPastEvent) {
-      toast.error("This event has already passed; booking not allowed.");
+      toast.error("This event has passed; booking not allowed.");
       return;
     }
-    if (
-      typeof event.availableTickets === "number" &&
-      event.availableTickets < adultCount + kidCount
-    ) {
+    if (typeof event.availableTickets === "number" && event.availableTickets < adultCount + kidCount) {
       toast.error("Not enough tickets available.");
       return;
     }
@@ -169,32 +162,26 @@ export default function EventCard({ event }: { event: EventData }) {
       const res = await fetch(`/api/events/${event.id}/booking-init`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          adultCount,
-          kidCount,
-        }),
+        body: JSON.stringify({ name, email, adultCount, kidCount }),
       });
       const data = (await res.json()) as BookingInitResponse;
       if (!res.ok) {
         toast.error("Booking failed: " + (data.message ?? "Unknown error"));
-        return;
-      }
-      if (data.bookingId) {
-        toast.success("Booking created! Redirecting to summary...");
+      } else if (data.bookingId) {
+        toast.success("Booking created! Redirecting…");
         router.push(`/events/summary/${data.bookingId}`);
       } else {
         toast.error("Booking initialization did not return an ID.");
       }
-    } catch (error: any) {
-      console.error("Error initializing booking:", error);
+    } catch (err: any) {
+      console.error("Error initializing booking:", err);
       toast.error("Error initializing booking.");
     } finally {
       setLoadingBooking(false);
     }
   };
 
+  // ── Thank-you panel for free events ─────────────────────────────────────────
   if (event.isFree && reserved) {
     return (
       <div className={styles.thankYouPanel}>
@@ -205,13 +192,15 @@ export default function EventCard({ event }: { event: EventData }) {
           {reserved.kidCount > 0 &&
             ` and ${reserved.kidCount} kid ticket${reserved.kidCount !== 1 ? "s" : ""}`}.
         </p>
-        <p>Please check your email for details. No ticket codes are needed for free events.</p>
+        <p>Please check your email for details. No ticket codes needed for free events.</p>
       </div>
     );
   }
 
+  // ── Main Event Card ────────────────────────────────────────────────────────
   return (
     <div className={styles.eventCard}>
+      {/* Image */}
       <div className={styles.eventImageWrapper}>
         {resolveImageSrc(event) ? (
           <Image
@@ -236,30 +225,23 @@ export default function EventCard({ event }: { event: EventData }) {
         )}
       </div>
 
+      {/* Details */}
       <div className={styles.eventDetails}>
         <h2>{event.title}</h2>
         <p>{event.description}</p>
-
-        <p>
-          <strong>Location:</strong> {event.location}
-        </p>
+        <p><strong>Location:</strong> {event.location}</p>
         <p>
           <strong>Date &amp; Time:</strong> {formattedDate} | {formattedStart}–{formattedEnd}
         </p>
         <p className={styles.duration}>
           <strong>Duration:</strong> {durationHrs} hrs
         </p>
-
-        <p>
-          <strong>Available Tickets:</strong> {event.availableTickets}
-        </p>
-
+        <p><strong>Available Tickets:</strong> {event.availableTickets}</p>
         {event.kidPriceInfo && (
           <p className={styles.kidInfo}>
             <strong>Child Pricing:</strong> {event.kidPriceInfo}
           </p>
         )}
-
         <p>
           <strong>Price:</strong>{" "}
           {event.isFree
@@ -270,20 +252,17 @@ export default function EventCard({ event }: { event: EventData }) {
           <p className={styles.adultsOnly}>Adults Only</p>
         )}
 
+        {/* FAQs */}
         {event.faqs?.length ? (
           <>
-            <button
-              className={styles.faqButton}
-              onClick={() => setShowFaqs(true)}
-            >
+            <button className={styles.faqButton} onClick={() => setShowFaqs(true)}>
               View FAQs
             </button>
-            {showFaqs && (
-              <FaqModal faqs={event.faqs} onClose={() => setShowFaqs(false)} />
-            )}
+            {showFaqs && <FaqModal faqs={event.faqs} onClose={() => setShowFaqs(false)} />}
           </>
         ) : null}
 
+        {/* Expired */}
         {isPastEvent ? (
           <div className={styles.expiredMessage}>
             <p>This event has expired.</p>
@@ -310,26 +289,22 @@ export default function EventCard({ event }: { event: EventData }) {
               />
             </div>
             <div className={styles.formGroup}>
-              <label>Number of Adults</label>
+              <label>Adults</label>
               <input
                 type="number"
-                min="0"
+                min={0}
                 value={freeAdultCount}
-                onChange={(e) =>
-                  setFreeAdultCount(clampNonNegative(parseInt(e.target.value) || 0))
-                }
+                onChange={(e) => setFreeAdultCount(clampNonNegative(parseInt(e.target.value) || 0))}
               />
             </div>
             {!event.adultOnly && (
               <div className={styles.formGroup}>
-                <label>Number of Kids</label>
+                <label>Kids</label>
                 <input
                   type="number"
-                  min="0"
+                  min={0}
                   value={freeKidCount}
-                  onChange={(e) =>
-                    setFreeKidCount(clampNonNegative(parseInt(e.target.value) || 0))
-                  }
+                  onChange={(e) => setFreeKidCount(clampNonNegative(parseInt(e.target.value) || 0))}
                 />
               </div>
             )}
@@ -348,11 +323,9 @@ export default function EventCard({ event }: { event: EventData }) {
               <label>Adult Tickets</label>
               <input
                 type="number"
-                min="0"
+                min={0}
                 value={adultCount}
-                onChange={(e) =>
-                  setAdultCount(clampNonNegative(parseInt(e.target.value) || 0))
-                }
+                onChange={(e) => setAdultCount(clampNonNegative(parseInt(e.target.value) || 0))}
               />
             </div>
             {!event.adultOnly && (
@@ -360,11 +333,9 @@ export default function EventCard({ event }: { event: EventData }) {
                 <label>Child Tickets</label>
                 <input
                   type="number"
-                  min="0"
+                  min={0}
                   value={kidCount}
-                  onChange={(e) =>
-                    setKidCount(clampNonNegative(parseInt(e.target.value) || 0))
-                  }
+                  onChange={(e) => setKidCount(clampNonNegative(parseInt(e.target.value) || 0))}
                 />
               </div>
             )}

@@ -20,22 +20,24 @@ interface AdminBlogNewsFormProps {
 }
 
 export default function AdminBlogNewsForm({ initialData }: AdminBlogNewsFormProps) {
-  // Basic post fields state
-  const [title, setTitle]       = useState(initialData?.title     || "");
-  const [excerpt, setExcerpt]   = useState(initialData?.excerpt   || "");
-  const [content, setContent]   = useState(initialData?.content   || "");
-  const [author, setAuthor]     = useState(initialData?.author    || "");
-  const [date, setDate]         = useState(initialData?.date.slice(0, 10) || "");
-  const [type, setType]         = useState<"blog"|"news">(initialData?.type || "blog");
-
-  // For header image upload & preview
-  const [imageFile, setImageFile]                         = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl]                       = useState<string>("");
-  const [existingImageUrl, setExistingImageUrl]           = useState<string | null>(null);
-
   const router = useRouter();
 
-  // If editing, build existing-image URL
+  // Basic post fields
+  const [title, setTitle]     = useState(initialData?.title     || "");
+  const [excerpt, setExcerpt] = useState(initialData?.excerpt   || "");
+  const [content, setContent] = useState(initialData?.content   || "");
+  const [author, setAuthor]   = useState(initialData?.author    || "");
+  const [date, setDate]       = useState(initialData?.date.slice(0, 10) || "");
+  const [type, setType]       = useState<"blog"|"news">(initialData?.type || "blog");
+
+  // Image states
+  const [imageFile, setImageFile]           = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl]         = useState<string>("");
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+  // track legacyImage value to send if no new upload
+  const [legacyImage, setLegacyImage]       = useState<string | null>(initialData?.image || null);
+
+  // Build existing-image preview URL
   useEffect(() => {
     if (initialData?.cloudinaryPublicId) {
       setExistingImageUrl(
@@ -46,7 +48,7 @@ export default function AdminBlogNewsForm({ initialData }: AdminBlogNewsFormProp
     }
   }, [initialData]);
 
-  // Preview newly selected file
+  // Preview new file selection
   useEffect(() => {
     if (!imageFile) {
       setPreviewUrl("");
@@ -57,17 +59,18 @@ export default function AdminBlogNewsForm({ initialData }: AdminBlogNewsFormProp
     return () => URL.revokeObjectURL(url);
   }, [imageFile]);
 
-  // Handle header image file change
+  // Handle file input change
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files?.[0]) {
       setImageFile(e.target.files[0]);
+      // if selecting a new file, clear legacyImage so API won't use it
+      setLegacyImage(null);
     }
   };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // Build FormData with all fields and the header image file
     const formData = new FormData();
     formData.append("title",   title);
     formData.append("excerpt", excerpt);
@@ -76,32 +79,34 @@ export default function AdminBlogNewsForm({ initialData }: AdminBlogNewsFormProp
     formData.append("date",    date);
     formData.append("type",    type);
 
+    // If a new file was selected, include it
     if (imageFile) {
       formData.append("image", imageFile);
+    } else if (legacyImage) {
+      // Otherwise, pass along the existing legacy URL
+      formData.append("legacyImage", legacyImage);
     }
 
     try {
       let res: Response;
       if (initialData) {
-        // Editing existing post
         res = await fetch(`/api/blog-news/${initialData.slug}`, {
           method: "PUT",
           body: formData,
         });
       } else {
-        // Creating new post
         res = await fetch("/api/blog-news", {
           method: "POST",
           body: formData,
         });
       }
 
+      const result = await res.json();
       if (res.ok) {
         toast.success("Post saved successfully!");
         router.push("/dashboard/admin-dashboard/blog-news");
       } else {
-        const errorData = await res.json();
-        toast.error(`Error saving post: ${errorData.message || "Unknown error"}`);
+        toast.error(`Error saving post: ${result.message || "Unknown error"}`);
       }
     } catch (err: any) {
       console.error("Error saving post:", err);
@@ -165,7 +170,6 @@ export default function AdminBlogNewsForm({ initialData }: AdminBlogNewsFormProp
           Date:
           <input
             type="date"
-            placeholder="Select the publication date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
@@ -177,11 +181,11 @@ export default function AdminBlogNewsForm({ initialData }: AdminBlogNewsFormProp
           Upload Header Image:
           <input type="file" accept="image/*" onChange={handleFileChange} />
           <small>
-            Choose a header image file from your computer. (Accepted formats: JPG, PNG, etc.)
+            Choose a header image file. If you don’t select one, the existing image will be preserved.
           </small>
         </label>
 
-        {/* existing or new preview */}
+        {/* Preview area */}
         {(previewUrl || existingImageUrl) && (
           <div className={styles.previewWrapper}>
             <Image

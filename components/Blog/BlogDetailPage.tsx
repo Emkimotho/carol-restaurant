@@ -1,3 +1,4 @@
+// File: components/BlogDetailPage.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -15,8 +16,9 @@ interface BlogPostData {
   author: string;
   date: string;
   content: string;
-  image?: string;
-  cloudinaryPublicId?: string;
+  cloudinaryPublicId?: string; // new Cloudinary ID
+  imageUrl?: string;           // secure URL from Cloudinary
+  legacyImage?: string;        // legacy/public URL or filename
 }
 
 interface BlogDetailPageProps {
@@ -32,8 +34,7 @@ export default function BlogDetailPage({ slug }: BlogDetailPageProps) {
       try {
         const res = await fetch(`/api/blog-news/${slug}?type=blog`);
         if (!res.ok) throw new Error("Failed to fetch blog post");
-        const data: BlogPostData = await res.json();
-        setPost(data);
+        setPost(await res.json());
       } catch (error) {
         console.error(error);
       } finally {
@@ -51,27 +52,30 @@ export default function BlogDetailPage({ slug }: BlogDetailPageProps) {
     return <div className={styles.error}>Blog post not found.</div>;
   }
 
-  // Determine image source:
-  // 1. Cloudinary if we have a public ID
-  // 2. Absolute URL if image starts with http
-  // 3. Local /images/ if image is a filename
-  // 4. Fallback placeholder
+  // Determine image source with fallback chain:
+  // 1) Cloudinary via public ID
+  // 2) Stored secure URL
+  // 3) Legacy image (absolute or local)
+  // 4) Placeholder
   let imageSrc = "/images/placeholder.jpg";
   if (post.cloudinaryPublicId) {
     imageSrc = getCloudinaryImageUrl(post.cloudinaryPublicId, 800, 400);
-  } else if (post.image) {
-    if (post.image.startsWith("http")) {
-      imageSrc = post.image;
-    } else {
-      imageSrc = `/images/${post.image}`;
-    }
+  } else if (post.imageUrl) {
+    imageSrc = post.imageUrl;
+  } else if (post.legacyImage) {
+    imageSrc = post.legacyImage.startsWith("http")
+      ? post.legacyImage
+      : `/images/${post.legacyImage}`;
   }
 
   return (
     <>
       <Head>
         <title>{post.title} | Company Name</title>
-        <meta name="description" content={`Read our blog post: ${post.title}`} />
+        <meta
+          name="description"
+          content={`Read our blog post: ${post.title}`}
+        />
       </Head>
 
       <article className={styles["blog-detail-page"]}>
@@ -86,7 +90,12 @@ export default function BlogDetailPage({ slug }: BlogDetailPageProps) {
           />
           <h1 className={styles["blog-detail-title"]}>{post.title}</h1>
           <p className={styles["blog-detail-meta"]}>
-            By {post.author} | {new Date(post.date).toLocaleDateString()}
+            By {post.author} |{" "}
+            {new Date(post.date).toLocaleDateString(undefined, {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </p>
         </header>
 

@@ -6,22 +6,33 @@ import { toast } from "react-toastify";
 import EventCard from "@/components/Events/EventCard";
 import styles from "@/components/Events/Events.module.css";
 
+export interface Faq {
+  id: string;
+  question: string;
+  answer: string;
+}
+
 export interface EventData {
   id: string;
   title: string;
   description: string;
+  /** legacy/local filename, e.g. "uploads/foo.jpg" */
   image?: string | null;
+  /** direct secured URL from Cloudinary or your API */
+  imageUrl?: string | null;
+  /** Cloudinary public ID, for on-the-fly transforms */
+  cloudinaryPublicId?: string | null;
   location: string;
   date: string;         // ISO date string
-  startTime: string;    // "HH:MM" format
-  endTime: string;      // "HH:MM" format
+  startTime: string;    // "HH:MM"
+  endTime: string;      // "HH:MM"
   adultPrice: number;
   kidPrice: number;
   kidPriceInfo?: string | null;
   availableTickets: number;
   isFree: boolean;
   adultOnly: boolean;
-  faqs?: { id: string; question: string; answer: string }[];
+  faqs?: Faq[];
 }
 
 export default function EventsPage() {
@@ -33,11 +44,14 @@ export default function EventsPage() {
         const res = await fetch("/api/events");
         if (!res.ok) throw new Error("Failed to fetch events");
         const { events: fetched } = await res.json();
-        const eventsFromDB: EventData[] = fetched.map((ev: any) => ({
+
+        const mapped: EventData[] = (fetched as any[]).map((ev) => ({
           id:               ev.id,
           title:            ev.title,
           description:      ev.description,
-          image:            ev.image,
+          image:            ev.image,                    // legacy
+          imageUrl:         ev.imageUrl ?? null,         // secure_url
+          cloudinaryPublicId: ev.cloudinaryPublicId ?? null,
           location:         ev.location,
           date:             ev.date,
           startTime:        ev.startTime,
@@ -50,21 +64,20 @@ export default function EventsPage() {
           adultOnly:        ev.adultOnly,
           faqs:             ev.faqs,
         }));
-        setEvents(eventsFromDB);
+
+        setEvents(mapped);
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching events:", error);
         toast.error("Error fetching events");
       }
     }
+
     fetchEvents();
   }, []);
 
   if (events.length === 0) {
     return (
-      <section
-        className={styles.eventsPage}
-        style={{ textAlign: "center", padding: "2rem" }}
-      >
+      <section className={styles.eventsPage} style={{ textAlign: "center", padding: "2rem" }}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           height="100"

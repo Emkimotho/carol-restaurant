@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { v2 as cloudinary } from "cloudinary";
 
+// disable built-in body parser so we can handle multipart/form-data
 export const config = {
   api: {
     bodyParser: false,
@@ -43,13 +44,17 @@ export async function GET(request: NextRequest) {
         type: true,
         blogImagePublicId: true,
         imageUrl: true,
+        legacyImage: true,
       },
     });
 
     return NextResponse.json(posts);
   } catch (err: any) {
     console.error("GET /api/blog-news error:", err);
-    return NextResponse.json({ message: err.message }, { status: 500 });
+    return NextResponse.json(
+      { message: "Failed to fetch posts" },
+      { status: 500 }
+    );
   }
 }
 
@@ -61,15 +66,18 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
 
     // required fields
-    const title   = (formData.get("title")   as string).trim();
-    const excerpt = (formData.get("excerpt") as string).trim();
-    const content = (formData.get("content") as string).trim();
-    const author  = (formData.get("author")  as string).trim();
-    const dateStr = (formData.get("date")    as string).trim();
-    const type    = (formData.get("type")    as string).trim();
+    const title      = (formData.get("title")   as string)?.trim();
+    const excerpt    = (formData.get("excerpt") as string)?.trim();
+    const content    = (formData.get("content") as string)?.trim();
+    const author     = (formData.get("author")  as string)?.trim();
+    const dateStr    = (formData.get("date")    as string)?.trim();
+    const type       = (formData.get("type")    as string)?.trim();
 
     if (!title || !excerpt || !content || !author || !dateStr || !type) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     // slugify title
@@ -78,26 +86,33 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)+/g, "");
 
-    // handle optional image upload
+    // legacy‐image fallback (if no file uploaded)
+    let legacyImage = (formData.get("legacyImage") as string)?.trim() || null;
+
+    // handle optional file upload
     let blogImagePublicId: string | null = null;
-    let imageUrl: string | null = null;
+    let imageUrl: string | null           = null;
 
     const imageFile = formData.get("image") as File | null;
     if (imageFile && imageFile.size > 0) {
-      // read as data URI
-      const buf = Buffer.from(await imageFile.arrayBuffer());
-      const dataUri = `data:${imageFile.type};base64,${buf.toString("base64")}`;
+      // clear out any legacy fallback
+      legacyImage = null;
+
+      // read file into buffer
+      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      const dataUri = `data:${imageFile.type};base64,${buffer.toString("base64")}`;
 
       const uploadRes = await cloudinary.uploader.upload(dataUri, {
-        folder: "blog-news",
+        folder:    "blog-news",
         public_id: slug,
         overwrite: true,
       });
 
       blogImagePublicId = uploadRes.public_id;
-      imageUrl            = uploadRes.secure_url;
+      imageUrl           = uploadRes.secure_url;
     }
 
+    // persist to database
     const post = await prisma.blogNews.create({
       data: {
         title,
@@ -109,12 +124,16 @@ export async function POST(request: NextRequest) {
         type,
         blogImagePublicId,
         imageUrl,
+        legacyImage,
       },
     });
 
     return NextResponse.json(post, { status: 201 });
   } catch (err: any) {
     console.error("POST /api/blog-news error:", err);
-    return NextResponse.json({ message: err.message }, { status: 500 });
+    return NextResponse.json(
+      { message: "Failed to create post" },
+      { status: 500 }
+    );
   }
 }

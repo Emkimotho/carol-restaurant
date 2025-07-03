@@ -1,3 +1,4 @@
+// File: components/BlogPost.tsx
 "use client";
 
 import React from "react";
@@ -14,8 +15,9 @@ interface BlogPostProps {
     excerpt: string;
     date: string;
     author: string;
-    image?: string;               // legacy/public URL or filename
-    cloudinaryPublicId?: string;  // optional Cloudinary public ID
+    cloudinaryPublicId?: string; // new Cloudinary ID
+    imageUrl?: string;           // secure URL from Cloudinary
+    legacyImage?: string;        // legacy/public URL or filename
     link?: string;
     type?: "blog" | "news";
   };
@@ -27,16 +29,24 @@ export default function BlogPost({ post }: BlogPostProps) {
     post.link ||
     (post.type === "news" ? `/news/${post.slug}` : `/blog/${post.slug}`);
 
-  // Determine image source
+  // Determine image source with full fallback chain
   const placeholder = "/images/placeholder.jpg";
-  let imageSrc = placeholder;
+  let imageSrc: string;
 
   if (post.cloudinaryPublicId) {
+    // 1) Cloudinary transformation URL
     imageSrc = getCloudinaryImageUrl(post.cloudinaryPublicId, 800, 450);
-  } else if (post.image) {
-    imageSrc = post.image.startsWith("http")
-      ? post.image
-      : `/images/${post.image}`;
+  } else if (post.imageUrl) {
+    // 2) Stored secure URL from DB
+    imageSrc = post.imageUrl;
+  } else if (post.legacyImage) {
+    // 3) Legacy/public URL or local filename
+    imageSrc = post.legacyImage.startsWith("http")
+      ? post.legacyImage
+      : `/images/${post.legacyImage}`;
+  } else {
+    // 4) Fallback placeholder
+    imageSrc = placeholder;
   }
 
   // Format date

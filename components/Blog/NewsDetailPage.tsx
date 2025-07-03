@@ -16,8 +16,9 @@ interface NewsPostData {
   author: string;
   date: string;
   content: string;
-  image?: string;                // legacy/public URL
-  cloudinaryPublicId?: string;   // new Cloudinary ID
+  cloudinaryPublicId?: string; // new Cloudinary ID
+  imageUrl?: string;           // secure URL from Cloudinary stored in DB
+  legacyImage?: string;        // legacy/public URL
 }
 
 interface NewsDetailPageProps {
@@ -46,19 +47,30 @@ export default function NewsDetailPage({ slug }: NewsDetailPageProps) {
   if (loading) return <div className={styles.loading}>Loading...</div>;
   if (!post)  return <div className={styles.error}>News post not found.</div>;
 
-  // Build our src: Cloudinary if available, else fallback
-  const src = post.cloudinaryPublicId
-    ? getCloudinaryImageUrl(post.cloudinaryPublicId, 800, 400)
-    : post.image?.startsWith("http")
-      ? post.image
-      : `/images/${post.image || "placeholder.jpg"}`;
+  // Determine image src: 1) Cloudinary via public ID, 2) stored imageUrl, 3) legacyImage, 4) placeholder
+  let src: string;
+  if (post.cloudinaryPublicId) {
+    src = getCloudinaryImageUrl(post.cloudinaryPublicId, 800, 400);
+  } else if (post.imageUrl) {
+    src = post.imageUrl;
+  } else if (post.legacyImage) {
+    src = post.legacyImage.startsWith("http")
+      ? post.legacyImage
+      : `/images/${post.legacyImage}`;
+  } else {
+    src = "/images/placeholder.jpg";
+  }
 
   return (
     <>
       <Head>
         <title>{post.title} | Company Name</title>
-        <meta name="description" content={`Read our news post: ${post.title}`} />
+        <meta
+          name="description"
+          content={`Read our news post: ${post.title}`}
+        />
       </Head>
+
       <article className={styles["blog-detail-page"]}>
         <header className={styles["blog-detail-header"]}>
           <Image
@@ -74,6 +86,7 @@ export default function NewsDetailPage({ slug }: NewsDetailPageProps) {
             By {post.author} | {post.date}
           </p>
         </header>
+
         <section className={styles["blog-detail-content"]}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {post.content}
