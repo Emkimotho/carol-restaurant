@@ -16,7 +16,7 @@ import type { CartItem, MenuItem as MenuItemType } from "@/utils/types";
  *  PROPS                                                             *
  * ------------------------------------------------------------------ */
 interface CartPageProps {
-  cart: CartItem[];            // current cart (supplied by route, not used directly)
+  cart: CartItem[];            // (passed by the route but not used here)
   crossSell: MenuItemType[];   // server-side cross-sell suggestions
 }
 
@@ -112,7 +112,9 @@ export default function CartPage({ cart, crossSell }: CartPageProps) {
                             alt={item.title}
                             width={150}
                             height={150}
-                            unoptimized
+                            /* On narrow screens we only need an 80 px thumb */
+                            sizes="(max-width:480px) 80px, 150px"
+                            priority={idx < 2}          // first two items above the fold
                             className={styles.itemThumbnail}
                           />
                         );
@@ -204,6 +206,7 @@ export default function CartPage({ cart, crossSell }: CartPageProps) {
                             {g.maxAllowed ? ` - ${g.maxAllowed}` : ""})
                           </h4>
 
+                          {/* dropdown or checkbox/radio list */}
                           {g.optionType === "dropdown" ? (
                             <select
                               className={styles.dropdownSelect}
@@ -363,8 +366,9 @@ export default function CartPage({ cart, crossSell }: CartPageProps) {
                           alt={item.title}
                           width={80}
                           height={80}
-                          unoptimized
+                          sizes="(max-width:480px) 60px, 80px"
                           className={styles.savedThumbnail}
+                          loading="lazy"
                         />
                       );
                     })()}
@@ -411,15 +415,17 @@ export default function CartPage({ cart, crossSell }: CartPageProps) {
                   <div className={styles.recommendImageContainer}>
                     {(() => {
                       const src = rec.cloudinaryPublicId
-                        ? getCloudinaryImageUrl(rec.cloudinaryPublicId, 200, 200)
+                        ? getCloudinaryImageUrl(rec.cloudinaryPublicId, 160, 160)
                         : rec.image || "/placeholder.png";
                       return (
                         <Image
                           src={src}
                           alt={rec.title}
-                          fill
-                          unoptimized
+                          width={160}
+                          height={160}
+                          sizes="(max-width:480px) 120px, 160px"
                           className={styles.recommendThumbnail}
+                          loading="lazy"
                         />
                       );
                     })()}

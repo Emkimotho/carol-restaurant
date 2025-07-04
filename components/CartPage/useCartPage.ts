@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------ */
 "use client";
 
-import { useEffect, useRef, useState, useContext } from "react";
+import { useEffect, useRef, useState, useContext, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CartContext } from "@/contexts/CartContext";
@@ -120,6 +120,27 @@ export function useCartPage(crossSell: MenuItemType[]) {
     };
   }, []);
 
+  /* ---- dedup lists to avoid double-render bug ---- */
+  const uniqCart  = uniqBy(cartItems, (c) => c.cartItemId);
+  const uniqSaved = uniqBy(savedItems, (s) => s.cartItemId);
+
+  /* ---- memoised recommendations ---- */
+  const { recs } = useMemo(() => {
+    const section = cartSection(uniqCart);
+    const idsInCartSet = new Set(uniqCart.map((c) => c.id));
+
+    const eligible = crossSell.filter((cs) => {
+      if (idsInCartSet.has(cs.id)) return false;
+      if (section === "MainMenu")
+        return cs.category?.type === "MainMenu" && !cs.showInGolfMenu;
+      if (section === "GolfMenu")
+        return cs.category?.type === "GolfMenu" || cs.showInGolfMenu;
+      return true; // Mixed / Unknown
+    });
+
+    return { recs: eligible.slice(0, MAX_RECS) };
+  }, [crossSell, uniqCart]);
+
   /* ------------- helpers for modifying items ------------- */
   const changeQty = (ci: CartItem, q: number) =>
     q > 0 && updateCartItem({ ...ci, quantity: q });
@@ -185,25 +206,6 @@ export function useCartPage(crossSell: MenuItemType[]) {
       },
     });
   };
-
-  /* -------- dedup lists to avoid double-render bug -------- */
-  const uniqCart = uniqBy(cartItems, (c) => c.cartItemId);
-  const uniqSaved = uniqBy(savedItems, (s) => s.cartItemId);
-
-  /* -------- prepare recommendations (server prop) -------- */
-  const section = cartSection(uniqCart);
-  const idsInCartSet = new Set(uniqCart.map((c) => c.id));
-
-  const eligible = crossSell.filter((cs) => {
-    if (idsInCartSet.has(cs.id)) return false;
-    if (section === "MainMenu")
-      return cs.category?.type === "MainMenu" && !cs.showInGolfMenu;
-    if (section === "GolfMenu")
-      return cs.category?.type === "GolfMenu" || cs.showInGolfMenu;
-    return true; // Mixed / Unknown
-  });
-
-  const recs = eligible.slice(0, MAX_RECS);
 
   return {
     router,
