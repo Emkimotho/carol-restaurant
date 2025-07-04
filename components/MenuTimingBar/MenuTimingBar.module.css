@@ -1,154 +1,97 @@
-/* Timing Bar Styles */
+/* File: components/MenuTimingBar/MenuTimingBar.module.css */
+
+/* ————— Fixed bar ————— */
 .timingBar {
   position: fixed;
-  top: 80px; /* Adjust if your navbar height changes */
-  left: 0;
-  width: 100%;
-  background-color: var(--light-gray);
-  padding: 0.75rem 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
+  top: 72px;               /* header height */
+  left: 0; right: 0;
+  height: 56px;
+  background: var(--light-gray);
+  border-bottom: 1px solid var(--border-color-dark);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 3000;
+  box-shadow: 0 2px 4px rgba(0,0,0,.08);
+  animation: glowIn 3s ease-out forwards;
 }
 
-.timingStatus {
-  font-size: 1rem;
-  color: var(--primary-color);
-  font-family: var(--font-body);
+@keyframes glowIn {
+  0%   { background: var(--primary-color); color: var(--white); }
+  100% { background: var(--light-gray);    color: var(--foreground); }
 }
 
-.changeBtn {
-  background-color: var(--secondary-color);
-  color: var(--white);
-  border: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-}
-
-.changeBtn:hover {
-  background-color: var(--secondary-color-hover);
-  transform: scale(1.03);
-}
-
-/* Popup Overlay */
-.popupOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Popup Modal */
-.popupModal {
-  background: var(--white);
-  border-radius: 8px;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
+/* whole bar acts as one button */
+.barButton {
+  all: unset;
   position: relative;
-}
-
-/* Popup Header with Green Background */
-.popupHeader {
-  background-color: var(--primary-color);
-  padding: 1rem 1.5rem;
-}
-
-.popupTitle {
-  font-size: 1.6rem;
-  margin: 0;
-  color: var(--white);
-  font-family: var(--font-heading);
-}
-
-/* Popup Body */
-.popupBody {
-  padding: 1.5rem;
-  font-size: 1rem;
-  color: var(--foreground);
-  font-family: var(--font-body);
-  line-height: 1.4;
-}
-
-/* Closed Message */
-.closedMessage {
-  color: red;
-  font-weight: 600;
-  margin-top: 0.5rem;
-}
-
-/* Popup Footer */
-.popupFooter {
-  padding: 1rem 1.5rem;
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-/* Buttons in Popup Footer */
-.popupBtnPrimary {
-  flex: 1;
-  background-color: var(--primary-color);
-  color: var(--white);
-  border: none;
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
+  overflow: hidden;
+  display: flex; align-items: center; gap: 0.6rem;
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.3s ease;
 }
 
-.popupBtnPrimary:hover {
-  background-color: var(--primary-color-hover);
-  transform: scale(1.03);
+/* tap ripple */
+.ripple::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: rgba(var(--primary-rgb),.15);
+  animation: ripple .45s ease-out;
 }
+@keyframes ripple { from{opacity:1;} to{opacity:0;} }
 
-.popupBtnSecondary {
-  flex: 1;
-  background-color: var(--secondary-color);
-  color: var(--white);
-  border: none;
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s ease, transform 0.3s ease;
+/* ——— CSS-drawn clock in secondary color ——— */
+.clockIcon {
+  width: 20px; height: 20px;
+  position: relative;
+  border: 2px solid var(--secondary-color);
+  border-radius: 50%;
+  color: var(--secondary-color);
 }
-
-.popupBtnSecondary:hover {
-  background-color: var(--primary-color);
-  transform: scale(1.03);
+.clockIcon::before, .clockIcon::after {
+  content:""; position:absolute; left:50%; top:50%;
+  width:2px; background: currentColor; transform-origin: bottom center;
 }
+.clockIcon::before { height:7px; transform: translate(-50%,-100%); }
+.clockIcon::after  { height:9px; transform: translate(-50%,-100%) rotate(50deg); }
 
-/* Popup Close Button */
-.popupClose {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.75rem;
-  background: transparent;
-  border: none;
-  font-size: 1.2rem;
-  color: var(--gray);
-  cursor: pointer;
-  transition: color 0.3s ease, transform 0.3s ease;
-}
+/* text */
+.barText   { font-size:1rem; font-weight:500; font-family:var(--font-body); }
+.barAction { font-weight:600; color:var(--primary-color); text-decoration:underline; }
+.asapWord  { color:#28a745; font-weight:700; }
 
-.popupClose:hover {
-  color: var(--gray-hover);
-  transform: scale(1.1);
+/* ————— Bottom sheet ————— */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,.45);
+           display:flex; align-items:flex-end; justify-content:center; z-index:3100; }
+
+.sheet { width:100%; max-width:500px; background:var(--white);
+         border-top-left-radius:12px; border-top-right-radius:12px;
+         padding:1.75rem 1.5rem 2.5rem; box-shadow:0 -4px 16px rgba(0,0,0,.16);
+         animation:slideUp .26s ease-out; position:relative; }
+
+@keyframes slideUp { from{transform:translateY(100%);} to{transform:translateY(0);} }
+
+.sheetTitle { text-align:center; font-family:var(--font-heading);
+              font-size:1.3rem; color:var(--primary-color); margin-bottom:1rem; }
+
+.closedNote { text-align:center; font-size:.95rem; line-height:1.4;
+              color:var(--dark-gray,#444); margin-bottom:1.25rem; }
+
+.sheetBtns  { display:flex; flex-direction:column; gap:.75rem; margin-bottom:1rem; }
+
+.btnPrimary, .btnOutline { padding:.85rem; font-size:1rem; font-weight:600;
+                           border-radius:8px; cursor:pointer;
+                           transition:background .25s; outline:2px solid transparent; outline-offset:2px; }
+
+.btnPrimary { background:var(--primary-color); color:var(--white); border:none; }
+.btnPrimary:hover:not(:disabled) { background:var(--primary-color-hover); }
+.btnPrimary:disabled { background:var(--border-color); cursor:not-allowed; }
+
+.btnOutline { background:var(--white); color:var(--primary-color); border:2px solid var(--primary-color); }
+.btnOutline:hover { background:rgba(var(--primary-rgb),.07); }
+
+.btnClose { position:absolute; top:12px; right:16px; background:none; border:none;
+            font-size:1.3rem; color:var(--gray,#888); cursor:pointer; transition:color .2s; }
+.btnClose:hover { color:var(--dark-gray,#666); }
+
+@media (prefers-reduced-motion:reduce) {
+  .sheet   { animation:none; }
+  .ripple::after, .timingBar { animation:none; }
 }
