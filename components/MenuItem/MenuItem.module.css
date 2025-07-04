@@ -18,7 +18,7 @@
 
 .container:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  /* transform: translateY(-2px);  subtle lift removed */
+  /* subtle lift removed */
 }
 
 /* ================================================================== */
@@ -66,9 +66,10 @@
   font-family: var(--font-body);
 }
 
+/* UPDATED: use primary color for price to match brand */
 .price {
   font-size: 1.2rem;
-  color: var(--secondary-color);
+  color: var(--primary-color);
   margin-bottom: 1rem;
   font-weight: bold;
 }
@@ -85,7 +86,7 @@
   cursor: pointer;
   width: 100%;
   text-align: center;
-  transition: background-color 0.3s ease; /* removed transform transition */
+  transition: background-color 0.3s ease;
   font-family: var(--font-body);
   outline: 2px solid transparent;
   outline-offset: 2px;
@@ -93,7 +94,6 @@
 
 .btnAddToCart:hover {
   background-color: var(--secondary-color);
-  /* transform: scale(1.05);  zoom effect removed */
 }
 
 .btnAddToCart:disabled {
@@ -171,7 +171,7 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s ease; /* removed transform transition */
+  transition: background 0.3s ease;
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
@@ -180,10 +180,11 @@
   background-color: var(--secondary-color);
   color: var(--white);
 }
+
 .btnChoice:hover {
   background-color: var(--secondary-color-hover);
-  /* transform: scale(1.03);  removed zoom */
 }
+
 .btnChoice:focus-visible,
 .btnCloseChoice:focus-visible {
   outline: 2px dashed var(--secondary-color);
@@ -193,9 +194,9 @@
   background-color: var(--dark-gray, #666);
   color: var(--white);
 }
+
 .btnCloseChoice:hover {
   background-color: var(--dark-gray-hover, #555);
-  /* transform: scale(1.02);  removed zoom */
 }
 
 /* ================================================================== */
