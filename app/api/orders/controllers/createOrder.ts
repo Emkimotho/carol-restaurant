@@ -20,20 +20,22 @@ import { TAX_RATE }               from "@/config/taxConfig";
 import { calculateDeliveryFee }   from "@/utils/calculateDeliveryFee";
 import { pushOrderToClover }      from "@/lib/clover/orderService";
 
-/// ---------- helpers -------------------------------------------------------
+/* ────────────────────────── helpers ────────────────────────── */
 const round = (n: number) => Math.round(n * 100) / 100;
 
 function computeItemTotal(it: any): number {
-  const qty  = typeof it.quantity === "number" && it.quantity > 0 ? it.quantity : 1;
-  let   price = typeof it.price === "number" ? it.price : 0;
+  const qty   = typeof it.quantity === "number" && it.quantity > 0 ? it.quantity : 1;
+  let   price = typeof it.price    === "number" ? it.price : 0;
 
   if (Array.isArray(it.optionGroups) && it.selectedOptions) {
     it.optionGroups.forEach((grp: any) => {
       const sel = it.selectedOptions[grp.id];
       if (!sel) return;
+
       grp.choices.forEach((choice: any) => {
         if (!sel.selectedChoiceIds.includes(choice.id)) return;
         price += choice.priceAdjustment ?? 0;
+
         if (choice.nestedOptionGroup && sel.nestedSelections?.[choice.id]) {
           sel.nestedSelections[choice.id].forEach((nid: string) => {
             const n = choice.nestedOptionGroup!.choices.find((c: any) => c.id === nid);
@@ -50,47 +52,50 @@ function computeItemTotal(it: any): number {
 /* ========================================================================== */
 export async function createOrder(req: Request) {
   try {
-    // 0) Authenticate
+    /* 0️⃣  Auth -------------------------------------------------------------- */
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.email)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    // 1) Lookup user
+    /* 1️⃣  User -------------------------------------------------------------- */
     const user = await prisma.user.findUnique({
-      where:  { email: session.user.email },
+      where : { email: session.user.email },
       select: { id: true, firstName: true, lastName: true },
     });
-    if (!user) {
+    if (!user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+
     const customerId   = user.id;
     const customerName = `${user.firstName} ${user.lastName}`;
 
-    // 2) Parse body
-    const body                = await req.json();
-    const { items, deliveryType, paymentMethod, guestPhone } = body;
+    /* 2️⃣  Body -------------------------------------------------------------- */
+    const body = await req.json();
+    const {
+      items,
+      deliveryType,
+      paymentMethod: rawPaymentMethod,
+      guestPhone,
+    } = body;
 
-    // 3) Validate
-    if (!Array.isArray(items) || items.length === 0) {
+    /* 3️⃣  Validate ---------------------------------------------------------- */
+    if (!Array.isArray(items) || items.length === 0)
       return NextResponse.json({ error: "items required" }, { status: 400 });
-    }
 
-    // 4) Flags
+    /* 4️⃣  Flags ------------------------------------------------------------- */
     const containsAlcohol = items.some((it: any) => it.isAlcohol === true);
     const isGolfOrder     = deliveryType !== DeliveryType.DELIVERY;
 
-    // 5) Money calculations
-    const subtotal  = items.reduce((sum: number, it: any) => sum + computeItemTotal(it), 0);
+    /* 5️⃣  Money ------------------------------------------------------------- */
+    const subtotal  = items.reduce((s: number, it: any) => s + computeItemTotal(it), 0);
     const taxAmount = calculateTaxAmount(subtotal, TAX_RATE);
 
     let tipAmount = Number(body.tipAmount);
     if (!Number.isFinite(tipAmount)) {
       tipAmount = calculateTipAmount(subtotal, body.tip, body.customTip);
-      if (!Number.isFinite(tipAmount)) tipAmount = 0;
-      tipAmount = round(tipAmount);
+      tipAmount = Number.isFinite(tipAmount) ? round(tipAmount) : 0;
     }
 
+    /* 5a. Delivery-fee block (unchanged) ------------------------------------ */
     let customerDeliveryFee   = 0;
     let restaurantDeliveryFee = 0;
     let totalDeliveryFee      = 0;
@@ -128,28 +133,36 @@ export async function createOrder(req: Request) {
       }
     }
 
-    const totalAmount = round(subtotal + taxAmount + tipAmount + customerDeliveryFee);
+    const totalAmount = round(
+      subtotal + taxAmount + tipAmount + customerDeliveryFee
+    );
 
-    // 6) Generate IDs & status
+    /* 6️⃣  IDs & payment-method normalisation ------------------------------- */
+    const paymentMethod: PaymentMethod =
+      rawPaymentMethod === PaymentMethod.CASH
+        ? PaymentMethod.CASH
+        : PaymentMethod.CARD;                     // ← NEW
+
     const today   = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const random  = Math.random().toString(36).slice(2, 8).toUpperCase();
     const orderId = `ORD-${today}-${random}`;
 
     const initialStatus =
-      paymentMethod === PaymentMethod.CASH
+      paymentMethod === PaymentMethod.CASH               // ← uses normalised value
         ? OrderStatus.ORDER_RECEIVED
-        : OrderStatus.PENDING_PAYMENT;
+        : OrderStatus.PENDING_PAYMENT;                    // CARD & Clover pre-auth
 
-    // 7) Prepare Order data
+    /* 7️⃣  Build order ------------------------------------------------------- */
     const data: any = {
       orderId,
       items,
-      schedule:          isGolfOrder ? null : (body.schedule ? new Date(body.schedule) : null),
-      orderType:         isGolfOrder ? "" : (body.orderType ?? ""),
+      schedule:      isGolfOrder ? null : body.schedule ? new Date(body.schedule) : null,
+      orderType:     isGolfOrder ? "" : body.orderType ?? "",
       deliveryType,
-      paymentMethod,
+      paymentMethod,                                     // ← NEW
       containsAlcohol,
-      ageVerified:       !!body.ageVerified,
+      ageVerified:   !!body.ageVerified,
+
       subtotal,
       taxAmount,
       tipAmount,
@@ -166,13 +179,14 @@ export async function createOrder(req: Request) {
       status: initialStatus,
       metadata: body.metadata ?? null,
 
-      // relations & guest fields
-      customer:    { connect: { id: customerId } },
-      guestName:   customerName,
-      guestEmail:  session.user.email,
-      guestPhone:  guestPhone || null,
+      /* relations & guest info */
+      customer:   { connect: { id: customerId } },
+      guestName:  customerName,
+      guestEmail: session.user.email,
+      guestPhone: guestPhone || null,
     };
 
+    /* golf-extras / delivery-extras (unchanged) ----------------------------- */
     if (isGolfOrder) {
       if (body.holeNumber != null) data.holeNumber = Number(body.holeNumber);
       const cartId = req.headers.get("x-cart-id");
@@ -184,10 +198,10 @@ export async function createOrder(req: Request) {
       data.deliveryInstructions = (body.deliveryInstructions || "").trim();
     }
 
-    // 8) Persist Order
+    /* 8️⃣  Persist order row ------------------------------------------------- */
     const created = await prisma.order.create({ data });
 
-    // 9) Persist each OrderLineItem
+    /* 9️⃣  Line-items (unchanged) ------------------------------------------- */
     await Promise.all(
       items.map(async (it: any) => {
         const qty       = typeof it.quantity === "number" && it.quantity > 0 ? it.quantity : 1;
@@ -208,7 +222,7 @@ export async function createOrder(req: Request) {
       })
     );
 
-    // 10) Persist status history
+    /* 🔟  Status-history (unchanged) ---------------------------------------- */
     await prisma.orderStatusHistory.create({
       data: {
         orderId:   created.id,
@@ -218,7 +232,7 @@ export async function createOrder(req: Request) {
       },
     });
 
-    // 11) Push to Clover
+    /* 1️⃣1️⃣  Clover push (unchanged) --------------------------------------- */
     try {
       const cloverOrderId = await pushOrderToClover(created.id);
       if (cloverOrderId) {
@@ -234,7 +248,7 @@ export async function createOrder(req: Request) {
       console.error(`[createOrder] Clover push failed for order ${orderId}:`, err);
     }
 
-    // 12) Return
+    /* 1️⃣2️⃣  Respond -------------------------------------------------------- */
     return NextResponse.json(created, { status: 201 });
   } catch (err: any) {
     console.error("[POST /api/orders] Error:", err);
