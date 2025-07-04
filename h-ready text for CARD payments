@@ -1,0 +1,304 @@
+warning: in the working copy of 'app/payment-confirmation/card/page.tsx', CRLF will be replaced by LF the next time Git touches it
+[1mdiff --git a/app/payment-confirmation/card/page.tsx b/app/payment-confirmation/card/page.tsx[m
+[1mindex c965560..0207e61 100644[m
+[1m--- a/app/payment-confirmation/card/page.tsx[m
+[1m+++ b/app/payment-confirmation/card/page.tsx[m
+[36m@@ -1,6 +1,9 @@[m
+ // File: components/payment-confirmation/CardPaymentConfirmation.tsx[m
+ /* =======================================================================[m
+[31m-   Credit-Card Payment Confirmation + Live-Tracking Link[m
+[32m+[m[32m   Credit-Card Payment Confirmation  (strict-mode TypeScript)[m
+[32m+[m[32m   • Shows cash-ready instructions only when paymentMethod === "CASH"[m
+[32m+[m[32m   • Uses getDeliveryLabel for consistent wording[m
+[32m+[m[32m   • Displays customer address for DELIVERY[m
+    ====================================================================== */[m
+ [m
+ "use client";[m
+[36m@@ -16,7 +19,7 @@[m [mimport type { DeliveryType } from "@prisma/client";[m
+ [m
+ import styles from "./PaymentConfirmation.module.css";[m
+ [m
+[31m-/* ───────────────────────────── Types ───────────────────────────── */[m
+[32m+[m[32m/* ────────────────────────── Type helpers ────────────────────────── */[m
+ interface FetchedOrder {[m
+   id:           string;[m
+   orderId:      string;[m
+[36m@@ -30,14 +33,13 @@[m [minterface FetchedOrder {[m
+     city:    string;[m
+     state:   string;[m
+     zipCode: string;[m
+[31m-    deliveryInstructions?: string;[m
+   } | null;[m
+   status:     string;[m
+   guestEmail: string | null;[m
+   createdAt:  string;  // ISO[m
+ }[m
+ [m
+[31m-/* ────────────────────────── Helpers ───────────────────────────── */[m
+[32m+[m[32m/* ─────────────────────────── Utilities ──────────────────────────── */[m
+ const money = (n: number) => `$${n.toFixed(2)}`;[m
+ const etClock = (iso: string) =>[m
+   new Date(iso).toLocaleTimeString("en-US", {[m
+[36m@@ -49,13 +51,11 @@[m [mconst etClock = (iso: string) =>[m
+ [m
+ /* ================================================================= */[m
+ export default function CardPaymentConfirmation() {[m
+[31m-  const router  = useRouter();[m
+[31m-  const params  = useSearchParams();[m
+[31m-  const dbId    = params.get("id") ?? "";[m
+[32m+[m[32m  const router = useRouter();[m
+[32m+[m[32m  const params = useSearchParams();[m
+[32m+[m[32m  const dbId   = params.get("id") ?? "";[m
+ [m
+[31m-  /* ----------------------------------------------------------------[m
+[31m-     Order & cart contexts[m
+[31m-  ---------------------------------------------------------------- */[m
+[32m+[m[32m  /* -------- 1. contexts & early guard -------- */[m
+   const orderCtx = useContext(OrderContext);[m
+   const cartCtx  = useContext(CartContext);[m
+   if (!orderCtx || !cartCtx) return null;[m
+[36m@@ -63,9 +63,7 @@[m [mexport default function CardPaymentConfirmation() {[m
+   const { order: ctxOrder } = orderCtx;[m
+   const { clearCart }       = cartCtx;[m
+ [m
+[31m-  /* ----------------------------------------------------------------[m
+[31m-     Local state[m
+[31m-  ---------------------------------------------------------------- */[m
+[32m+[m[32m  /* -------- 2. local state -------- */[m
+   const [dbOrder, setDbOrder] = useState<FetchedOrder | null>(null);[m
+   const [loading, setLoading] = useState(false);[m
+   const [errMsg,  setErrMsg]  = useState<string | null>(null);[m
+[36m@@ -75,14 +73,9 @@[m [mexport default function CardPaymentConfirmation() {[m
+     process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ??[m
+     "20025 Mount Aetna Road, Hagerstown, MD 21742";[m
+ [m
+[31m-  /* ----------------------------------------------------------------[m
+[31m-     1. Clear cart exactly once after a successful payment[m
+[31m-  ---------------------------------------------------------------- */[m
+[31m-  useEffect(clearCart, [clearCart]);[m
+[32m+[m[32m  /* -------- 3. side-effects -------- */[m
+[32m+[m[32m  useEffect(clearCart, [clearCart]);                     // empty cart once[m
+ [m
+[31m-  /* ----------------------------------------------------------------[m
+[31m-     2. Fetch order from DB[m
+[31m-  ---------------------------------------------------------------- */[m
+   useEffect(() => {[m
+     if (!dbId) return;[m
+     setLoading(true);[m
+[36m@@ -96,18 +89,15 @@[m [mexport default function CardPaymentConfirmation() {[m
+       .finally(() => setLoading(false));[m
+   }, [dbId]);[m
+ [m
+[31m-  /* ----------------------------------------------------------------[m
+[31m-     3. Send email receipt once, when guestEmail is present[m
+[31m-  ---------------------------------------------------------------- */[m
+   useEffect(() => {[m
+     const target = dbOrder?.guestEmail ?? ctxOrder.guestEmail;[m
+     if (!target || emailOK) return;[m
+ [m
+[31m-    const humanId = dbOrder?.orderId  ?? ctxOrder.orderId;[m
+[32m+[m[32m    const humanId = dbOrder?.orderId    ?? ctxOrder.orderId;[m
+     const amount  = dbOrder?.totalAmount ?? ctxOrder.totalAmount ?? 0;[m
+ [m
+     fetch("/api/send-email", {[m
+[31m-      method: "POST",[m
+[32m+[m[32m      method:  "POST",[m
+       headers: { "Content-Type": "application/json" },[m
+       body: JSON.stringify({[m
+         to:      target,[m
+[36m@@ -120,9 +110,7 @@[m [mexport default function CardPaymentConfirmation() {[m
+       .catch(console.error);[m
+   }, [dbOrder, ctxOrder, emailOK]);[m
+ [m
+[31m-  /* ----------------------------------------------------------------[m
+[31m-     4. Snapshot: prefer fresh DB record, fall back to context[m
+[31m-  ---------------------------------------------------------------- */[m
+[32m+[m[32m  /* -------- 4. snapshot (prefer DB) -------- */[m
+   const snap = (dbOrder ?? ctxOrder) as Partial<FetchedOrder>;[m
+ [m
+   const {[m
+[36m@@ -136,60 +124,31 @@[m [mexport default function CardPaymentConfirmation() {[m
+     deliveryAddress,[m
+   } = snap;[m
+ [m
+[31m-  const placedClock =[m
+[31m-    dbOrder?.createdAt ? etClock(dbOrder.createdAt) : undefined;[m
+[32m+[m[32m  const placedClock = dbOrder?.createdAt ? etClock(dbOrder.createdAt) : undefined;[m
+ [m
+[31m-  /* ----------------------------------------------------------------[m
+[31m-     5. Human-readable labels & instructions[m
+[31m-  ---------------------------------------------------------------- */[m
+[31m-  const label = getDeliveryLabel([m
+[31m-    deliveryType as DeliveryType,[m
+[31m-    holeNumber[m
+[31m-  );[m
+[32m+[m[32m  /* -------- 5. labels -------- */[m
+[32m+[m[32m  const label = getDeliveryLabel(deliveryType as DeliveryType, holeNumber);[m
+[32m+[m
+[32m+[m[32m  /* show “have cash ready” **only** for CASH orders */[m
+[32m+[m[32m  let instruction: React.ReactNode | null = null;[m
+ [m
+[31m-  let instruction: React.ReactNode;[m
+[31m-  if (deliveryType === "ON_COURSE") {[m
+[31m-    instruction =[m
+[31m-      holeNumber != null ? ([m
+[31m-        <>[m
+[31m-          We’ll bring your order to hole&nbsp;[m
+[31m-          <strong>{holeNumber}</strong> — please have{" "}[m
+[31m-          <strong>{money(totalAmount)}</strong> ready.[m
+[31m-        </>[m
+[31m-      ) : ([m
+[31m-        <>[m
+[31m-          We’ll bring your order straight to your hole — please have{" "}[m
+[31m-          <strong>{money(totalAmount)}</strong> ready.[m
+[31m-        </>[m
+[31m-      );[m
+[31m-  } else if ([m
+[31m-    deliveryType === "DELIVERY" ||[m
+[31m-    orderType?.toLowerCase().includes("delivery")[m
+[31m-  ) {[m
+[31m-    instruction = deliveryAddress ? ([m
+[31m-      <>[m
+[31m-        We’ll deliver to your address — please have{" "}[m
+[31m-        <strong>{money(totalAmount)}</strong> ready.[m
+[31m-      </>[m
+[31m-    ) : ([m
+[31m-      <>Address will appear once a driver is assigned.</>[m
+[31m-    );[m
+[31m-  } else {[m
+[31m-    instruction = ([m
+[31m-      <>[m
+[31m-        Please pick up your order at the clubhouse and have{" "}[m
+[31m-        <strong>{money(totalAmount)}</strong> ready.[m
+[31m-      </>[m
+[31m-    );[m
+[32m+[m[32m  if (paymentMethod === "CASH") {[m
+[32m+[m[32m    if (deliveryType === "ON_COURSE") {[m
+[32m+[m[32m      instruction = holeNumber != null[m
+[32m+[m[32m        ? <>We’ll bring your order to hole&nbsp;<strong>{holeNumber}</strong> — please have <strong>{money(totalAmount)}</strong> ready.</>[m
+[32m+[m[32m        : <>We’ll bring your order straight to your hole — please have <strong>{money(totalAmount)}</strong> ready.</>;[m
+[32m+[m[32m    } else if (deliveryType === "DELIVERY" || orderType?.toLowerCase().includes("delivery")) {[m
+[32m+[m[32m      instruction = <>Please have <strong>{money(totalAmount)}</strong> ready when the driver arrives.</>;[m
+[32m+[m[32m    } else { // clubhouse pickup[m
+[32m+[m[32m      instruction = <>Please pick up your order at the clubhouse and have <strong>{money(totalAmount)}</strong> ready.</>;[m
+[32m+[m[32m    }[m
+   }[m
+ [m
+[31m-  /* =================================================================[m
+[31m-     Render[m
+[31m-  ================================================================= */[m
+[32m+[m[32m  /* -------- 6. render -------- */[m
+   return ([m
+     <div className={styles.container}>[m
+       <div className={styles.confirmationCard}>[m
+[31m-        {/* ✔️ Icon */}[m
+[32m+[m[32m        {/* ✔  icon */}[m
+         <div className={styles.iconWrapper}>[m
+           <svg className={styles.checkIcon} viewBox="0 0 52 52">[m
+             <circle className={styles.checkCircle} cx="26" cy="26" r="25" />[m
+[36m@@ -199,32 +158,24 @@[m [mexport default function CardPaymentConfirmation() {[m
+ [m
+         <h1 className={styles.title}>Payment Confirmed!</h1>[m
+ [m
+[31m-        {/* Loading / error / success banner */}[m
+         {loading && <p className={styles.message}>Fetching order details…</p>}[m
+[31m-[m
+[31m-        {errMsg && ([m
+[32m+[m[32m        {errMsg  && ([m
+           <p className={styles.message}>[m
+             Payment succeeded, but we couldn’t load full details.&nbsp;[m
+             <button[m
+[31m-              onClick={() => {[m
+[31m-                setErrMsg(null);[m
+[31m-                setDbOrder(null);[m
+[31m-                setLoading(false);[m
+[31m-              }}[m
+[32m+[m[32m              onClick={() => { setErrMsg(null); setDbOrder(null); }}[m
+               className={styles.retryBtn}[m
+             >[m
+               retry[m
+             </button>[m
+           </p>[m
+         )}[m
+[31m-[m
+         {!loading && !errMsg && ([m
+           <p className={styles.message}>[m
+             Your card was charged {money(totalAmount)} — thank you![m
+           </p>[m
+         )}[m
+ [m
+[31m-        {/* Order number */}[m
+         {orderId && ([m
+           <div className={styles.orderNumberRow}>[m
+             <span className={styles.factLabel}>Order #</span>[m
+[36m@@ -232,7 +183,6 @@[m [mexport default function CardPaymentConfirmation() {[m
+           </div>[m
+         )}[m
+ [m
+[31m-        {/* Paid / placed */}[m
+         <div className={styles.paidPlacedRow}>[m
+           <div>[m
+             <span className={styles.factLabel}>Paid with</span>[m
+[36m@@ -246,46 +196,45 @@[m [mexport default function CardPaymentConfirmation() {[m
+           )}[m
+         </div>[m
+ [m
+[31m-        {/* Current status */}[m
+         <div className={styles.statusRow}>[m
+           <span className={styles.factLabel}>Status</span>[m
+           <span>{status.replace(/_/g, " ")}</span>[m
+         </div>[m
+ [m
+[31m-        {/* Delivery / pickup details */}[m
+[32m+[m[32m        {/* delivery / pickup details */}[m
+         <div className={styles.detailSection}>[m
+           <h2 className={styles.subtitle}>{label}</h2>[m
+[31m-          <p className={styles.address}>{instruction}</p>[m
+[32m+[m
+[32m+[m[32m          {instruction && <p className={styles.address}>{instruction}</p>}[m
+[32m+[m
+[32m+[m[32m          {deliveryType === "DELIVERY" && deliveryAddress && ([m
+[32m+[m[32m            <p className={styles.address}>[m
+[32m+[m[32m              {deliveryAddress.street}, {deliveryAddress.city},{" "}[m
+[32m+[m[32m              {deliveryAddress.state} {deliveryAddress.zipCode}[m
+[32m+[m[32m            </p>[m
+[32m+[m[32m          )}[m
+[32m+[m
+           {deliveryType === "PICKUP_AT_CLUBHOUSE" && ([m
+             <p className={styles.address}>{restaurantAddress}</p>[m
+           )}[m
+         </div>[m
+ [m
+[31m-        {/* Navigation buttons */}[m
+[32m+[m[32m        {/* nav buttons */}[m
+         {orderId && ([m
+           <div className={styles.navigation}>[m
+[31m-            <button[m
+[31m-              onClick={() => router.push(`/track-delivery/${orderId}`)}[m
+[31m-              className="btn"[m
+[31m-            >[m
+[32m+[m[32m            <button onClick={() => router.push(`/track-delivery/${orderId}`)} className="btn">[m
+               Track My Order[m
+             </button>[m
+[31m-            <button[m
+[31m-              onClick={() => router.push("/menu")}[m
+[31m-              className="btn secondary"[m
+[31m-            >[m
+[32m+[m[32m            <button onClick={() => router.push("/menu")} className="btn secondary">[m
+               View Menu[m
+             </button>[m
+[31m-            <button[m
+[31m-              onClick={() => router.push("/")}[m
+[31m-              className="btn secondary"[m
+[31m-            >[m
+[32m+[m[32m            <button onClick={() => router.push("/")} className="btn secondary">[m
+               Home[m
+             </button>[m
+           </div>[m
+         )}[m
+ [m
+[31m-        {/* Footer note */}[m
+[32m+[m[32m        {/* footer note */}[m
+         <p className={styles.note}>[m
+           {emailOK[m
+             ? "A confirmation email has been sent to you. Enjoy the 19"[m
