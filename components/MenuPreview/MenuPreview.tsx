@@ -41,14 +41,13 @@ const MenuPreview: React.FC = () => {
         <h2 className={styles.previewTitle}>Menu Preview</h2>
         <div className="row mt-4">
           {items.map((item) => {
-            // pick Cloudinary if available, else fallback to imageUrl, else placeholder
             const src = item.cloudinaryPublicId
               ? getCloudinaryImageUrl(item.cloudinaryPublicId, 300, 300)
               : item.imageUrl || "/images/placeholder.png";
 
             return (
               <div key={item.id} className="col-md-4 mb-4">
-                <div className={styles.menuItem}>
+                <Link href="/menu" className={styles.menuItem}>
                   <div
                     style={{
                       position: "relative",
@@ -72,7 +71,7 @@ const MenuPreview: React.FC = () => {
                   {item.description && (
                     <p className={styles.itemDesc}>{item.description}</p>
                   )}
-                </div>
+                </Link>
               </div>
             );
           })}
