@@ -108,8 +108,14 @@
 }
 
 @keyframes fade-in {
-  0%   { opacity: 0; transform: translateY(-8px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .itemHeader {
@@ -139,7 +145,7 @@
   height: 150px;
 }
 
-/* Shrink thumbnails on very small screens for faster loads */
+/* Responsive thumbnail for phones */
 @media (max-width: 480px) {
   .itemThumbnail {
     width: 80px;
@@ -173,7 +179,9 @@
 }
 
 @media (min-width: 450px) {
-  .actionButtons { flex-direction: row; }
+  .actionButtons {
+    flex-direction: row;
+  }
 }
 
 .removeBtn,
@@ -188,8 +196,13 @@
   transition: background-color 0.3s ease;
 }
 
-.removeBtn:hover   { background-color: #c82333; }
-.saveLaterBtn:hover{ background-color: var(--primary-color); }
+.removeBtn:hover {
+  background-color: #c82333;
+}
+
+.saveLaterBtn:hover {
+  background-color: var(--primary-color);
+}
 
 /***************************************
   Quantity & Spice Level
@@ -224,7 +237,9 @@
   transition: background-color 0.3s;
 }
 
-.stepBtn:hover { background-color: var(--border-color); }
+.stepBtn:hover {
+  background-color: var(--border-color);
+}
 
 .quantityValue {
   min-width: 30px;
@@ -250,9 +265,12 @@
   font-size: 0.8rem;
   white-space: nowrap;
   color: var(--black);
+  transition: background-color 0.3s;
 }
 
-.spiceBtn:hover { background-color: var(--light-gray); }
+.spiceBtn:hover {
+  background-color: var(--light-gray);
+}
 
 .activeSpiceBtn {
   border-color: var(--primary-color);
@@ -446,7 +464,7 @@
   line-height: 1;
 }
 
-.returnBtn  { background-color: var(--primary-color); }
+.returnBtn { background-color: var(--primary-color); }
 .removeSavedBtn { background-color: #dc3545; }
 
 .returnBtn:hover,
@@ -488,7 +506,8 @@
   border: 1px solid var(--border-color);
   border-radius: 6px;
   width: 180px;
-  min-height: 270px;
+  /* increased min-height to fit button without overlap */
+  min-height: 300px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -506,15 +525,14 @@
   position: relative;
   width: 160px;
   height: 160px;
-  margin-bottom: 0.6rem;
+  margin-bottom: 1rem; /* more space under image */
+  flex-shrink: 0;
 }
 
-/* Mobile-friendly recommendation thumbnails */
 @media (max-width: 480px) {
-  .recommendImageContainer {
-    width: 120px;
-    height: 120px;
-  }
+  .recommendImageContainer { width: 120px; height: 120px; }
+  .recommendItem { min-height: 320px; }
+  .addRecommendBtn { margin-top: 0.75rem; }
 }
 
 .recommendThumbnail { object-fit: contain; }

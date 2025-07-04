@@ -62,6 +62,10 @@ export default function RecommendationsSection({
                 />
               )}
               <p className={styles.drinkTitle}>{rec.title}</p>
+              {/* NEW: Price in primary color */}
+              <p className={styles.drinkPrice}>
+                ${rec.price.toFixed(2)}
+              </p>
             </div>
           );
         })}
