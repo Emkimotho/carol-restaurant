@@ -9,6 +9,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { OrderContext } from "@/contexts/OrderContext";
 import { CartContext }  from "@/contexts/CartContext";
 
+import { getDeliveryLabel } from "@/utils/getDeliveryLabel";   /* ← NEW */
+import { DeliveryType }     from "@prisma/client";
+
 import styles from "./PaymentConfirmation.module.css";
 
 /* ─ Types ────────────────────────────────────────────────────────────── */
@@ -70,7 +73,7 @@ export default function CardPaymentConfirmation() {
     if (!dbId) return;
     setLoading(true);
     fetch(`/api/orders/${encodeURIComponent(dbId)}`)
-      .then(async r => {
+      .then(async (r) => {
         if (!r.ok) throw new Error(String(r.status));
         const { order } = await r.json();
         setDbOrder(order);
@@ -89,18 +92,19 @@ export default function CardPaymentConfirmation() {
 
     fetch("/api/send-email", {
       method: "POST",
-      headers:{ "Content-Type":"application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         to:      target,
         subject: "19th Hole — Payment Confirmation",
         text:    `Your card payment of $${amount.toFixed(
-                   2
-                 )} for order #${humanId} has been received.`,
+          2
+        )} for order #${humanId} has been received.`,
         html:    `<p>Your card payment of <strong>$${amount.toFixed(
-                   2
-                 )}</strong> for order #${humanId} has been received.</p>`,
+          2
+        )}</strong> for order #${humanId} has been received.</p>`,
       }),
-    }).then(r => r.ok && setEmailOK(true))
+    })
+      .then((r) => r.ok && setEmailOK(true))
       .catch(console.error);
   }, [dbOrder, ctxOrder, emailOK]);
 
@@ -111,7 +115,7 @@ export default function CardPaymentConfirmation() {
     paymentMethod = "CARD",
     status        = "",
     orderType     = "",
-    deliveryType  = "PICKUP",
+    deliveryType  = "PICKUP_AT_CLUBHOUSE",
     deliveryAddress,
   } = snap;
 
@@ -119,6 +123,8 @@ export default function CardPaymentConfirmation() {
     ? etClock(dbOrder.createdAt)
     : undefined;
 
+  /* ─── Shared delivery/pick-up label via helper ─────────────────── */
+  const label = getDeliveryLabel(deliveryType as DeliveryType);
   const isDelivery =
     deliveryType === "DELIVERY" || orderType?.includes("delivery");
 
@@ -128,29 +134,34 @@ export default function CardPaymentConfirmation() {
         <div className={styles.iconWrapper}>
           <svg className={styles.checkIcon} viewBox="0 0 52 52">
             <circle className={styles.checkCircle} cx="26" cy="26" r="25" />
-            <path className={styles.checkMark} d="M14.1 27.2 21.2 34.4 37.9 17.6"/>
+            <path className={styles.checkMark} d="M14.1 27.2 21.2 34.4 37.9 17.6" />
           </svg>
         </div>
 
         <h1 className={styles.title}>Payment Confirmed!</h1>
 
         {loading && <p className={styles.message}>Fetching order details…</p>}
-        {errMsg  && (
+        {errMsg && (
           <p className={styles.message}>
             Payment succeeded, but we couldn’t load full details.&nbsp;
-            <button onClick={() => {
-              setErrMsg(null);
-              setDbOrder(null);
-              setLoading(false);
-              fetch(`/api/orders/${encodeURIComponent(dbId)}`)
-                .then(async r => {
-                  if (!r.ok) throw new Error(String(r.status));
-                  const { order } = await r.json();
-                  setDbOrder(order);
-                })
-                .catch(() => setErrMsg("Couldn’t load order details."))
-                .finally(() => setLoading(false));
-            }} className={styles.retryBtn}>retry</button>
+            <button
+              onClick={() => {
+                setErrMsg(null);
+                setDbOrder(null);
+                setLoading(false);
+                fetch(`/api/orders/${encodeURIComponent(dbId)}`)
+                  .then(async (r) => {
+                    if (!r.ok) throw new Error(String(r.status));
+                    const { order } = await r.json();
+                    setDbOrder(order);
+                  })
+                  .catch(() => setErrMsg("Couldn’t load order details."))
+                  .finally(() => setLoading(false));
+              }}
+              className={styles.retryBtn}
+            >
+              retry
+            </button>
           </p>
         )}
         {!loading && !errMsg && (
@@ -184,27 +195,27 @@ export default function CardPaymentConfirmation() {
           <span>{status.replace(/_/g, " ")}</span>
         </div>
 
-        {isDelivery ? (
-          <div className={styles.detailSection}>
-            <h2 className={styles.subtitle}>Delivery To</h2>
-            {deliveryAddress ? (
+        {/* ─── Delivery / Pick-up section ──────────────────────────── */}
+        <div className={styles.detailSection}>
+          <h2 className={styles.subtitle}>{label}</h2>
+
+          {isDelivery ? (
+            deliveryAddress ? (
               <p className={styles.address}>
-                {deliveryAddress.street}, {deliveryAddress.city}, {deliveryAddress.state} {deliveryAddress.zipCode}
+                {deliveryAddress.street}, {deliveryAddress.city},{" "}
+                {deliveryAddress.state} {deliveryAddress.zipCode}
               </p>
             ) : (
               <p className={styles.address}>
                 Address will appear once we’ve assigned a driver.
               </p>
-            )}
-          </div>
-        ) : (
-          <div className={styles.detailSection}>
-            <h2 className={styles.subtitle}>Pickup At</h2>
+            )
+          ) : (
             <p className={styles.address}>{restaurantAddress}</p>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* ←— newly added “Track” button */}
+        {/* Track / nav buttons */}
         {orderId && (
           <div className={styles.navigation}>
             <button
@@ -213,10 +224,13 @@ export default function CardPaymentConfirmation() {
             >
               Track My Order
             </button>
-            <button onClick={() => router.push("/menu")}    className="btn secondary">
+            <button
+              onClick={() => router.push("/menu")}
+              className="btn secondary"
+            >
               View Menu
             </button>
-            <button onClick={() => router.push("/")}        className="btn secondary">
+            <button onClick={() => router.push("/")} className="btn secondary">
               Home
             </button>
           </div>
@@ -225,8 +239,7 @@ export default function CardPaymentConfirmation() {
         <p className={styles.note}>
           {emailOK
             ? "A confirmation email has been sent to you. Enjoy the 19"
-            : "A confirmation email will be sent to you shortly. Enjoy the 19"
-          }
+            : "A confirmation email will be sent to you shortly. Enjoy the 19"}
           <sup>th</sup> Hole!
         </p>
       </div>

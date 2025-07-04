@@ -4,13 +4,17 @@
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams }             from "next/navigation";
 
 import { OrderContext } from "@/contexts/OrderContext";
 import { CartContext }  from "@/contexts/CartContext";
 
+import { getDeliveryLabel } from "@/utils/getDeliveryLabel";   /* ← NEW */
+import { DeliveryType }     from "@prisma/client";
+
 import styles from "./PaymentConfirmation.module.css";
 
+/* ─ Types ────────────────────────────────────────────────────────────── */
 interface FetchedOrder {
   id:           string;
   orderId:      string;
@@ -22,8 +26,10 @@ interface FetchedOrder {
   createdAt:    string; // ISO
 }
 
+/* ─ Helpers ──────────────────────────────────────────────────────────── */
 const fmtMoney = (n: number) => `$${n.toFixed(2)}`;
 
+/* ===================================================================== */
 export default function CashPaymentConfirmation() {
   const router  = useRouter();
   const params  = useSearchParams();
@@ -40,15 +46,15 @@ export default function CashPaymentConfirmation() {
   const [error,     setError]     = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
 
-  /* Clear cart */
+  /* ---------------- Clear cart once -------------------------------- */
   useEffect(() => clearCart(), [clearCart]);
 
-  /* Fetch order */
+  /* ---------------- Fetch order from DB ---------------------------- */
   useEffect(() => {
     if (!dbId) return;
     setLoading(true);
     fetch(`/api/orders/${encodeURIComponent(dbId)}`)
-      .then(async r => {
+      .then(async (r) => {
         if (!r.ok) throw new Error(`Status ${r.status}`);
         const { order } = await r.json();
         setOrder(order);
@@ -57,61 +63,91 @@ export default function CashPaymentConfirmation() {
       .finally(() => setLoading(false));
   }, [dbId]);
 
-  /* Email confirmation */
+  /* ---------------- Send confirmation email ------------------------ */
   useEffect(() => {
     const o = order ?? ctxOrder;
     if (emailSent || !o?.guestEmail) return;
 
     fetch("/api/send-email", {
-      method: "POST",
-      headers:{ "Content-Type":"application/json" },
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         to:      o.guestEmail,
         subject: "19th Hole — Cash Order Confirmation",
-        text:    `Your order #${o.orderId} for ${fmtMoney(o.totalAmount)} has been placed. Please have cash ready when we deliver.`,
-        html:    `<p>Your order <strong>#${o.orderId}</strong> for <strong>${fmtMoney(o.totalAmount)}</strong> has been placed. Please have cash ready when we deliver.</p>`,
+        text:    `Your order #${o.orderId} for ${fmtMoney(
+          o.totalAmount
+        )} has been placed. Please have cash ready when we deliver.`,
+        html:    `<p>Your order <strong>#${o.orderId}</strong> for <strong>${fmtMoney(
+          o.totalAmount
+        )}</strong> has been placed. Please have cash ready when we deliver.</p>`,
       }),
     })
-    .then(r => r.ok && setEmailSent(true))
-    .catch(console.error);
+      .then((r) => r.ok && setEmailSent(true))
+      .catch(console.error);
   }, [order, ctxOrder, emailSent]);
 
+  /* ---------------- Loading / error guards ------------------------- */
   if (loading) return <div className={styles.message}>Loading order…</div>;
   if (error)   return <div className={styles.message}>{error}</div>;
 
+  /* ---------------- Snapshot (DB or context) ----------------------- */
   const o   = (order ?? ctxOrder) as FetchedOrder;
   const amt = fmtMoney(o.totalAmount);
 
-  let heading: string;
-  let instruction: React.ReactNode;
+  /* ---------------- Heading + instruction via helper --------------- */
+  const heading     = getDeliveryLabel(
+    o.deliveryType as DeliveryType,
+    o.holeNumber
+  );
+  let   instruction: React.ReactNode;
 
   switch (o.deliveryType) {
     case "PICKUP_AT_CLUBHOUSE":
-      heading     = "Pickup at Clubhouse";
-      instruction = <>Please pick up your order at the clubhouse and have <strong>{amt}</strong> ready.</>;
+      instruction = (
+        <>
+          Please pick up your order at the clubhouse and have{" "}
+          <strong>{amt}</strong> ready.
+        </>
+      );
       break;
+
     case "ON_COURSE":
-      heading     = o.holeNumber != null
-        ? `On-Course Delivery (Hole ${o.holeNumber})`
-        : "On-Course Delivery";
-      instruction = <>We’ll bring your order straight to your hole—please have <strong>{amt}</strong> ready.</>;
+      instruction = (
+        <>
+          We’ll bring your order straight to your hole&mdash;please have{" "}
+          <strong>{amt}</strong> ready.
+        </>
+      );
       break;
+
     case "EVENT_PAVILION":
-      heading     = "Event Pavilion Delivery";
-      instruction = <>We’ll deliver to the pavilion—please have <strong>{amt}</strong> ready.</>;
+      instruction = (
+        <>
+          We’ll deliver to the pavilion&mdash;please have{" "}
+          <strong>{amt}</strong> ready.
+        </>
+      );
       break;
+
     default:
-      heading     = "Order Placed";
-      instruction = <>Your order is confirmed. Please have <strong>{amt}</strong> ready.</>;
+      instruction = (
+        <>
+          Your order is confirmed. Please have <strong>{amt}</strong> ready.
+        </>
+      );
   }
 
+  /* ---------------- Render ----------------------------------------- */
   return (
     <div className={styles.container}>
       <div className={styles.confirmationCard}>
         <div className={styles.iconWrapper}>
           <svg className={styles.checkIcon} viewBox="0 0 52 52">
             <circle className={styles.checkCircle} cx="26" cy="26" r="25" />
-            <path  className={styles.checkMark} d="M14.1 27.2 21.2 34.4 37.9 17.6" />
+            <path
+              className={styles.checkMark}
+              d="M14.1 27.2 21.2 34.4 37.9 17.6"
+            />
           </svg>
         </div>
 
@@ -129,7 +165,7 @@ export default function CashPaymentConfirmation() {
           </div>
         </div>
 
-        {/* ←— newly added “Track” button */}
+        {/* Track / nav buttons */}
         {o.orderId && (
           <div className={styles.navigation}>
             <button
@@ -138,17 +174,24 @@ export default function CashPaymentConfirmation() {
             >
               Track My Order
             </button>
-            <button onClick={() => router.push("/menu")} className="btn secondary">
+            <button
+              onClick={() => router.push("/menu")}
+              className="btn secondary"
+            >
               View Menu
             </button>
-            <button onClick={() => router.push("/")}     className="btn secondary">
+            <button
+              onClick={() => router.push("/")}
+              className="btn secondary"
+            >
               Home
             </button>
           </div>
         )}
 
         <p className={styles.note}>
-          You’ll receive a confirmation email shortly. Thanks for choosing the 19<sup>th</sup> Hole!
+          You’ll receive a confirmation email shortly. Thanks for choosing the
+          19<sup>th</sup> Hole!
         </p>
       </div>
     </div>

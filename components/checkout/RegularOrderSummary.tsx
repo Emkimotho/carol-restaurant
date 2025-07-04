@@ -3,6 +3,7 @@
 /* ----------------------------------------------------------------------- */
 /*  Unified order summary for MAIN-menu flows (pickup & delivery).         */
 /*  Handles option pricing correctly *and* compiles under strict TS rules. */
+/*  Delivery/Pick-up label now delegates to utils/getDeliveryLabel.ts      */
 /* ======================================================================= */
 
 "use client";
@@ -32,6 +33,8 @@ import {
   DeliveryCalculationParams,
   DeliveryCalculationResult,
 }                                   from "@/utils/calculateDeliveryFee";
+import { getDeliveryLabel }         from "@/utils/getDeliveryLabel";   /* ← NEW */
+import { DeliveryType }             from "@prisma/client";
 
 import type {
   CartItem,
@@ -56,7 +59,7 @@ interface OptionGroup {
   choices: OptionChoice[];
 }
 
-/* ---------- tiny util --------- */
+/* ---------- tiny util ---------- */
 const roundTwo = (n: number) => Math.round(n * 100) / 100;
 
 /* ------------------------------------------------------------------ */
@@ -73,12 +76,13 @@ function calculateItemPrice(item: CartItem): number {
       group.choices.forEach((choice: OptionChoice) => {
         if (!state.selectedChoiceIds.includes(choice.id)) return;
 
-        /* apply parent adjustment only when it has no nested group */
+        /* parent adjustment (only when no nested group) */
         if (!choice.nestedOptionGroup) extras += choice.priceAdjustment ?? 0;
 
+        /* nested selections */
         if (choice.nestedOptionGroup) {
           const nestedSel = state.nestedSelections?.[choice.id] ?? [];
-          choice.nestedOptionGroup.choices.forEach(nested => {
+          choice.nestedOptionGroup.choices.forEach((nested) => {
             if (nestedSel.includes(nested.id)) {
               extras += nested.priceAdjustment ?? 0;
             }
@@ -92,7 +96,7 @@ function calculateItemPrice(item: CartItem): number {
 }
 
 /* =================================================================== */
-/*                           Component                                 */
+/*                              Component                              */
 /* =================================================================== */
 const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
   cartItems,
@@ -106,17 +110,15 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
   onBack,
   taxRate,
 }) => {
-  /* ------------------ context & hooks ----------------------------- */
-  const { order, setOrder } = useContext(OrderContext)!;
-  const router              = useRouter();
-  const { isOpen }          = useOpeningHours();
-  const {
-    deliveryCharges: admin,
-    loading:         adminLoading,
-  } = useContext(DeliveryChargesContext)!;
-  const { data: session }   = useSession();
+  /* -------------- context & hooks --------------------------------- */
+  const { order, setOrder }      = useContext(OrderContext)!;
+  const router                   = useRouter();
+  const { isOpen }               = useOpeningHours();
+  const { deliveryCharges: admin,
+          loading:         adminLoading } = useContext(DeliveryChargesContext)!;
+  const { data: session }        = useSession();
 
-  /* ------------------ local state --------------------------------- */
+  /* -------------- local state ------------------------------------- */
   const [formattedSchedule, setFormattedSchedule] =
     useState("Instant Order (ASAP)");
   const [deliveryParams, setDeliveryParams] =
@@ -125,18 +127,19 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
     useState<DeliveryCalculationResult | null>(null);
   const hasFetchedDistance = useRef(false);
 
-  /* ------------------ helper: delivery instructions --------------- */
+  /* -------------- helper: delivery instructions ------------------- */
   const deliveryInstructionsLabel = (): string => {
-    const opt   = order.deliveryAddress.deliveryOption;
-    const instr = order.deliveryAddress.deliveryInstructions;
-    if (opt === "handToMe")            return "Hand to me";
-    if (opt === "leaveAtDoor")         return "Leave at the door";
-    if (opt === "readMyInstructions")  return instr || "Leave at the door";
+    const addr  = order.deliveryAddress ?? {};
+    const opt   = addr.deliveryOption;
+    const instr = addr.deliveryInstructions;
+    if (opt === "handToMe")           return "Hand to me";
+    if (opt === "leaveAtDoor")        return "Leave at the door";
+    if (opt === "readMyInstructions") return instr || "Leave at the door";
     return instr || opt || "Hand to me";
   };
 
-  /* ------------------ constants ----------------------------------- */
-  const usedTaxRate = typeof taxRate === "number" ? taxRate : TAX_RATE;
+  /* -------------- constants --------------------------------------- */
+  const usedTaxRate       = typeof taxRate === "number" ? taxRate : TAX_RATE;
   const restaurantAddress =
     process.env.NEXT_PUBLIC_RESTAURANT_ADDRESS ||
     "20025 Mount Aetna Road, Hagerstown, MD 21742";
@@ -146,7 +149,7 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
       ? order.customerName
       : order.guestName);
 
-  /* ------------------ schedule → human string --------------------- */
+  /* -------------- schedule → human string ------------------------- */
   useEffect(() => {
     if (order.schedule) {
       const d = new Date(order.schedule);
@@ -164,15 +167,15 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
     }
   }, [order.schedule]);
 
-  /* ------------------ distance + delivery fee --------------------- */
+  /* -------------- distance + delivery fee ------------------------- */
   useEffect(() => {
     if (!orderType.includes("delivery")) return;
 
     if (
-      !order.deliveryAddress.street?.trim() ||
-      !order.deliveryAddress.city?.trim() ||
-      !order.deliveryAddress.state?.trim() ||
-      !order.deliveryAddress.zipCode?.trim()
+      !order.deliveryAddress?.street?.trim() ||
+      !order.deliveryAddress?.city?.trim() ||
+      !order.deliveryAddress?.state?.trim() ||
+      !order.deliveryAddress?.zipCode?.trim()
     )
       return;
 
@@ -202,13 +205,13 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
         setDeliveryResult(calculateDeliveryFee(params));
 
         /* store distance/time in context */
-        setOrder(prev => ({
+        setOrder((prev) => ({
           ...prev,
           deliveryDistanceMiles: est.distance,
           deliveryTimeMinutes:   Math.ceil(est.travelTimeMinutes),
         }));
       })
-      .catch(err => console.error("Distance fetch error:", err));
+      .catch((err) => console.error("Distance fetch error:", err));
   }, [
     orderType,
     order.deliveryAddress,
@@ -218,11 +221,11 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
     setOrder,
   ]);
 
-  /* ------------------ price maths --------------------------------- */
-  const subtotal   = cartItems.reduce((sum, it) => sum + calculateItemPrice(it), 0);
-  const tipAmt     = calculateTipAmount(subtotal, tip, customTip);
-  const taxAmt     = calculateTaxAmount(subtotal, usedTaxRate);
-  const customerFee = deliveryResult?.customerFee ?? 0;
+  /* -------------- price maths ------------------------------------- */
+  const subtotal     = cartItems.reduce((s, it) => s + calculateItemPrice(it), 0);
+  const tipAmt       = calculateTipAmount(subtotal, tip, customTip);
+  const taxAmt       = calculateTaxAmount(subtotal, usedTaxRate);
+  const customerFee  = deliveryResult?.customerFee ?? 0;
 
   const rawTotal = calculateTotalWithTipAndTax(
     subtotal,
@@ -232,20 +235,13 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
   );
   const total = typeof rawTotal === "string" ? parseFloat(rawTotal) : rawTotal;
 
-  /* ------------------ label helper -------------------------------- */
-  const typeLabel = (t: string): string => {
-    switch (t) {
-      case "pickup":             return "Pickup";
-      case "delivery":           return "Delivery";
-      case "instant_pickup":     return "Pickup (Immediate)";
-      case "instant_delivery":   return "Delivery (Immediate)";
-      case "scheduled_pickup":   return "Pickup (Scheduled)";
-      case "scheduled_delivery": return "Delivery (Scheduled)";
-      default:                   return "Not specified";
-    }
-  };
+  /* -------------- delivery label (shared helper) ------------------ */
+  const deliveryLabel = getDeliveryLabel(
+    order.deliveryType as DeliveryType,
+    order.holeNumber
+  );
 
-  /* ------------------ Next ---------------------------------------- */
+  /* -------------- Next -------------------------------------------- */
   const handleNext = (): void => {
     if (!order.schedule && !isOpen) {
       alert("Restaurant is currently closed. Please schedule your order.");
@@ -253,12 +249,11 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
       return;
     }
 
-    const totalFee = deliveryResult?.totalFee ?? customerFee;
-    const hasAlcohol = cartItems.some(ci => ci.isAlcohol);
+    const totalFee   = deliveryResult?.totalFee ?? customerFee;
+    const hasAlcohol = cartItems.some((ci) => ci.isAlcohol);
 
-    setOrder(prev => ({
+    setOrder((prev) => ({
       ...prev,
-      /* reset alcohol flags based on current cart */
       containsAlcohol: hasAlcohol,
       ageVerified:     hasAlcohol ? prev.ageVerified : false,
 
@@ -277,11 +272,11 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
     onNext();
   };
 
-  /* ------------------ loading guard ------------------------------ */
+  /* -------------- loading guard ----------------------------------- */
   if (adminLoading) return <div>Loading…</div>;
 
   /* ================================================================= */
-  /*                            RENDER                                 */
+  /*                             RENDER                                */
   /* ================================================================= */
   return (
     <div className={styles.checkoutSection}>
@@ -312,21 +307,19 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
 
                 const labels: string[] = [];
 
-                state.selectedChoiceIds.forEach(cid => {
-                  const choice = group.choices.find(c => c.id === cid);
+                state.selectedChoiceIds.forEach((cid) => {
+                  const choice = group.choices.find((c) => c.id === cid);
                   if (!choice) return;
 
-                  if (!choice.nestedOptionGroup) {
-                    labels.push(choice.label ?? cid);
-                  }
+                  if (!choice.nestedOptionGroup) labels.push(choice.label ?? cid);
 
                   if (
                     choice.nestedOptionGroup &&
                     state.nestedSelections?.[cid]?.length
                   ) {
-                    state.nestedSelections[cid].forEach(nid => {
+                    state.nestedSelections[cid].forEach((nid) => {
                       const nested = choice.nestedOptionGroup!.choices.find(
-                        n => n.id === nid
+                        (n) => n.id === nid
                       );
                       if (nested) labels.push(nested.label ?? nid);
                     });
@@ -358,7 +351,7 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
       <div className={styles.orderSummary}>
         <div className={styles.orderTotal}>
           <h5>Order Type:</h5>
-          <p>{typeLabel(orderType)}</p>
+          <p>{deliveryLabel}</p>
         </div>
 
         <div className={styles.orderTotal}>
@@ -404,17 +397,21 @@ const RegularOrderSummary: React.FC<OrderSummaryStepProps> = ({
       <div className={styles.tipSelection}>
         <h5>Add a Tip?</h5>
         <div className={styles.tipOptions}>
-          {["0", "10", "15", "20"].map(pct => (
+          {["0", "10", "15", "20"].map((pct) => (
             <button
               key={pct}
-              className={tip === pct ? styles.btnPrimary : styles.btnOutlinePrimary}
+              className={
+                tip === pct ? styles.btnPrimary : styles.btnOutlinePrimary
+              }
               onClick={() => onTipChange(pct)}
             >
               {pct === "0" ? "No Tip" : `${pct}%`}
             </button>
           ))}
           <button
-            className={tip === "custom" ? styles.btnPrimary : styles.btnOutlinePrimary}
+            className={
+              tip === "custom" ? styles.btnPrimary : styles.btnOutlinePrimary
+            }
             onClick={() => onTipChange("custom")}
           >
             Custom
