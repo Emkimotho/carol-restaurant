@@ -45,8 +45,8 @@ export default function OrderActions({
   onShowDetail,
   onShowAgePatch,
 }: OrderActionsProps) {
-  // 1) No action buttons for clubhouse pick-up orders
-  if (order.deliveryType === DeliveryType.PICKUP_AT_CLUBHOUSE) {
+  // 1) No action buttons for cashier dashboard
+  if (role === 'cashier') {
     return null;
   }
 
