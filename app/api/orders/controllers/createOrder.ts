@@ -31,11 +31,9 @@ function computeItemTotal(it: any): number {
     it.optionGroups.forEach((grp: any) => {
       const sel = it.selectedOptions[grp.id];
       if (!sel) return;
-
       grp.choices.forEach((choice: any) => {
         if (!sel.selectedChoiceIds.includes(choice.id)) return;
         price += choice.priceAdjustment ?? 0;
-
         if (choice.nestedOptionGroup && sel.nestedSelections?.[choice.id]) {
           sel.nestedSelections[choice.id].forEach((nid: string) => {
             const n = choice.nestedOptionGroup!.choices.find((c: any) => c.id === nid);
@@ -54,17 +52,18 @@ export async function createOrder(req: Request) {
   try {
     /* 0️⃣  Auth -------------------------------------------------------------- */
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email)
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     /* 1️⃣  User -------------------------------------------------------------- */
     const user = await prisma.user.findUnique({
       where : { email: session.user.email },
       select: { id: true, firstName: true, lastName: true },
     });
-    if (!user)
+    if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
-
+    }
     const customerId   = user.id;
     const customerName = `${user.firstName} ${user.lastName}`;
 
@@ -78,8 +77,9 @@ export async function createOrder(req: Request) {
     } = body;
 
     /* 3️⃣  Validate ---------------------------------------------------------- */
-    if (!Array.isArray(items) || items.length === 0)
+    if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "items required" }, { status: 400 });
+    }
 
     /* 4️⃣  Flags ------------------------------------------------------------- */
     const containsAlcohol = items.some((it: any) => it.isAlcohol === true);
@@ -139,27 +139,29 @@ export async function createOrder(req: Request) {
 
     /* 6️⃣  IDs & payment-method normalisation ------------------------------- */
     const paymentMethod: PaymentMethod =
-      rawPaymentMethod === PaymentMethod.CASH
-        ? PaymentMethod.CASH
-        : PaymentMethod.CARD;                     // ← NEW
+      deliveryType === DeliveryType.DELIVERY
+        ? PaymentMethod.CARD         // force card for all home deliveries
+        : rawPaymentMethod === PaymentMethod.CASH
+          ? PaymentMethod.CASH
+          : PaymentMethod.CARD;
 
     const today   = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const random  = Math.random().toString(36).slice(2, 8).toUpperCase();
     const orderId = `ORD-${today}-${random}`;
 
     const initialStatus =
-      paymentMethod === PaymentMethod.CASH               // ← uses normalised value
+      paymentMethod === PaymentMethod.CASH
         ? OrderStatus.ORDER_RECEIVED
-        : OrderStatus.PENDING_PAYMENT;                    // CARD & Clover pre-auth
+        : OrderStatus.PENDING_PAYMENT;
 
     /* 7️⃣  Build order ------------------------------------------------------- */
     const data: any = {
       orderId,
       items,
-      schedule:      isGolfOrder ? null : body.schedule ? new Date(body.schedule) : null,
+      schedule:      isGolfOrder ? null : (body.schedule ? new Date(body.schedule) : null),
       orderType:     isGolfOrder ? "" : body.orderType ?? "",
       deliveryType,
-      paymentMethod,                                     // ← NEW
+      paymentMethod,
       containsAlcohol,
       ageVerified:   !!body.ageVerified,
 
@@ -176,17 +178,15 @@ export async function createOrder(req: Request) {
       deliveryDistanceMiles,
       deliveryTimeMinutes,
       totalAmount,
-      status: initialStatus,
-      metadata: body.metadata ?? null,
+      status:        initialStatus,
+      metadata:      body.metadata ?? null,
 
-      /* relations & guest info */
-      customer:   { connect: { id: customerId } },
-      guestName:  customerName,
-      guestEmail: session.user.email,
-      guestPhone: guestPhone || null,
+      customer:      { connect: { id: customerId } },
+      guestName:     customerName,
+      guestEmail:    session.user.email,
+      guestPhone:    guestPhone || null,
     };
 
-    /* golf-extras / delivery-extras (unchanged) ----------------------------- */
     if (isGolfOrder) {
       if (body.holeNumber != null) data.holeNumber = Number(body.holeNumber);
       const cartId = req.headers.get("x-cart-id");
