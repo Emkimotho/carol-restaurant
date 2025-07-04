@@ -2,13 +2,12 @@
 import type { DeliveryType } from "@prisma/client";
 
 /**
- * Turns a DeliveryType enum value (plus optional hole number)
- * into human-readable text for receipts, confirmations, dashboards, etc.
+ * DeliveryType  (+ optional holeNumber) → human-readable label
  *
- *  • PICKUP_AT_CLUBHOUSE → “Restaurant Pick-up”
- *  • ON_COURSE          → “On-Course • Hole N”
- *  • EVENT_PAVILION     → “Event Pavilion”
- *  • DELIVERY           → “Home Delivery”
+ * •  PICKUP_AT_CLUBHOUSE → “Clubhouse Pick-up”
+ * •  ON_COURSE           → “On-Course • Hole N”
+ * •  EVENT_PAVILION      → “Event Pavilion”
+ * •  DELIVERY            → “Home Delivery”
  */
 export function getDeliveryLabel(
   deliveryType: DeliveryType,
@@ -17,12 +16,15 @@ export function getDeliveryLabel(
   switch (deliveryType) {
     case "ON_COURSE":
       return `On-Course • Hole ${holeNumber ?? "—"}`;
+
     case "EVENT_PAVILION":
       return "Event Pavilion";
+
     case "DELIVERY":
       return "Home Delivery";
+
     case "PICKUP_AT_CLUBHOUSE":
     default:
-      return "Restaurant Pick-up";
+      return "Clubhouse Pick-up";
   }
 }

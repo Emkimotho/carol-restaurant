@@ -1,6 +1,8 @@
+// File: components/payment-confirmation/CashPaymentConfirmation.tsx
 /* =======================================================================
-   Cash-order confirmation + optional delivery-tracking
+   Cash-Order Confirmation  (with optional live-tracking link)
    ====================================================================== */
+
 "use client";
 
 import React, { useContext, useEffect, useState } from "react";
@@ -9,47 +11,58 @@ import { useRouter, useSearchParams }             from "next/navigation";
 import { OrderContext } from "@/contexts/OrderContext";
 import { CartContext }  from "@/contexts/CartContext";
 
-import { getDeliveryLabel } from "@/utils/getDeliveryLabel";   /* ← NEW */
-import { DeliveryType }     from "@prisma/client";
+import { getDeliveryLabel } from "@/utils/getDeliveryLabel";
+import type { DeliveryType } from "@prisma/client";
 
 import styles from "./PaymentConfirmation.module.css";
 
-/* ─ Types ────────────────────────────────────────────────────────────── */
+/* ───────────────────────────── Types ───────────────────────────── */
 interface FetchedOrder {
   id:           string;
   orderId:      string;
   totalAmount:  number;
-  deliveryType: "PICKUP_AT_CLUBHOUSE" | "ON_COURSE" | "EVENT_PAVILION";
-  holeNumber?:  number;
+  deliveryType: DeliveryType;
+  holeNumber?:  number | null;
   guestEmail?:  string | null;
   status:       string;
-  createdAt:    string; // ISO
+  createdAt:    string;      // ISO
 }
 
-/* ─ Helpers ──────────────────────────────────────────────────────────── */
-const fmtMoney = (n: number) => `$${n.toFixed(2)}`;
+/* ────────────────────────── Helpers ───────────────────────────── */
+const money = (n: number) => `$${n.toFixed(2)}`;
 
-/* ===================================================================== */
+/* ================================================================= */
 export default function CashPaymentConfirmation() {
-  const router  = useRouter();
-  const params  = useSearchParams();
-  const dbId    = params.get("id") ?? "";
+  const router = useRouter();
+  const params = useSearchParams();
+  const dbId   = params.get("id") ?? "";
 
+  /* ----------------------------------------------------------------
+     Contexts
+  ---------------------------------------------------------------- */
   const orderCtx = useContext(OrderContext);
   const cartCtx  = useContext(CartContext);
   if (!orderCtx || !cartCtx) return null;
+
   const { order: ctxOrder } = orderCtx;
   const { clearCart }       = cartCtx;
 
+  /* ----------------------------------------------------------------
+     Local state
+  ---------------------------------------------------------------- */
   const [order,     setOrder]     = useState<FetchedOrder | null>(null);
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
 
-  /* ---------------- Clear cart once -------------------------------- */
+  /* ----------------------------------------------------------------
+     1. Clear cart on mount
+  ---------------------------------------------------------------- */
   useEffect(() => clearCart(), [clearCart]);
 
-  /* ---------------- Fetch order from DB ---------------------------- */
+  /* ----------------------------------------------------------------
+     2. Fetch order from DB
+  ---------------------------------------------------------------- */
   useEffect(() => {
     if (!dbId) return;
     setLoading(true);
@@ -63,22 +76,24 @@ export default function CashPaymentConfirmation() {
       .finally(() => setLoading(false));
   }, [dbId]);
 
-  /* ---------------- Send confirmation email ------------------------ */
+  /* ----------------------------------------------------------------
+     3. Send confirmation email (once)
+  ---------------------------------------------------------------- */
   useEffect(() => {
-    const o = order ?? ctxOrder;
-    if (emailSent || !o?.guestEmail) return;
+    const snap = order ?? ctxOrder;
+    if (emailSent || !snap?.guestEmail) return;
 
     fetch("/api/send-email", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        to:      o.guestEmail,
+        to:      snap.guestEmail,
         subject: "19th Hole — Cash Order Confirmation",
-        text:    `Your order #${o.orderId} for ${fmtMoney(
-          o.totalAmount
+        text:    `Your order #${snap.orderId} for ${money(
+          snap.totalAmount
         )} has been placed. Please have cash ready when we deliver.`,
-        html:    `<p>Your order <strong>#${o.orderId}</strong> for <strong>${fmtMoney(
-          o.totalAmount
+        html:    `<p>Your order <strong>#${snap.orderId}</strong> for <strong>${money(
+          snap.totalAmount
         )}</strong> has been placed. Please have cash ready when we deliver.</p>`,
       }),
     })
@@ -86,74 +101,78 @@ export default function CashPaymentConfirmation() {
       .catch(console.error);
   }, [order, ctxOrder, emailSent]);
 
-  /* ---------------- Loading / error guards ------------------------- */
+  /* ----------------------------------------------------------------
+     4. Loading / error guards
+  ---------------------------------------------------------------- */
   if (loading) return <div className={styles.message}>Loading order…</div>;
   if (error)   return <div className={styles.message}>{error}</div>;
 
-  /* ---------------- Snapshot (DB or context) ----------------------- */
+  /* ----------------------------------------------------------------
+     5. Snapshot (prefer DB over context)
+  ---------------------------------------------------------------- */
   const o   = (order ?? ctxOrder) as FetchedOrder;
-  const amt = fmtMoney(o.totalAmount);
+  const amt = money(o.totalAmount);
 
-  /* ---------------- Heading + instruction via helper --------------- */
-  const heading     = getDeliveryLabel(
-    o.deliveryType as DeliveryType,
-    o.holeNumber
-  );
-  let   instruction: React.ReactNode;
+  /* ----------------------------------------------------------------
+     6. Heading & instruction
+  ---------------------------------------------------------------- */
+  const heading = getDeliveryLabel(o.deliveryType, o.holeNumber);
 
+  let instruction: React.ReactNode;
   switch (o.deliveryType) {
+    case "ON_COURSE":
+      instruction =
+        o.holeNumber != null ? (
+          <>
+            We’ll bring your order to hole&nbsp;
+            <strong>{o.holeNumber}</strong> — please have{" "}
+            <strong>{amt}</strong> ready.
+          </>
+        ) : (
+          <>
+            We’ll bring your order straight to your hole — please have{" "}
+            <strong>{amt}</strong> ready.
+          </>
+        );
+      break;
+
+    case "EVENT_PAVILION":
+      instruction = (
+        <>
+          We’ll deliver to the pavilion — please have{" "}
+          <strong>{amt}</strong> ready.
+        </>
+      );
+      break;
+
     case "PICKUP_AT_CLUBHOUSE":
+    default:
       instruction = (
         <>
           Please pick up your order at the clubhouse and have{" "}
           <strong>{amt}</strong> ready.
         </>
       );
-      break;
-
-    case "ON_COURSE":
-      instruction = (
-        <>
-          We’ll bring your order straight to your hole&mdash;please have{" "}
-          <strong>{amt}</strong> ready.
-        </>
-      );
-      break;
-
-    case "EVENT_PAVILION":
-      instruction = (
-        <>
-          We’ll deliver to the pavilion&mdash;please have{" "}
-          <strong>{amt}</strong> ready.
-        </>
-      );
-      break;
-
-    default:
-      instruction = (
-        <>
-          Your order is confirmed. Please have <strong>{amt}</strong> ready.
-        </>
-      );
   }
 
-  /* ---------------- Render ----------------------------------------- */
+  /* =================================================================
+     Render
+  ================================================================= */
   return (
     <div className={styles.container}>
       <div className={styles.confirmationCard}>
+        {/* ✔️ icon */}
         <div className={styles.iconWrapper}>
           <svg className={styles.checkIcon} viewBox="0 0 52 52">
             <circle className={styles.checkCircle} cx="26" cy="26" r="25" />
-            <path
-              className={styles.checkMark}
-              d="M14.1 27.2 21.2 34.4 37.9 17.6"
-            />
+            <path   className={styles.checkMark}  d="M14.1 27.2 21.2 34.4 37.9 17.6" />
           </svg>
         </div>
 
         <h1 className={styles.title}>{heading}</h1>
         <p className={styles.message}>{instruction}</p>
 
+        {/* Order facts */}
         <div className={styles.factGrid}>
           <div>
             <span className={styles.factLabel}>Order #</span>
@@ -165,7 +184,7 @@ export default function CashPaymentConfirmation() {
           </div>
         </div>
 
-        {/* Track / nav buttons */}
+        {/* Navigation buttons */}
         {o.orderId && (
           <div className={styles.navigation}>
             <button
@@ -189,6 +208,7 @@ export default function CashPaymentConfirmation() {
           </div>
         )}
 
+        {/* Footer note */}
         <p className={styles.note}>
           You’ll receive a confirmation email shortly. Thanks for choosing the
           19<sup>th</sup> Hole!

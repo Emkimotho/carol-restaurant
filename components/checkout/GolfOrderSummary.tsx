@@ -3,16 +3,13 @@
 // Renders the order summary for golf & mixed-menu orders.
 //
 // • Shows customer name.
-// • Lists each line item with title, quantity, description, spice level,
-//   special instructions, and option selections.
-// • Displays golf delivery label (“Clubhouse Pick-up”, “On-Course • Hole X”,
-//   or “Event Pavilion”).                               ← label now via helper
-// • Defaults schedule to ASAP on first mount (no scheduling UI here).
-// • Tip selection (0 %, 10 %, 15 %, 20 %, or custom).
-// • If containsAlcohol ➜ shows age-verification checkbox **below the totals**.
-// • Calculates & shows subtotal, tip, tax, and grand-total.
-// • On “Next”, writes items, totals, and alcohol flags into OrderContext.
-//   If the age-checkbox isn’t ticked a toast warns the user.
+// • Lists each line item with title, qty, description, spice level, notes, options.
+// • Displays golf delivery label via getDeliveryLabel helper.
+// • Defaults schedule to ASAP on first mount.
+// • Tip selector (0 %, 10 %, 15 %, 20 %, or custom).
+// • Alcohol check below totals.
+// • Calculates subtotal, tip, tax, grand-total.
+// • On “Next” writes all values into OrderContext.
 //
 
 "use client";
@@ -20,6 +17,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "react-toastify";
+
 import styles from "./OrderSummaryStep.module.css";
 
 import { OrderContext } from "@/contexts/OrderContext";
@@ -29,14 +27,14 @@ import {
   calculateTaxAmount,
   calculateTotalWithTipAndTax,
 } from "@/utils/checkoutUtils";
-import { TAX_RATE } from "@/config/taxConfig";
-import { DeliveryType } from "@prisma/client";
-import { getDeliveryLabel } from "@/utils/getDeliveryLabel"; // ← NEW helper import
+import { TAX_RATE }            from "@/config/taxConfig";
+import { DeliveryType }        from "@prisma/client";
+import { getDeliveryLabel }    from "@/utils/getDeliveryLabel";
 
-/* ------------------------------------------------------------------ */
-/*  Helper: price of a single cart item                               */
-/* ------------------------------------------------------------------ */
-const priceOf = (item: CartItem): number => {
+/* ──────────────────────────────────────────────────────────── */
+/* Helper: compute full price of a single cart item            */
+/* ──────────────────────────────────────────────────────────── */
+function priceOf(item: CartItem): number {
   let extras = 0;
 
   if (item.optionGroups && item.selectedOptions) {
@@ -47,11 +45,11 @@ const priceOf = (item: CartItem): number => {
       group.choices.forEach((choice) => {
         if (!state.selectedChoiceIds.includes(choice.id)) return;
 
-        // parent adjustment (only when no nested group)
+        // parent choice
         if (!choice.nestedOptionGroup) {
           extras += choice.priceAdjustment ?? 0;
         } else {
-          // nested selections
+          // nested choices
           const nestedSel = state.nestedSelections?.[choice.id] ?? [];
           choice.nestedOptionGroup.choices.forEach((nested) => {
             if (nestedSel.includes(nested.id)) {
@@ -64,55 +62,61 @@ const priceOf = (item: CartItem): number => {
   }
 
   return (item.price + extras) * item.quantity;
-};
+}
 
 /* =================================================================== */
-/*                               Component                             */
+/*                        Component                                    */
 /* =================================================================== */
-export default function GolfOrderSummary({
-  cartItems,
-  tip,
-  customTip,
-  onTipChange,
-  onCustomTipChange,
-  onBack,
-  onNext,
-  taxRate,
-  containsAlcohol,
-}: OrderSummaryStepProps & { containsAlcohol: boolean }) {
+export default function GolfOrderSummary(
+  props: OrderSummaryStepProps & { containsAlcohol: boolean }
+) {
+  const {
+    cartItems,
+    tip,
+    customTip,
+    onTipChange,
+    onCustomTipChange,
+    onBack,
+    onNext,
+    taxRate,
+    containsAlcohol,
+  } = props;
+
   const { order, setOrder } = useContext(OrderContext)!;
-  const { data: session } = useSession();
+  const { data: session }   = useSession();
 
-  /* ---------------- local age-checkbox state ----------------------- */
+  /* ───────────── local age-checkbox state ───────────── */
   const [ageConfirmed, setAgeConfirmed] = useState(order.ageVerified);
 
-  /* ---------- default schedule to “now” (ASAP) --------------------- */
+  /* ───────────── default schedule → ASAP ───────────── */
   useEffect(() => {
     if (!order.schedule) {
       setOrder((prev) => ({ ...prev, schedule: new Date().toISOString() }));
     }
   }, [order.schedule, setOrder]);
 
-  /* ------------------- money math ---------------------------------- */
-  const subtotal = cartItems.reduce((sum, it) => sum + priceOf(it), 0);
+  /* ───────────── money math ───────────── */
+  const subtotal = cartItems.reduce((s, it) => s + priceOf(it), 0);
   const tipAmt   = calculateTipAmount(subtotal, tip, customTip);
   const rate     = typeof taxRate === "number" ? taxRate : TAX_RATE;
   const taxAmt   = calculateTaxAmount(subtotal, rate);
   const rawTotal = calculateTotalWithTipAndTax(subtotal, tipAmt, taxAmt, 0);
   const total    = typeof rawTotal === "string" ? parseFloat(rawTotal) : rawTotal;
 
-  /* ---------------- display name logic ----------------------------- */
+  /* ───────────── display name ───────────── */
   const displayName =
     session?.user?.name ||
     (order.customerId && order.customerName
       ? order.customerName
       : order.guestName);
 
-  /* ---------------- golf / delivery label -------------------------- */
-  const golfLabel = (): string =>
-    getDeliveryLabel(order.deliveryType as DeliveryType, order.holeNumber);
+  /* ───────────── golf / delivery label ───────────── */
+  const golfLabel = getDeliveryLabel(
+    order.deliveryType as DeliveryType,
+    order.holeNumber
+  );
 
-  /* -------------------- proceed handler ---------------------------- */
+  /* ───────────── Next handler ───────────── */
   const proceed = () => {
     if (containsAlcohol && !ageConfirmed) {
       toast.warn("Please confirm you’re at least 21 years old to continue.");
@@ -123,37 +127,38 @@ export default function GolfOrderSummary({
       ...prev,
       containsAlcohol,
       ageVerified: containsAlcohol ? ageConfirmed : false,
-      items: cartItems,
+      items:        cartItems,
       subtotal,
-      tipAmount: tipAmt,
-      taxAmount: taxAmt,
-      totalAmount: total,
+      tipAmount:    tipAmt,
+      taxAmount:    taxAmt,
+      totalAmount:  total,
     }));
     onNext?.();
   };
 
   /* ================================================================= */
-  /*                                UI                                 */
+  /*                             UI                                    */
   /* ================================================================= */
   return (
     <div className={styles.checkoutSection}>
       <h4>Golf Order Summary</h4>
 
-      {/* Customer ---------------------------------------------------- */}
+      {/* Customer info */}
       <div className={styles.customerInfo}>
         <h5>Customer:</h5>
         <p>{displayName || "N/A"}</p>
       </div>
       <hr />
 
-      {/* Line items -------------------------------------------------- */}
+      {/* Line items */}
       {cartItems.map((it, idx) => (
         <div key={idx} className={styles.orderItem}>
           <h5>{`${it.title} × ${it.quantity}`}</h5>
-          {it.description && <p>{it.description}</p>}
-          {it.spiceLevel && <p>Spice Level: {it.spiceLevel}</p>}
-          {it.specialInstructions && <p>Note: {it.specialInstructions}</p>}
+          {it.description          && <p>{it.description}</p>}
+          {it.spiceLevel           && <p>Spice Level: {it.spiceLevel}</p>}
+          {it.specialInstructions  && <p>Note: {it.specialInstructions}</p>}
 
+          {/* Option selections */}
           {it.optionGroups && it.selectedOptions && (
             <div className={styles.accompaniments}>
               {it.optionGroups.map((group) => {
@@ -161,6 +166,7 @@ export default function GolfOrderSummary({
                 if (!state?.selectedChoiceIds.length) return null;
 
                 const labels: string[] = [];
+
                 state.selectedChoiceIds.forEach((cid) => {
                   const choice = group.choices.find((c) => c.id === cid);
                   if (!choice) return;
@@ -191,15 +197,15 @@ export default function GolfOrderSummary({
       ))}
       <hr />
 
-      {/* Golf / delivery meta ---------------------------------------- */}
+      {/* Golf meta */}
       <div className={styles.orderTotal}>
         <h5>Order Type:</h5>
-        <p>{golfLabel()}</p>
+        <p>{golfLabel}</p>
         <h5>Scheduled Time:</h5>
         <p>ASAP</p>
       </div>
 
-      {/* Tip selector ------------------------------------------------ */}
+      {/* Tip selector */}
       <div className={styles.tipSelection}>
         <h5>Add a Tip?</h5>
         <div className={styles.tipOptions}>
@@ -241,7 +247,7 @@ export default function GolfOrderSummary({
       </div>
       <hr />
 
-      {/* Totals ------------------------------------------------------ */}
+      {/* Totals */}
       <div className={styles.orderTotal}>
         <h5>Tip Amount:</h5>
         <p>${tipAmt.toFixed(2)}</p>
@@ -255,7 +261,7 @@ export default function GolfOrderSummary({
         <p>${total.toFixed(2)}</p>
       </div>
 
-      {/* Alcohol check (now *after* totals) ------------------------- */}
+      {/* Alcohol notice */}
       {containsAlcohol && (
         <div className={styles.alcoholNotice}>
           <p className={styles.alcoholText}>
@@ -273,7 +279,7 @@ export default function GolfOrderSummary({
         </div>
       )}
 
-      {/* Nav --------------------------------------------------------- */}
+      {/* Navigation buttons */}
       <div className={styles.navigationButtons}>
         <button
           type="button"
