@@ -7,6 +7,7 @@
 import React from "react";
 import Image from "next/image";
 import styles from "./CartPage.module.css";
+import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
 import { useCartPage, MAX_RECS } from "./useCartPage";
 import type { CartItem, MenuItem as MenuItemType } from "@/utils/types";
@@ -99,16 +100,23 @@ export default function CartPage({ cart, crossSell }: CartPageProps) {
                 <div className={styles.itemHeader}>
                   <div className={styles.itemNumber}>{idx + 1}.</div>
 
-                  {item.image && (
+                  {(item.cloudinaryPublicId || item.image) && (
                     <div className={styles.thumbnail}>
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        width={150}
-                        height={150}
-                        unoptimized
-                        className={styles.itemThumbnail}
-                      />
+                      {(() => {
+                        const src = item.cloudinaryPublicId
+                          ? getCloudinaryImageUrl(item.cloudinaryPublicId, 150, 150)
+                          : item.image!;
+                        return (
+                          <Image
+                            src={src}
+                            alt={item.title}
+                            width={150}
+                            height={150}
+                            unoptimized
+                            className={styles.itemThumbnail}
+                          />
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -343,15 +351,24 @@ export default function CartPage({ cart, crossSell }: CartPageProps) {
           <div className={styles.savedItemsWrapper}>
             {uniqSaved.map((item) => (
               <div key={item.cartItemId} className={styles.savedItem}>
-                {item.image && (
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    width={80}
-                    height={80}
-                    unoptimized
-                    className={styles.savedThumbnail}
-                  />
+                {(item.cloudinaryPublicId || item.image) && (
+                  <div className={styles.savedThumbnailContainer}>
+                    {(() => {
+                      const src = item.cloudinaryPublicId
+                        ? getCloudinaryImageUrl(item.cloudinaryPublicId, 80, 80)
+                        : item.image!;
+                      return (
+                        <Image
+                          src={src}
+                          alt={item.title}
+                          width={80}
+                          height={80}
+                          unoptimized
+                          className={styles.savedThumbnail}
+                        />
+                      );
+                    })()}
+                  </div>
                 )}
                 <div className={styles.savedInfo}>
                   <p className={styles.savedItemTitle}>{item.title}</p>
@@ -392,13 +409,20 @@ export default function CartPage({ cart, crossSell }: CartPageProps) {
                   onClick={() => router.push(`/menuitem/${rec.id}`)}
                 >
                   <div className={styles.recommendImageContainer}>
-                    <Image
-                      src={rec.image || "/placeholder.png"}
-                      alt={rec.title}
-                      fill
-                      unoptimized
-                      className={styles.recommendThumbnail}
-                    />
+                    {(() => {
+                      const src = rec.cloudinaryPublicId
+                        ? getCloudinaryImageUrl(rec.cloudinaryPublicId, 200, 200)
+                        : rec.image || "/placeholder.png";
+                      return (
+                        <Image
+                          src={src}
+                          alt={rec.title}
+                          fill
+                          unoptimized
+                          className={styles.recommendThumbnail}
+                        />
+                      );
+                    })()}
                   </div>
                   <button className={styles.addRecommendBtn}>View / Add</button>
                   <div className={styles.recommendInfo}>
