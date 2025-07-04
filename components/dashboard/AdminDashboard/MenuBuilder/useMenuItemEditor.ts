@@ -1,18 +1,20 @@
 // File: components/dashboard/AdminDashboard/MenuBuilder/useMenuItemEditor.ts
 /*
-  Custom React hook to manage the state and operations for the MenuItemEditor component:
+  Custom React hook to manage state & operations for MenuItemForm
+  ──────────────────────────────────────────────────────────────────
   • Loads draft data from localStorage and syncs with editingItem
-  • Manages form fields: title, description, price, image upload, options, stock, etc.
-  • Validates inputs and collects errors
-  • Handles image upload via /api/upload and Cloudinary IDs
-  • Creates or updates menu items via React Query mutation
-  • Syncs saved item to Clover
-  • Supports preview and onSaved callbacks
+  • Manages form fields: title, description, price, image, options…
+  • Validates inputs and gathers errors
+  • Handles image upload (POST /api/upload → Cloudinary)
+  • Creates / updates menu items via React-Query mutation
+  • After save → triggers Clover sync, fires Toast, clears form
+    (clears only when adding a NEW item; edits keep current state)
+  • Exposes helpers + mutation object to the presentation component
 */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { useMutation, UseMutationResult } from "@tanstack/react-query";
+import { useMutation, type UseMutationResult } from "@tanstack/react-query";
 import type { MenuItem, MenuItemOptionGroup } from "@/utils/types";
 
 const DRAFT_KEY = "menuItemDraft";
@@ -26,6 +28,7 @@ interface UseMenuItemEditorParams {
 }
 
 interface UseMenuItemEditorReturn {
+  /* form fields */
   title: string;
   setTitle: (v: string) => void;
   description: string;
@@ -52,6 +55,7 @@ interface UseMenuItemEditorReturn {
   addOptionGroup: () => void;
   updateOptionGroup: (idx: number, g: MenuItemOptionGroup) => void;
   removeOptionGroup: (idx: number) => void;
+  /* utils */
   errors: Record<string, string>;
   clearDraft: () => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
@@ -65,30 +69,26 @@ export function useMenuItemEditor({
   onSaved,
   onPreview,
 }: UseMenuItemEditorParams): UseMenuItemEditorReturn {
-  // seed imageUrl state from editingItem.imageUrl or fallback to legacy editingItem.image
-  const [title, setTitle] = useState(editingItem?.title ?? "");
-  const [description, setDescription] = useState(editingItem?.description ?? "");
-  const [price, setPrice] = useState<number>(editingItem?.price ?? 0);
-  const [imageUrl, setImageUrl] = useState(
-    editingItem?.imageUrl ?? editingItem?.image ?? ""
-  );
-  const [publicId, setPublicId] = useState<string | null>(
-    editingItem?.cloudinaryPublicId ?? null
-  );
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  /* ───────── state ───────── */
+  const [title, setTitle]                   = useState(editingItem?.title ?? "");
+  const [description, setDescription]       = useState(editingItem?.description ?? "");
+  const [price, setPrice]                   = useState<number>(editingItem?.price ?? 0);
+  const [imageUrl, setImageUrl]             = useState(editingItem?.imageUrl ?? editingItem?.image ?? "");
+  const [publicId, setPublicId]             = useState<string | null>(editingItem?.cloudinaryPublicId ?? null);
+  const [selectedFile, setSelectedFile]     = useState<File | null>(null);
+  const [uploading, setUploading]           = useState(false);
   const [selectedSubcategory, setSelectedSubcategory] = useState(categoryId ?? "");
-  const [stock, setStock] = useState<number>(editingItem?.stock ?? 0);
-  const [hasSpiceLevel, setHasSpiceLevel] = useState(editingItem?.hasSpiceLevel ?? false);
-  const [hasAlcohol, setHasAlcohol] = useState(editingItem?.isAlcohol ?? false);
+  const [stock, setStock]                   = useState<number>(editingItem?.stock ?? 0);
+  const [hasSpiceLevel, setHasSpiceLevel]   = useState(editingItem?.hasSpiceLevel ?? false);
+  const [hasAlcohol, setHasAlcohol]         = useState(editingItem?.isAlcohol ?? false);
   const [showInGolfMenu, setShowInGolfMenu] = useState(editingItem?.showInGolfMenu ?? false);
-  const [optionGroups, setOptionGroups] = useState<MenuItemOptionGroup[]>(editingItem?.optionGroups ?? []);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [optionGroups, setOptionGroups]     = useState<MenuItemOptionGroup[]>(editingItem?.optionGroups ?? []);
+  const [errors, setErrors]                 = useState<Record<string, string>>({});
 
-  // this flag can be overridden by the consuming component if needed
+  /* override if the category being edited is specifically the Golf menu */
   const categoryIsGolf = false;
 
-  /* Sync form fields when editingItem changes */
+  /* ───────── sync incoming editingItem → form fields ───────── */
   useEffect(() => {
     if (editingItem) {
       setTitle(editingItem.title);
@@ -105,7 +105,7 @@ export function useMenuItemEditor({
     }
   }, [editingItem, categoryId]);
 
-  /* Load draft from localStorage when not editing an existing item */
+  /* ───────── load draft when creating new item ───────── */
   useEffect(() => {
     if (!editingItem) {
       const raw = localStorage.getItem(DRAFT_KEY);
@@ -123,13 +123,13 @@ export function useMenuItemEditor({
           setSelectedSubcategory(d.selectedSubcategory ?? categoryId ?? "");
           setStock(d.stock ?? 0);
         } catch {
-          // ignore parse errors
+          /* ignore draft parse errors */
         }
       }
     }
   }, [editingItem, categoryId]);
 
-  /* Auto-save draft to localStorage */
+  /* ───────── draft autosave ───────── */
   useEffect(() => {
     if (!editingItem) {
       const timer = setTimeout(() => {
@@ -165,12 +165,12 @@ export function useMenuItemEditor({
     editingItem,
   ]);
 
+  /* ───────── helpers ───────── */
   const clearDraft = () => {
     localStorage.removeItem(DRAFT_KEY);
     toast.info("Draft cleared");
   };
 
-  /* Handlers */
   const handlePriceChange = (value: string) => {
     const cleaned = value.replace(/^0+(?=\d)/, "");
     setPrice(parseFloat(cleaned) || 0);
@@ -197,57 +197,59 @@ export function useMenuItemEditor({
       },
     ]);
 
-  const updateOptionGroup = (idx: number, group: MenuItemOptionGroup) =>
-    setOptionGroups((prev) => prev.map((g, i) => (i === idx ? group : g)));
+  const updateOptionGroup = (idx: number, g: MenuItemOptionGroup) =>
+    setOptionGroups((prev) => prev.map((og, i) => (i === idx ? g : og)));
 
   const removeOptionGroup = (idx: number) =>
     setOptionGroups((prev) => prev.filter((_, i) => i !== idx));
 
-  /* Validation */
+  /* ───────── validation ───────── */
   const validate = () => {
-    const validationErrors: Record<string, string> = {};
-    if (!title.trim()) validationErrors.title = "Title is required.";
-    if (price <= 0) validationErrors.price = "Price must be greater than zero.";
-    if (!selectedSubcategory) validationErrors.subcategory = "Subcategory is required.";
-    if (stock < 0) validationErrors.stock = "Stock cannot be negative.";
-    setErrors(validationErrors);
-    return Object.keys(validationErrors).length === 0;
+    const v: Record<string, string> = {};
+    if (!title.trim()) v.title = "Title is required.";
+    if (price <= 0) v.price = "Price must be greater than zero.";
+    if (!selectedSubcategory) v.subcategory = "Subcategory is required.";
+    if (stock < 0) v.stock = "Stock cannot be negative.";
+    setErrors(v);
+    return Object.keys(v).length === 0;
   };
 
-  /* Mutation to save/update item */
+  /* ───────── mutation (save) ───────── */
   const mutation = useMutation<any, Error, any>({
     mutationFn: async (data) => {
       const url = editingItem ? `/api/menu/item/${editingItem.id}` : "/api/menu/item";
-      const response = await fetch(url, {
+      const res = await fetch(url, {
         method: editingItem ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.message || "Save failed");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Save failed");
       return json;
     },
   });
 
-  /* Form submit */
+  /* ───────── form submit ───────── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     let finalPublicId = publicId;
-    let finalUrl = imageUrl;
+    let finalUrl      = imageUrl;
 
+    /* optional upload */
     if (selectedFile) {
       setUploading(true);
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      const uploadJson = await uploadRes.json();
-      finalPublicId = uploadJson.public_id;
-      finalUrl = uploadJson.secure_url;
+      const fd = new FormData();
+      fd.append("file", selectedFile);
+      const upRes  = await fetch("/api/upload", { method: "POST", body: fd });
+      const upJson = await upRes.json();
+      finalPublicId = upJson.public_id;
+      finalUrl      = upJson.secure_url;
       setUploading(false);
     }
 
+    /* payload */
     const payload = {
       title,
       description,
@@ -263,15 +265,18 @@ export function useMenuItemEditor({
     };
 
     try {
-      const result = await mutation.mutateAsync(payload);
-      const savedItem: any = result.item ?? result.menuItem;
-      if (savedItem?.id) {
-        await fetch(`/api/clover/sync-items/${savedItem.id}`, { method: "POST" });
+      const result   = await mutation.mutateAsync(payload);
+      const saved    = result.item ?? result.menuItem;
+      if (saved?.id) {
+        await fetch(`/api/clover/sync-items/${saved.id}`, { method: "POST" });
       }
+
+      toast.success(editingItem ? "Menu item updated!" : "Menu item created!");
+
       onSaved();
 
+      /* reset when *adding new* */
       if (!editingItem) {
-        // reset form
         setTitle("");
         setDescription("");
         setPrice(0);
@@ -286,12 +291,12 @@ export function useMenuItemEditor({
         setStock(0);
         clearDraft();
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save menu item");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save menu item");
     }
   };
 
-  /* Preview draft */
+  /* ───────── preview draft ───────── */
   const handlePreview = () => {
     onPreview({
       id: editingItem?.id ?? "temp-id",
@@ -309,6 +314,7 @@ export function useMenuItemEditor({
     } as MenuItem);
   };
 
+  /* ───────── return API ───────── */
   return {
     title,
     setTitle,

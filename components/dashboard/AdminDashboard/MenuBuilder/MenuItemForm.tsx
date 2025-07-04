@@ -1,18 +1,23 @@
 // File: components/dashboard/AdminDashboard/MenuBuilder/MenuItemForm.tsx
 /*
-  Presentation component for the MenuItemEditor form.
-  • Renders form fields for title, description, price, image upload, subcategory, stock, flags, and option groups.
-  • Uses the `useMenuItemEditor` hook for all state, validation, and submit logic.
-  • Calls `onSaved` callback after successful save and `onPreview` to preview draft.
+  Menu-item editor form (presentation only).
+  • Works hand-in-hand with useMenuItemEditor for logic & mutation.
+  • On successful save:
+      – Fires a Toastify “success” message.
+      – If it was *new* (not editing), clears every field inc. file-picker.
+      – If it was an *edit*, leaves all fields as-is so the admin sees the
+        saved state (including previously-uploaded image).
 */
 
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
+import { toast } from "react-toastify";
+
 import type { MenuCategory, MenuItem, MenuItemOptionGroup } from "@/utils/types";
-import { useMenuItemEditor } from "./useMenuItemEditor";
 import OptionGroupEditor from "./OptionGroupEditor";
+import { useMenuItemEditor } from "./useMenuItemEditor";
 import styles from "./MenuItemEditor.module.css";
 
 interface MenuItemFormProps {
@@ -30,6 +35,9 @@ export default function MenuItemForm({
   onPreview,
   categories,
 }: MenuItemFormProps) {
+  /* ----------------------------------------------------------------
+     Hook handles all state + mutations
+  ------------------------------------------------------------------ */
   const {
     title,
     setTitle,
@@ -38,7 +46,6 @@ export default function MenuItemForm({
     price,
     handlePriceChange,
     imageUrl,
-    publicId,
     selectedFile,
     uploading,
     handleFileChange,
@@ -64,6 +71,23 @@ export default function MenuItemForm({
     mutation,
   } = useMenuItemEditor({ categoryId, editingItem, onSaved, onPreview });
 
+  /* ----------------------------------------------------------------
+     Toast + clear logic after a successful mutation
+  ------------------------------------------------------------------ */
+  useEffect(() => {
+    if (mutation.isSuccess) {
+      toast.success(editingItem ? "Menu item updated!" : "Menu item created!");
+
+      // Clear only when it was a *new* item – preserve state on edits
+      if (!editingItem) {
+        clearDraft();           // resets all local fields incl. file input
+      }
+    }
+  }, [mutation.isSuccess, editingItem, clearDraft]);
+
+  /* ----------------------------------------------------------------
+     Render
+  ------------------------------------------------------------------ */
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
       {/* Title */}
@@ -118,15 +142,16 @@ export default function MenuItemForm({
         />
         {selectedFile && <p>Selected file: {selectedFile.name}</p>}
         {uploading && <p>Uploading image...</p>}
+
         {imageUrl && (
-          <div style={{ marginTop: '0.5rem', maxWidth: '200px' }}>
+          <div style={{ marginTop: "0.5rem", maxWidth: "200px" }}>
             <Image
               src={imageUrl}
               alt="Preview"
               width={200}
               height={200}
               unoptimized
-              style={{ maxWidth: '100%', height: 'auto' }}
+              style={{ maxWidth: "100%", height: "auto" }}
             />
           </div>
         )}
@@ -148,7 +173,9 @@ export default function MenuItemForm({
             </option>
           ))}
         </select>
-        {errors.subcategory && <span className={styles.error}>{errors.subcategory}</span>}
+        {errors.subcategory && (
+          <span className={styles.error}>{errors.subcategory}</span>
+        )}
       </div>
 
       {/* Stock */}
@@ -210,7 +237,11 @@ export default function MenuItemForm({
             onRemove={() => removeOptionGroup(idx)}
           />
         ))}
-        <button type="button" onClick={addOptionGroup} className={styles.addButton}>
+        <button
+          type="button"
+          onClick={addOptionGroup}
+          className={styles.addButton}
+        >
           Add Option Group
         </button>
       </div>
@@ -218,17 +249,21 @@ export default function MenuItemForm({
       {/* Buttons */}
       <div className={styles.buttonsRow}>
         <button type="submit" disabled={uploading || mutation.isPending}>
-          {uploading || mutation.isPending ? 'Saving...' : 'Save Menu Item'}
+          {uploading || mutation.isPending ? "Saving…" : "Save Menu Item"}
         </button>
         <button type="button" onClick={handlePreview} disabled={uploading}>
           Preview
         </button>
       </div>
 
-      {/* Clear draft */}
+      {/* Clear draft (only when adding new) */}
       {!editingItem && (
         <div className={styles.clearDraftRow}>
-          <button type="button" onClick={clearDraft} className={styles.clearDraftButton}>
+          <button
+            type="button"
+            onClick={clearDraft}
+            className={styles.clearDraftButton}
+          >
             Clear Draft
           </button>
         </div>

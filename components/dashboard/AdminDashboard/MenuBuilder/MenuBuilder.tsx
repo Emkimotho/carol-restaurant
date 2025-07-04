@@ -1,37 +1,32 @@
 // File: components/dashboard/AdminDashboard/MenuBuilder/MenuBuilder.tsx
-/*
-   Admin UI for Categories & Items
-   • Supports:
-       – selecting category type  (MainMenu | GolfMenu)
-       – “Hidden on public menu”  checkbox when creating/editing
-       – manual “New Category” and “New Item” operations
-   ------------------------------------------------------------------ */
-
 "use client";
 
 import React, { useState, useEffect } from "react";
-import CategoryList   from "./CategoryList";
-import MenuItemList   from "./MenuItemList";
-import MenuItemForm   from "./MenuItemForm";
-import ItemDetailPage from "@/components/MenuItem/ItemDetailPage";
-import styles         from "./MenuBuilder.module.css";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast }         from "react-toastify";
+import { toast } from "react-toastify";
+
+import CategoryList from "./CategoryList";
+import MenuItemList from "./MenuItemList";
+import MenuItemForm from "./MenuItemForm";
+import ItemDetailPage from "@/components/MenuItem/ItemDetailPage";
+
+import styles from "./MenuBuilder.module.css";
 import type { MenuCategory, MenuItem } from "@/utils/types";
 
 const MenuBuilder: React.FC = () => {
   /* ----------------------------------------------------------------
      local state
   ------------------------------------------------------------------ */
-  const [categories,        setCategories]       = useState<MenuCategory[]>([]);
-  const [selectedCategory,  setSelectedCategory] = useState<string | null>(null);
-  const [editingItem,       setEditingItem]      = useState<MenuItem | null>(null);
-  const [previewItem,       setPreviewItem]      = useState<MenuItem | null>(null);
-
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [previewItem, setPreviewItem] = useState<MenuItem | null>(null);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  const [error,             setError]             = useState("");
+  const [error, setError] = useState("");
+  const [showItems, setShowItems] = useState(false);
 
-  const [showItems,         setShowItems]         = useState(false);  // collapsible item list
+  // formKey forces MenuItemForm to remount (clearing file input)
+  const [formKey, setFormKey] = useState(0);
 
   const queryClient = useQueryClient();
 
@@ -46,7 +41,7 @@ const MenuBuilder: React.FC = () => {
     setLoadingCategories(true);
     setError("");
     try {
-      const res  = await fetch("/api/menu/category");
+      const res = await fetch("/api/menu/category");
       if (!res.ok) throw new Error("Failed to fetch categories");
       const json = await res.json();
       setCategories(json.categories || []);
@@ -62,60 +57,63 @@ const MenuBuilder: React.FC = () => {
   ------------------------------------------------------------------ */
   function handleCategorySelect(catId: string) {
     setSelectedCategory(catId);
-    setEditingItem(null);  // reset right-hand editor
+    setEditingItem(null);
   }
 
   function handleReorder(newOrder: MenuCategory[]) {
     setCategories(newOrder);
-    // TODO: Persist new order with PATCH /api/menu/category/reorder
+    // TODO: Persist new order order
   }
 
   /* ----------------------------------------------------------------
      create / edit / delete category
-     (window.prompt UI – fine for internal admin)
   ------------------------------------------------------------------ */
   async function handleCreateSubcategory() {
-    const name         = prompt("Sub-category name:");
+    const name = prompt("Sub-category name:");
     if (!name) return;
-
-    const type         = prompt('Type ("MainMenu" or "GolfMenu"):', "MainMenu") || "MainMenu";
-    const hiddenAnswer = prompt("Hide on public menu? (yes / no):", "no") || "no";
-    const hidden       = hiddenAnswer.toLowerCase() === "yes";
-
+    const type =
+      (prompt('Type ("MainMenu" or "GolfMenu"):', "MainMenu") as
+        | "MainMenu"
+        | "GolfMenu") || "MainMenu";
+    const hidden =
+      (prompt("Hide on public menu? (yes / no):", "no") || "no").toLowerCase() ===
+      "yes";
     try {
-      const res  = await fetch("/api/menu/category", {
+      const res = await fetch("/api/menu/category", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, type, hidden }),
       });
       const json = await res.json();
       if (!res.ok) return alert("Error: " + json.message);
-
-      setCategories(prev => [...prev, json.category]);
+      setCategories((prev) => [...prev, json.category]);
     } catch {
       alert("Error creating sub-category.");
     }
   }
 
   async function handleEditCategory(catId: string) {
-    const cat = categories.find(c => c.id === catId);
+    const cat = categories.find((c) => c.id === catId);
     if (!cat) return alert("Sub-category not found.");
-
-    const name   = prompt("Sub-category name:",   cat.name) || cat.name;
-    const type   = prompt('Type ("MainMenu" or "GolfMenu"):', cat.type) || cat.type;
-    const hidden = (prompt("Hide on public menu? (yes / no):", cat.hidden ? "yes" : "no") || (cat.hidden ? "yes" : "no"))
-      .toLowerCase() === "yes";
-
+    const name = prompt("Sub-category name:", cat.name) || cat.name;
+    const type =
+      (prompt('Type ("MainMenu" or "GolfMenu"):', cat.type) as
+        | "MainMenu"
+        | "GolfMenu") || cat.type;
+    const hidden =
+      (prompt("Hide on public menu? (yes / no):", cat.hidden ? "yes" : "no") ||
+        (cat.hidden ? "yes" : "no")
+      )
+        .toLowerCase() === "yes";
     try {
-      const res  = await fetch(`/api/menu/category/${catId}`, {
+      const res = await fetch(`/api/menu/category/${catId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, type, hidden }),
       });
       const json = await res.json();
       if (!res.ok) return alert("Error: " + json.message);
-
-      fetchCategories();  // refresh list
+      fetchCategories();
     } catch {
       alert("Error updating sub-category.");
     }
@@ -124,10 +122,11 @@ const MenuBuilder: React.FC = () => {
   async function handleDeleteCategory(catId: string) {
     if (!confirm("Delete this sub-category?")) return;
     try {
-      const res  = await fetch(`/api/menu/category/${catId}`, { method: "DELETE" });
+      const res = await fetch(`/api/menu/category/${catId}`, {
+        method: "DELETE",
+      });
       const json = await res.json();
       if (!res.ok) return alert("Error: " + json.message);
-
       fetchCategories();
     } catch {
       alert("Error deleting sub-category.");
@@ -144,13 +143,14 @@ const MenuBuilder: React.FC = () => {
   async function handleDeleteItem(item: MenuItem) {
     if (!confirm(`Delete "${item.title}"?`)) return;
     try {
-      const res  = await fetch(`/api/menu/item/${item.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/menu/item/${item.id}`, {
+        method: "DELETE",
+      });
       const json = await res.json();
       if (!res.ok) return toast.error(`Error: ${json.message}`);
-
       toast.success(`Menu item "${item.title}" deleted.`);
-      queryClient.invalidateQueries({ queryKey: ["menuItems"] });  // refresh cache
-      setEditingItem(curr => (curr?.id === item.id ? null : curr));
+      queryClient.invalidateQueries({ queryKey: ["menuItems"] });
+      setEditingItem((curr) => (curr?.id === item.id ? null : curr));
     } catch {
       toast.error("Error deleting menu item.");
     }
@@ -165,9 +165,10 @@ const MenuBuilder: React.FC = () => {
   }
 
   function handleSaved() {
-    fetchCategories();  // reflect any category add/move
+    fetchCategories();
     setEditingItem(null);
     queryClient.invalidateQueries({ queryKey: ["menuItems"] });
+    setFormKey((k) => k + 1); // remount form to clear file input
   }
 
   /* ----------------------------------------------------------------
@@ -202,7 +203,7 @@ const MenuBuilder: React.FC = () => {
 
       <button
         className={styles.toggleItemsButton}
-        onClick={() => setShowItems(p => !p)}
+        onClick={() => setShowItems((p) => !p)}
         disabled={!!error || loadingCategories}
       >
         {showItems ? "Hide Menu Items" : "Show Menu Items"}
@@ -225,13 +226,17 @@ const MenuBuilder: React.FC = () => {
         <div className={styles.editorHeader}>
           <h2>{editingItem ? "Edit Menu Item" : "Add New Menu Item"}</h2>
           {!editingItem && (
-            <button onClick={handleNewItem} className={styles.newItemButton}>
+            <button
+              onClick={handleNewItem}
+              className={styles.newItemButton}
+            >
               New Menu Item
             </button>
           )}
         </div>
 
         <MenuItemForm
+          key={formKey}
           categoryId={selectedCategory}
           editingItem={editingItem}
           onSaved={handleSaved}

@@ -26,7 +26,7 @@
   overflow: hidden;
   border-radius: 10px;
   box-shadow: var(--box-shadow-primary);
-  aspect-ratio: 5 / 4;       /* enforce 500×400 ratio */
+  aspect-ratio: 1 / 1;       /* enforce 300×300 ratio */
 }
 
 .itemImage {

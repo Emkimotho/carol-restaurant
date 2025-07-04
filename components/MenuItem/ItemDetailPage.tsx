@@ -52,8 +52,8 @@ export default function ItemDetailPage({
   const recommendations = sameCategory.filter((m) => m.id !== item.id);
 
   /* Build Cloudinary-backed image src or fallback to any existing URL */
-  const IMAGE_WIDTH = 500;
-  const IMAGE_HEIGHT = 400;
+  const IMAGE_WIDTH = 300;
+  const IMAGE_HEIGHT = 300;
   const src = item.cloudinaryPublicId
     ? getCloudinaryImageUrl(item.cloudinaryPublicId, IMAGE_WIDTH, IMAGE_HEIGHT)
     : item.imageUrl
