@@ -14,7 +14,7 @@ import React from 'react';
 import { toast } from 'react-toastify';
 import styles from './OrderActions.module.css';
 import type { Order } from './types';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, DeliveryType } from '@prisma/client';
 
 export interface OrderActionsProps {
   order: Order;
@@ -45,6 +45,11 @@ export default function OrderActions({
   onShowDetail,
   onShowAgePatch,
 }: OrderActionsProps) {
+  // 1) No action buttons for clubhouse pick-up orders
+  if (order.deliveryType === DeliveryType.PICKUP_AT_CLUBHOUSE) {
+    return null;
+  }
+
   const patchOrder = async (nextStatus: string, msg: string) => {
     const t = toast.loading(msg);
     try {
