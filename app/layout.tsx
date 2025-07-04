@@ -7,6 +7,7 @@ import ConditionalLayoutWrapper from "@/components/ConditionalLayoutWrapper";
 import SessionWrapper from "@/app/SessionWrapper";
 import CookieBanner from "@/components/CookieBanner";
 import AddToCartEffect from "@/components/AddToCartEffect/AddToCartEffect";
+import Preloader from "@/components/Preloader/Preloader";  // ← import
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -35,6 +36,9 @@ export default function RootLayout({
     <html lang="en">
       <head />
       <body className={inter.className}>
+        {/* ─── Preloader ─── */}
+        <Preloader />
+
         {/* ─── 1) Golf-ball animation listener across the whole app ─── */}
         <AddToCartEffect />
 

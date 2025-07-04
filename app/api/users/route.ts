@@ -1,45 +1,47 @@
-// File: app/api/users/route.ts
-import { NextResponse } from "next/server";
-import { PrismaClient, RoleName } from "@prisma/client";
+/* ────────────────────────────────────────────────────────────────────────────
+ * File: app/api/users/route.ts
+ * ---------------------------------------------------------------------------
+ * GET /api/users
+ *   • Optional query-string:  ?roles=ADMIN,STAFF,DRIVER
+ *     – Returns users that have **at least one** of the requested roles
+ *       (case-insensitive, validated against the RoleName enum).
+ *   • If the query-string is omitted or blank, returns *all* users.
+ *   • Always returns each user with:
+ *       – Their roles   (role.role.name → string[])
+ *       – staffProfile  (photo + position)
+ *       – driverProfile (photo + vehicle info)
+ * -------------------------------------------------------------------------*/
+
+import { NextResponse }             from 'next/server';
+import { PrismaClient, RoleName }   from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-/**
- * GET /api/users?roles=STAFF,DRIVER
- *
- * • If ?roles=… is given, returns users matching at least one of those roles,
- *   but always excludes any ADMIN users.
- * • If no ?roles=… is given, returns all non-ADMIN users.
- */
 export async function GET(req: Request) {
   try {
-    const url        = new URL(req.url);
-    const rolesParam = url.searchParams.get("roles") ?? "";
+    /* ── 1. Parse & normalise ?roles=… (if present) ─────────────────────── */
+    const { searchParams } = new URL(req.url);
+    const rawRoles         = (searchParams.get('roles') ?? '')
+                               .split(',')
+                               .map(r => r.trim().toUpperCase())
+                               .filter(Boolean);
 
-    // Exclude any ADMIN users
-    const excludeAdmin = {
-      roles: { none: { role: { name: RoleName.ADMIN } } }
-    };
+    const validRoles       = rawRoles.filter((r): r is RoleName =>
+      (Object.values(RoleName) as string[]).includes(r)
+    );
 
-    let whereClause;
-    if (rolesParam.trim()) {
-      const wanted = rolesParam
-        .split(",")
-        .map(r => r.trim().toUpperCase())
-        .filter(r => !!r) as RoleName[];
+    /* ── 2. Build dynamic WHERE clause ──────────────────────────────────── */
+    const whereClause = validRoles.length
+      ? {
+          roles: {
+            some: { role: { name: { in: validRoles } } }
+          }
+        }
+      : {};  // no filter → all users
 
-      whereClause = {
-        AND: [
-          excludeAdmin,
-          { roles: { some: { role: { name: { in: wanted } } } } }
-        ]
-      };
-    } else {
-      whereClause = excludeAdmin;
-    }
-
+    /* ── 3. Query ───────────────────────────────────────────────────────── */
     const users = await prisma.user.findMany({
-      where: whereClause,
+      where:  whereClause,
       include: {
         roles: {
           select: { role: { select: { name: true } } }
@@ -60,14 +62,16 @@ export async function GET(req: Request) {
           }
         }
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: 'desc' }
     });
 
+    /* ── 4. Respond ─────────────────────────────────────────────────────── */
     return NextResponse.json({ users });
+
   } catch (err) {
-    console.error("GET /api/users error:", err);
+    console.error('GET /api/users error:', err);
     return NextResponse.json(
-      { message: "Internal error" },
+      { message: 'Internal error' },
       { status: 500 }
     );
   }

@@ -1,147 +1,178 @@
-// File: components/dashboard/AdminDashboard/RegisterUser/RegisterUser.tsx
+/* ──────────────────────────────────────────────────────────────────────────────
+   File: components/dashboard/AdminDashboard/RegisterUser/RegisterUser.tsx
+   Description: Admin-side form that creates new users (staff / driver / etc.).
+   Notes:
+     • Supports Cloudinary image upload (env: NEXT_PUBLIC_CLOUDINARY_*).
+     • Sends data to /api/registeruser where the server handles DB + email.
+     • Roles now include "ADMIN" so any admin can promote another.
+   ────────────────────────────────────────────────────────────────────────────*/
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
-import styles from "./RegisterUser.module.css";
+import React, { useEffect, useState } from "react";
+import { toast }                      from "react-toastify";
+import styles                         from "./RegisterUser.module.css";
 
-type RoleOption = "STAFF" | "DRIVER" | "SERVER" | "CASHIER";
-const ALL_ROLES: RoleOption[] = ["STAFF", "DRIVER", "SERVER", "CASHIER"];
+/* -------------------------------------------------------------------------- */
+/*  Role setup                                                                */
+/* -------------------------------------------------------------------------- */
+export type RoleOption =
+  | "ADMIN"
+  | "STAFF"
+  | "DRIVER"
+  | "SERVER"
+  | "CASHIER";
 
-// These must be defined in your NEXT_PUBLIC_ env
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
+const ALL_ROLES: RoleOption[] = [
+  "ADMIN",
+  "STAFF",
+  "DRIVER",
+  "SERVER",
+  "CASHIER",
+];
+
+/* -------------------------------------------------------------------------- */
+/*  Environment vars (compile-time crash if missing)                          */
+/* -------------------------------------------------------------------------- */
+const CLOUD_NAME   = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
 
-export default function RegisterUserForm() {
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    position: "",
-    licenseNumber: "",
-    carMakeModel: "",
-  });
-  const [roles, setRoles] = useState<RoleOption[]>([]);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+/* -------------------------------------------------------------------------- */
+/*  Form state types                                                          */
+/* -------------------------------------------------------------------------- */
+interface FormState {
+  firstName:     string;
+  lastName:      string;
+  email:         string;
+  phone:         string;
+  position:      string;
+  licenseNumber: string;
+  carMakeModel:  string;
+}
 
-  // Generate a preview when the user selects a file
+const BLANK_FORM: FormState = {
+  firstName:     "",
+  lastName:      "",
+  email:         "",
+  phone:         "",
+  position:      "",
+  licenseNumber: "",
+  carMakeModel:  "",
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Component
+   ══════════════════════════════════════════════════════════════════════════*/
+export default function RegisterUserForm() {
+  const [form,      setForm]      = useState<FormState>(BLANK_FORM);
+  const [roles,     setRoles]     = useState<RoleOption[]>([]);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [preview,   setPreview]   = useState("");
+  const [loading,   setLoading]   = useState(false);
+
+  /* ---------- local image preview ---------- */
   useEffect(() => {
-    if (!photoFile) {
-      setPreviewUrl("");
-      return;
-    }
+    if (!photoFile) { setPreview(""); return; }
     const url = URL.createObjectURL(photoFile);
-    setPreviewUrl(url);
+    setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [photoFile]);
 
+  /* ---------- input / checkbox handlers ---------- */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target;
+
     if (name === "photo" && files?.[0]) {
       setPhotoFile(files[0]);
-    } else {
-      setForm(f => ({ ...f, [name]: value }));
+      return;
     }
+    setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const toggleRole = (r: RoleOption) =>
-    setRoles(rs => (rs.includes(r) ? rs.filter(x => x !== r) : [...rs, r]));
+  const toggleRole = (role: RoleOption) =>
+    setRoles(r =>
+      r.includes(role) ? r.filter(x => x !== role) : [...r, role]
+    );
 
+  /* ---------- submit ---------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // 1) Client-side validation
+    /* client-side checks */
     if (!form.firstName || !form.lastName || !form.email) {
-      toast.error("First name, last name and email are required.");
-      setLoading(false);
-      return;
+      toast.error("First name, last name and email are required."); setLoading(false); return;
     }
-    if (!roles.length) {
-      toast.error("Select at least one role.");
-      setLoading(false);
-      return;
+    if (roles.length === 0) {
+      toast.error("Select at least one role."); setLoading(false); return;
     }
-    if (roles.includes("DRIVER") && (!form.licenseNumber || !form.carMakeModel)) {
-      toast.error("Driver must have license & vehicle info.");
-      setLoading(false);
-      return;
+    const wantsDriver = roles.includes("DRIVER");
+    if (wantsDriver && (!form.licenseNumber || !form.carMakeModel)) {
+      toast.error("Driver must have license & vehicle info."); setLoading(false); return;
     }
 
     try {
-      // 2) Upload photo to Cloudinary (if provided)
-      let uploadedPhotoUrl: string | undefined;
+      /* 1️⃣ Optional Cloudinary upload */
+      let photoUrl: string | undefined;
       if (photoFile) {
-        const cloudData = new FormData();
-        cloudData.append("file", photoFile);
-        cloudData.append("upload_preset", UPLOAD_PRESET);
+        const fd = new FormData();
+        fd.append("file", photoFile);
+        fd.append("upload_preset", UPLOAD_PRESET);
 
         const cloudRes = await fetch(
           `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`,
-          { method: "POST", body: cloudData }
+          { method: "POST", body: fd }
         );
         if (!cloudRes.ok) {
-          const errText = await cloudRes.text();
-          throw new Error("Photo upload failed: " + errText);
+          throw new Error("Photo upload failed.");
         }
-        const cloudJson = await cloudRes.json();
-        uploadedPhotoUrl = cloudJson.secure_url as string;
+        const { secure_url } = await cloudRes.json();
+        photoUrl = secure_url;
       }
 
-      // 3) Build JSON payload for your backend
-      const payload: Record<string, any> = {
+      /* 2️⃣ Build payload */
+      const payload: Record<string, unknown> = {
         firstName: form.firstName.trim(),
-        lastName:  form.lastName.trim(),
-        email:     form.email.trim(),
-        phone:     form.phone.trim(),
-        position:  form.position.trim(),
+        lastName : form.lastName.trim(),
+        email    : form.email.trim(),
+        phone    : form.phone.trim(),
+        position : form.position.trim(),
         roles,
       };
-      if (roles.includes("DRIVER")) {
+      if (wantsDriver) {
         payload.licenseNumber = form.licenseNumber.trim();
         payload.carMakeModel  = form.carMakeModel.trim();
       }
-      if (uploadedPhotoUrl) {
-        payload.photoUrl = uploadedPhotoUrl;
-      }
+      if (photoUrl) payload.photoUrl = photoUrl;
 
-      // 4) Send to your own API
+      /* 3️⃣ POST to API */
       const apiRes = await fetch("/api/registeruser", {
-        method: "POST",
+        method : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body   : JSON.stringify(payload),
       });
       if (!apiRes.ok) {
-        const err = await apiRes.json();
-        throw new Error(err.message || "Registration failed");
+        const { message } = await apiRes.json().catch(() => ({}));
+        throw new Error(message ?? "Registration failed.");
       }
 
-      toast.success("User created & email sent!");
-      // reset form
-      setForm({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        position: "",
-        licenseNumber: "",
-        carMakeModel: "",
-      });
+      toast.success("User created – invitation email sent!");
+
+      /* reset form */
+      setForm(BLANK_FORM);
       setRoles([]);
       setPhotoFile(null);
-    } catch (error: any) {
-      console.error("Registration Error:", error);
-      toast.error(error.message || "Registration failed");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message ?? "Registration failed.");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ══════════════════════ JSX ══════════════════════ */
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
+      {/* Basic info --------------------------------------------------------- */}
       <input
         name="firstName"
         placeholder="First name"
@@ -170,7 +201,6 @@ export default function RegisterUserForm() {
         value={form.phone}
         onChange={handleChange}
       />
-
       <input
         name="position"
         placeholder="Position (e.g. Waitress)"
@@ -178,6 +208,7 @@ export default function RegisterUserForm() {
         onChange={handleChange}
       />
 
+      {/* Role checkboxes ---------------------------------------------------- */}
       <fieldset className={styles.rolesFieldset}>
         <legend>Assign Roles</legend>
         {ALL_ROLES.map(role => (
@@ -192,6 +223,7 @@ export default function RegisterUserForm() {
         ))}
       </fieldset>
 
+      {/* Driver extras ------------------------------------------------------ */}
       {roles.includes("DRIVER") && (
         <>
           <input
@@ -211,6 +243,7 @@ export default function RegisterUserForm() {
         </>
       )}
 
+      {/* Photo -------------------------------------------------------------- */}
       <label className={styles.fileLabel}>
         {photoFile ? "Change Photo" : "Upload Photo"}
         <input
@@ -220,10 +253,11 @@ export default function RegisterUserForm() {
           onChange={handleChange}
         />
       </label>
-      {previewUrl && (
-        <img src={previewUrl} alt="Preview" className={styles.previewImage} />
+      {preview && (
+        <img src={preview} alt="Preview" className={styles.previewImage} />
       )}
 
+      {/* Submit ------------------------------------------------------------- */}
       <button
         type="submit"
         className={styles.submitButton}

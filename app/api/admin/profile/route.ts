@@ -9,12 +9,20 @@ import { getServerSession }         from "next-auth/next";
 import { authOptions }              from "@/lib/auth";
 import prisma                       from "@/lib/prisma";
 
+/** Pulls roles out of the session, whether they come as an array or a single string */
+function extractRoles(session: any): string[] {
+  if (Array.isArray(session.user.roles)) {
+    return session.user.roles.map((r: string) => r.toLowerCase());
+  }
+  if (typeof session.user.role === "string") {
+    return [session.user.role.toLowerCase()];
+  }
+  return [];
+}
+
 /** Returns true if the session’s user has the "admin" role (case-insensitive) */
 function isAdmin(session: any): boolean {
-  return (
-    Array.isArray(session.user.roles) &&
-    session.user.roles.some((r: string) => r.toLowerCase() === "admin")
-  );
+  return extractRoles(session).includes("admin");
 }
 
 export async function GET(req: NextRequest) {
@@ -47,19 +55,13 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { message: "Profile not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "Profile not found" }, { status: 404 });
     }
 
     return NextResponse.json({ profile: user });
   } catch (err) {
     console.error("GET /api/admin/profile error:", err);
-    return NextResponse.json(
-      { message: "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
 
@@ -122,9 +124,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ profile: updated });
   } catch (err) {
     console.error("PATCH /api/admin/profile error:", err);
-    return NextResponse.json(
-      { message: "Update failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Update failed" }, { status: 500 });
   }
 }

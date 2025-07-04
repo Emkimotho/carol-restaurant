@@ -1,12 +1,8 @@
 /* =======================================================================
  * File: app/api/orders/cash-collections/[id]/route.ts
  * -----------------------------------------------------------------------
- 
- *     – Admin‑only edit of a single cash‑collection record
- *     – Accepts any subset of { amount, status, settledById }
  *
- * • DELETE /api/orders/cash-collections/:id
- *     – Admin‑only hard delete of erroneous record
+ *     – Admin-only edit / delete of a single cash-collection record
  * ---------------------------------------------------------------------*/
 
 import { NextRequest, NextResponse }       from 'next/server';
@@ -20,16 +16,22 @@ import { CashCollectionStatus }            from '@prisma/client';
 /* ------------------------------------------------------------------ */
 async function isAdmin(): Promise<boolean> {
   const session = await getServerSession(authOptions);
-  return Boolean(
-    session?.user?.roles?.includes('ADMIN') ||
-    session?.user?.roles?.includes('SUPERADMIN')
-  );
+
+  // 🔍 Diagnostic dump – keep or remove as you prefer
+  console.log('[cash-collections] session:', JSON.stringify(session, null, 2));
+
+  // Case-insensitive role check
+  const roles = (session?.user?.roles ?? []).map(r => r.toUpperCase());
+  return roles.includes('ADMIN') || roles.includes('SUPERADMIN');
 }
 
 /* ------------------------------------------------------------------ */
 /*  PATCH  /api/cash-collections/:id                                   */
 /* ------------------------------------------------------------------ */
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   if (!(await isAdmin()))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -37,22 +39,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
   try {
-    const body = await req.json() as Partial<{
-      amount:        number;
-      status:        'PENDING' | 'SETTLED';
-      settledById:   number | null; // null = unset
+    const body = (await req.json()) as Partial<{
+      amount:      number;
+      status:      'PENDING' | 'SETTLED';
+      settledById: number | null;
     }>;
 
     const data: any = {};
-    if (typeof body.amount === 'number')       data.amount      = body.amount;
-    if (body.status)                           data.status      = CashCollectionStatus[body.status];
-    if ('settledById' in body)                 data.settledById = body.settledById;
+    if (typeof body.amount === 'number') data.amount = body.amount;
+    if (body.status)                     data.status = CashCollectionStatus[body.status];
+    if ('settledById' in body)           data.settledById = body.settledById;
 
     if (Object.keys(data).length === 0)
       return NextResponse.json({ error: 'No valid fields supplied' }, { status: 400 });
 
     if (data.status === CashCollectionStatus.SETTLED && !('settledById' in body)) {
-      // auto‑stamp current admin if not provided
       const session = await getServerSession(authOptions);
       data.settledById = session?.user?.id ?? null;
       data.settledAt   = new Date();
@@ -62,9 +63,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       where: { id },
       data,
       include: {
-        server:    { select: { firstName: true, lastName: true }},
-        settledBy: { select: { firstName: true, lastName: true }},
-        order:     { select: { orderId: true }},
+        server:    { select: { firstName: true, lastName: true } },
+        settledBy: { select: { firstName: true, lastName: true } },
+        order:     { select: { orderId: true } },
       },
     });
 
@@ -78,7 +79,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 /* ------------------------------------------------------------------ */
 /*  DELETE  /api/cash-collections/:id                                  */
 /* ------------------------------------------------------------------ */
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   if (!(await isAdmin()))
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -86,7 +90,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
   try {
-    await prisma.cashCollection.delete({ where: { id }});
+    const existing = await prisma.cashCollection.findUnique({ where: { id } });
+    console.log('[DELETE cash-collection] existing record:', existing);
+
+    if (!existing)
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    await prisma.cashCollection.delete({ where: { id } });
     return NextResponse.json({ deleted: true });
   } catch (err: any) {
     console.error('[DELETE /api/cash-collections/:id]', err);

@@ -1,39 +1,65 @@
-// File: components/dashboard/AdminDashboard/UserCard/UserCard.tsx
+/* ──────────────────────────────────────────────────────────────────────────
+   File: components/dashboard/AdminDashboard/UserCard/UserCard.tsx
+   Purpose: Compact card for each user in the Admin → User-Management grid.
+            • Shows avatar, key details and role toggles (now includes ADMIN)
+            • Allows status changes, edit & delete actions via callbacks
+   ────────────────────────────────────────────────────────────────────────*/
 "use client";
 
 import React from "react";
-import Image from "next/image";
-import styles from "./UserCard.module.css";
-import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
+import Image                        from "next/image";
+import styles                       from "./UserCard.module.css";
+import { getCloudinaryImageUrl }    from "@/lib/cloudinary-client";
+
+/* ---------------------------------------------------------------------- */
+/*  Types                                                                 */
+/* ---------------------------------------------------------------------- */
+export type Role =
+  | "ADMIN"
+  | "STAFF"
+  | "DRIVER"
+  | "SERVER"
+  | "CASHIER";
 
 export interface UserCardProps {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  position?: string;
-  roles: string[];  // e.g. ["STAFF","DRIVER","SERVER","CASHIER"]
-  status: "ACTIVE" | "SUSPENDED" | "BANNED";
-  /** Cloudinary public ID, if available */
+  id:            number;
+  name:          string;
+  email:         string;
+  phone?:        string;
+  position?:     string;
+  roles:         Role[];                 // e.g. ["ADMIN","STAFF",…]
+  status:        "ACTIVE" | "SUSPENDED" | "BANNED";
+
+  /** Cloudinary public ID (preferred) */
   photoPublicId?: string;
-  /** Legacy or direct URL (e.g. "/uploads/...") */
-  photoUrl?: string;
-  licenseNumber?: string;
-  carMakeModel?: string;
-  onEdit: () => void;
-  onDelete: () => void;
-  onStatusChange: (action: "suspend" | "unsuspend" | "ban") => void;
-  onToggleRole: (role: "STAFF" | "DRIVER" | "SERVER" | "CASHIER") => void;
+  /** Fallback absolute/relative URL */
+  photoUrl?:       string;
+
+  /* driver extras (optional) */
+  licenseNumber?:  string;
+  carMakeModel?:   string;
+
+  /* callbacks passed down from parent component */
+  onEdit:          () => void;
+  onDelete:        () => void;
+  onStatusChange:  (action: "suspend" | "unsuspend" | "ban") => void;
+  onToggleRole:    (role: Role) => void;
 }
 
-// Only these four roles are togglable in the UI
-const ASSIGNABLE_ROLES: Array<"STAFF" | "DRIVER" | "SERVER" | "CASHIER"> = [
+/* ---------------------------------------------------------------------- */
+/*  Constants                                                              */
+/* ---------------------------------------------------------------------- */
+const ASSIGNABLE_ROLES: Role[] = [
+  "ADMIN",
   "STAFF",
   "DRIVER",
   "SERVER",
   "CASHIER",
 ];
 
+/* ---------------------------------------------------------------------- */
+/*  Component                                                              */
+/* ---------------------------------------------------------------------- */
 const UserCard: React.FC<UserCardProps> = ({
   name,
   position,
@@ -50,21 +76,21 @@ const UserCard: React.FC<UserCardProps> = ({
   onDelete,
   onToggleRole,
 }) => {
-  // Decide which avatar source to use
+  /* ------------- Compute avatar source ------------- */
   let avatarSrc: string | undefined;
-  let unoptimized = false;
+  let unoptimized = false;           // opt-out of Next optimisation for Cloudinary
 
   if (photoPublicId) {
-    // Cloudinary URL at 120×120
-    avatarSrc = getCloudinaryImageUrl(photoPublicId, 120, 120);
-    unoptimized = true; // skip Next.js optimization for external CDN
+    avatarSrc   = getCloudinaryImageUrl(photoPublicId, 120, 120);
+    unoptimized = true;
   } else if (photoUrl) {
     avatarSrc = photoUrl;
   }
 
+  /* ------------- JSX ------------- */
   return (
     <div className={styles.card}>
-      {/* Avatar */}
+      {/* Avatar ----------------------------------------------------------- */}
       {avatarSrc ? (
         <div className={styles.avatarWrapper}>
           <Image
@@ -80,7 +106,7 @@ const UserCard: React.FC<UserCardProps> = ({
         <div className={styles.avatarPlaceholder}>{name[0]}</div>
       )}
 
-      {/* User Info */}
+      {/* Info ------------------------------------------------------------- */}
       <div className={styles.info}>
         <h4 className={styles.name}>{name}</h4>
 
@@ -93,6 +119,7 @@ const UserCard: React.FC<UserCardProps> = ({
         <p className={styles.detail}>
           <strong>Email:</strong> {email}
         </p>
+
         {phone && (
           <p className={styles.detail}>
             <strong>Phone:</strong> {phone}
@@ -104,6 +131,7 @@ const UserCard: React.FC<UserCardProps> = ({
             <strong>License #:</strong> {licenseNumber}
           </p>
         )}
+
         {carMakeModel && (
           <p className={styles.detail}>
             <strong>Vehicle:</strong> {carMakeModel}
@@ -114,22 +142,22 @@ const UserCard: React.FC<UserCardProps> = ({
           {status.replace("_", " ")}
         </p>
 
-        {/* Role toggles */}
+        {/* Role check-boxes ---------------------------------------------- */}
         <div className={styles.roleToggles}>
-          {ASSIGNABLE_ROLES.map((r) => (
-            <label key={r} className={styles.roleLabel}>
+          {ASSIGNABLE_ROLES.map(role => (
+            <label key={role} className={styles.roleLabel}>
               <input
                 type="checkbox"
-                checked={roles.includes(r)}
-                onChange={() => onToggleRole(r)}
+                checked={roles.includes(role)}
+                onChange={() => onToggleRole(role)}
               />{" "}
-              {r}
+              {role}
             </label>
           ))}
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Action buttons ---------------------------------------------------- */}
       <div className={styles.buttonBar}>
         <div className={styles.row}>
           {status === "ACTIVE" && (
@@ -148,6 +176,7 @@ const UserCard: React.FC<UserCardProps> = ({
               </button>
             </>
           )}
+
           {status === "SUSPENDED" && (
             <>
               <button
@@ -164,6 +193,7 @@ const UserCard: React.FC<UserCardProps> = ({
               </button>
             </>
           )}
+
           {status === "BANNED" && (
             <button
               className={styles.enable}
@@ -173,12 +203,8 @@ const UserCard: React.FC<UserCardProps> = ({
             </button>
           )}
 
-          <button className={styles.edit} onClick={onEdit}>
-            Edit
-          </button>
-          <button className={styles.delete} onClick={onDelete}>
-            Delete
-          </button>
+          <button className={styles.edit}   onClick={onEdit}>   Edit   </button>
+          <button className={styles.delete} onClick={onDelete}>Delete</button>
         </div>
       </div>
     </div>

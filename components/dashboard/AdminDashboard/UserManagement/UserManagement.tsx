@@ -1,64 +1,80 @@
-// File: components/dashboard/AdminDashboard/UserManagement/UserManagement.tsx
-"use client";
+/* ──────────────────────────────────────────────────────────────────────────────
+ * File: components/dashboard/AdminDashboard/UserManagement/UserManagement.tsx
+ * -----------------------------------------------------------------------------
+ * Lists every non-super user in a responsive grid and lets an admin:
+ *   • toggle any role (ADMIN, STAFF, DRIVER, SERVER, CASHIER)
+ *   • suspend / unsuspend / ban users
+ *   • open the full-edit page or delete a user
+ * All server round-trips hit the `/api/users[…]` endpoints.
+ * --------------------------------------------------------------------------- */
 
-import React, { useEffect, useState } from "react";
-import { toast } from "react-toastify";
-import UserCard, { UserCardProps } from "../UserCard/UserCard";
-import styles from "./UserManagement.module.css";
+'use client';
 
+import React, { useEffect, useState } from 'react';
+import { toast }                       from 'react-toastify';
+
+import UserCard                        from '../UserCard/UserCard';
+import styles                          from './UserManagement.module.css';
+
+/* ── Role literal-union used across the admin UI ───────────────────────────── */
+export type Role = 'ADMIN' | 'STAFF' | 'DRIVER' | 'SERVER' | 'CASHIER';
+
+/* ── Shape returned by GET /api/users ──────────────────────────────────────── */
 interface DbUser {
-  id: number;
-  email: string;
-  phone?: string;
-  firstName: string;
-  lastName: string;
-  status: "ACTIVE" | "SUSPENDED" | "BANNED";
-  roles: string[];
-  position?: string;
+  id:            number;
+  email:         string;
+  phone?:        string;
+  firstName:     string;
+  lastName:      string;
+  status:        'ACTIVE' | 'SUSPENDED' | 'BANNED';
+  roles:         Role[];
+  position?:     string;
   staffProfile?: {
     photoPublicId?: string;
-    photoUrl?: string;
-    position?: string;
+    photoUrl?:      string;
+    position?:      string;
   };
   driverProfile?: {
     photoPublicId?: string;
-    photoUrl?: string;
+    photoUrl?:      string;
     licenseNumber?: string;
-    carMakeModel?: string;
+    carMakeModel?:  string;
   };
 }
 
+/* ── Component ─────────────────────────────────────────────────────────────── */
 export default function UserManagement() {
-  const [users, setUsers] = useState<DbUser[]>([]);
+  const [users,   setUsers]   = useState<DbUser[]>([]);
   const [loading, setLoading] = useState(false);
 
+  /* -- Fetch helpers -------------------------------------------------------- */
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/users", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to load users");
+      const res = await fetch('/api/users', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load users');
       const { users: raw } = await res.json();
 
       const mapped: DbUser[] = (raw as any[]).map((u) => {
-        // normalize role names (handles both shapes: { role: { name } } and { name })
-        const roleNames: string[] = Array.isArray(u.roles)
+        // Flatten the prisma shape → Role[]
+        const roleNames: Role[] = Array.isArray(u.roles)
           ? u.roles.map((r: any) =>
-              typeof r.name === "string"
-                ? r.name
-                : r.role?.name ?? ""
+              typeof r.name === 'string'
+                ? r.name.toUpperCase()
+                : r.role?.name.toUpperCase(),
             )
           : [];
 
         return {
-          id: u.id,
-          email: u.email,
-          phone: u.phone,
-          firstName: u.firstName,
-          lastName: u.lastName,
-          status: u.status,
-          roles: roleNames,
-          position: u.staffProfile?.position ?? "",
-          staffProfile: {
+          id:            u.id,
+          email:         u.email,
+          phone:         u.phone,
+          firstName:     u.firstName,
+          lastName:      u.lastName,
+          status:        u.status,
+          roles:         roleNames,
+          position:      u.staffProfile?.position ?? '',
+          staffProfile:  {
             photoPublicId: u.staffProfile?.photoPublicId,
             photoUrl:      u.staffProfile?.photoUrl,
             position:      u.staffProfile?.position,
@@ -70,29 +86,34 @@ export default function UserManagement() {
             carMakeModel:  u.driverProfile?.carMakeModel,
           },
         };
-      }).filter(u => !u.roles.includes("ADMIN"));
+      });
 
       setUsers(mapped);
     } catch (e: any) {
-      toast.error(e.message || "Could not fetch users");
+      toast.error(e.message || 'Could not fetch users');
     } finally {
       setLoading(false);
     }
   };
 
+  /* initial load */
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  const changeStatus = async (id: number, action: "suspend" | "unsuspend" | "ban") => {
+  /* -- Mutations ------------------------------------------------------------ */
+  const changeStatus = async (
+    id: number,
+    action: 'suspend' | 'unsuspend' | 'ban',
+  ) => {
     try {
       const res = await fetch(`/api/users/${id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
       });
-      if (!res.ok) throw new Error("Status update failed");
+      if (!res.ok) throw new Error('Status update failed');
       toast.success(`User ${action}ed`);
       fetchUsers();
     } catch (e: any) {
@@ -101,14 +122,14 @@ export default function UserManagement() {
   };
 
   const deleteUser = async (id: number) => {
-    if (!confirm("Delete this user?")) return;
+    if (!confirm('Delete this user?')) return;
     try {
       const res = await fetch(`/api/users/${id}`, {
-        method: "DELETE",
-        credentials: "include",
+        method: 'DELETE',
+        credentials: 'include',
       });
-      if (!res.ok) throw new Error("Deletion failed");
-      toast.success("User deleted");
+      if (!res.ok) throw new Error('Deletion failed');
+      toast.success('User deleted');
       fetchUsers();
     } catch (e: any) {
       toast.error(e.message);
@@ -118,10 +139,7 @@ export default function UserManagement() {
   const editUser = (id: number) =>
     (window.location.href = `/dashboard/admin-dashboard/edit-user/${id}`);
 
-  const toggleRole = async (
-    userId: number,
-    role: UserCardProps["onToggleRole"] extends (r: infer R) => any ? R : never
-  ) => {
+  const toggleRole = async (userId: number, role: Role) => {
     const user = users.find((u) => u.id === userId);
     if (!user) return;
     const has = user.roles.includes(role);
@@ -131,19 +149,20 @@ export default function UserManagement() {
 
     try {
       const res = await fetch(`/api/users/${userId}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roles: newRoles }),
       });
-      if (!res.ok) throw new Error("Role update failed");
-      toast.success("Role updated");
+      if (!res.ok) throw new Error('Role update failed');
+      toast.success('Role updated');
       fetchUsers();
     } catch {
-      toast.error("Role update failed");
+      toast.error('Role update failed');
     }
   };
 
+  /* -- Render --------------------------------------------------------------- */
   return (
     <div className={styles.userManagementContainer}>
       <h1 className={styles.title}>User Management</h1>
@@ -157,8 +176,8 @@ export default function UserManagement() {
           {users.map((u) => {
             const photoPublicId =
               u.staffProfile?.photoPublicId ?? u.driverProfile?.photoPublicId;
-            const photoUrl      =
-              u.staffProfile?.photoUrl      ?? u.driverProfile?.photoUrl;
+            const photoUrl =
+              u.staffProfile?.photoUrl ?? u.driverProfile?.photoUrl;
 
             return (
               <UserCard

@@ -11,14 +11,14 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
-  transition: box-shadow 0.3s ease, transform 0.2s ease;
+  transition: box-shadow 0.3s ease; /* removed transform transition */
   min-height: 420px;               /* keeps grid even */
   cursor: pointer;                 /* entire card clickable */
 }
 
 .container:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);     /* subtle lift */
+  /* transform: translateY(-2px);  subtle lift removed */
 }
 
 /* ================================================================== */
@@ -39,11 +39,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.photo:hover img {
-  transform: scale(1.1);
+  /* removed transition & transform on hover */
 }
 
 /* ================================================================== */
@@ -57,7 +53,7 @@
 }
 
 .title {
-  font-size: clamp(1.2rem, 1.6vw, 1.5rem); /* responsive */
+  font-size: clamp(1.2rem, 1.6vw, 1.5rem);
   color: var(--primary-color);
   margin-bottom: 0.5rem;
   font-family: var(--font-heading);
@@ -65,7 +61,7 @@
 
 .description {
   font-size: 1rem;
-  color: var(--gray, #666);        /* fallback color */
+  color: var(--gray, #666);
   flex-grow: 1;
   font-family: var(--font-body);
 }
@@ -89,24 +85,23 @@
   cursor: pointer;
   width: 100%;
   text-align: center;
-  transition: background-color 0.3s ease, transform 0.3s ease;
+  transition: background-color 0.3s ease; /* removed transform transition */
   font-family: var(--font-body);
-  outline: 2px solid transparent;  /* focus ring base */
+  outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
 .btnAddToCart:hover {
   background-color: var(--secondary-color);
-  transform: scale(1.05);
+  /* transform: scale(1.05);  zoom effect removed */
 }
 
 .btnAddToCart:disabled {
   background-color: var(--border-color);
   cursor: not-allowed;
-  transform: none;
 }
 
-.btnAddToCart:focus-visible {      /* accessibility */
+.btnAddToCart:focus-visible {
   outline: 2px dashed var(--primary-color);
 }
 
@@ -155,7 +150,7 @@
 
 .orderChoiceModal p {
   font-size: 1rem;
-  color: var(--dark-gray, #444);   /* fallback */
+  color: var(--dark-gray, #444);
   margin-bottom: 1.5rem;
   line-height: 1.4;
   font-family: var(--font-body);
@@ -176,8 +171,8 @@
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.3s ease;
-  outline: 2px solid transparent;  /* focus-ring base */
+  transition: background 0.3s ease; /* removed transform transition */
+  outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
@@ -187,7 +182,7 @@
 }
 .btnChoice:hover {
   background-color: var(--secondary-color-hover);
-  transform: scale(1.03);
+  /* transform: scale(1.03);  removed zoom */
 }
 .btnChoice:focus-visible,
 .btnCloseChoice:focus-visible {
@@ -200,7 +195,7 @@
 }
 .btnCloseChoice:hover {
   background-color: var(--dark-gray-hover, #555);
-  transform: scale(1.02);
+  /* transform: scale(1.02);  removed zoom */
 }
 
 /* ================================================================== */
@@ -230,7 +225,7 @@
 .soldOut {
   position: absolute;
   top: 10px; right: -35px;
-  background: #dc2626;              /* red-600 */
+  background: #dc2626;
   color: #fff;
   padding: 0.25rem 2.1rem;
   font-size: 0.75rem;
@@ -253,7 +248,7 @@
 .spicy {
   margin-left: 0.3rem;
   font-size: 0.9rem;
-  vertical-align: text-top;         /* aligns baseline */
+  vertical-align: text-top;
 }
 
 /* ================================================================== */

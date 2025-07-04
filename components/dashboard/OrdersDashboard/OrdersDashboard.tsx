@@ -1,11 +1,9 @@
 // File: components/dashboard/OrdersDashboard/OrdersDashboard.tsx
 'use client';
 
-
 import React, { useEffect, useState, Dispatch, SetStateAction } from 'react';
 import useSWR from 'swr';
 import { ToastContainer, toast } from 'react-toastify';
-
 
 import styles from './OrdersDashboard.module.css';
 import DashboardHeader from './DashboardHeader';
@@ -21,12 +19,10 @@ import DetailModal from './DetailModal';
 import AgeCheckModal from './AgeCheckModal';
 import StatementView from './StatementView';
 
-
 import { fetcher, useDebounce } from './utils';
 import { useOrders } from './hooks/useOrders';
 import { useCashCollections } from './hooks/useCashCollections';
 import { useReconciledRecords } from './hooks/useReconciledRecords';
-
 
 import type {
   Order,
@@ -37,15 +33,12 @@ import type {
 import type { Driver } from './DriverAssigner';
 import type { KeyedMutator } from 'swr';
 
-
 export interface OrdersDashboardProps {
   role: 'admin' | 'staff' | 'server' | 'cashier';
   userId?: string | number;
 }
 
-
 const PAGE_SIZE = 20;
-
 
 export default function OrdersDashboard({
   role,
@@ -55,7 +48,6 @@ export default function OrdersDashboard({
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 300);
   const [serverFilter, setServerFilter] = useState('');
-
 
   // Tab & pagination state
   const [tab, setTab] = useState<TabKey>(
@@ -72,7 +64,6 @@ export default function OrdersDashboard({
     setPage(1);
   }, [tab, debouncedQuery, serverFilter]);
 
-
   // Detail / modals state
   const [detail, setDetail] = useState<Order | null>(null);
   const [agePatch, setAgePatch] = useState<{
@@ -82,7 +73,6 @@ export default function OrdersDashboard({
   } | null>(null);
   const [cashInput, setCashInput] = useState('');
 
-
   // Cashier’s server dropdown
   const { data: serverAgg = [] } = useSWR<ServerAgg[]>(
     role === 'cashier'
@@ -91,7 +81,6 @@ export default function OrdersDashboard({
     fetcher,
     { refreshInterval: 10000 }
   );
-
 
   // Paginated orders fetch
   const { orders, totalPages, mutate } = useOrders({
@@ -103,7 +92,6 @@ export default function OrdersDashboard({
     serverFilter,
     reconciledFlag: tab === 'reconciled',
   });
-
 
   // Live driver & cash data
   const { data: drivers = [] } = useSWR<Driver[]>(
@@ -121,11 +109,9 @@ export default function OrdersDashboard({
     cashierId: role === 'cashier' ? userId : undefined,
   });
 
-
   // Buckets & totals
   const filterBy = (statuses: Order['status'][]) =>
     orders.filter((o) => statuses.includes(o.status));
-
 
   const received  = filterBy(['ORDER_RECEIVED']);
   const inPrep    = filterBy(['IN_PROGRESS']);
@@ -145,10 +131,8 @@ export default function OrdersDashboard({
     (o) => o.cashCollection?.status === 'PENDING'
   );
 
-
   const expectedTotal = toReconcile.reduce((sum, o) => sum + o.totalAmount, 0);
   const diff = Number(cashInput) - expectedTotal;
-
 
   const tipTotal = orders
     .filter(
@@ -160,6 +144,8 @@ export default function OrdersDashboard({
     )
     .reduce((sum, o) => sum + (o.tipAmount ?? 0), 0);
 
+  // Admin flag → toggles Delete column in StatementView
+  const isAdmin = role === 'admin';
 
   // Tabs metadata
   const tabs: Tab[] =
@@ -190,7 +176,6 @@ export default function OrdersDashboard({
           { key: 'cancelled', label: 'Cancelled',count: cancelled.length },
         ];
 
-
   // Map for current tab’s list
   const listMap: Record<TabKey, Order[]> = {
     received,
@@ -207,7 +192,6 @@ export default function OrdersDashboard({
     pendingCash: [],  // handled by PendingCashSection
   };
   const listToShow = listMap[tab] ?? [];
-
 
   // Cashier reconciliation handler
   const handleReconcile = async () => {
@@ -242,16 +226,13 @@ export default function OrdersDashboard({
     }
   };
 
-
   return (
     <>
       <ToastContainer position="top-right" theme="colored" />
 
-
       <div className={styles.container}>
         {/* Header */}
         <DashboardHeader role={role} tipTotal={tipTotal} />
-
 
         {/* Search & Filters */}
         <SearchAndFilter
@@ -263,10 +244,8 @@ export default function OrdersDashboard({
           serverAgg={serverAgg}
         />
 
-
         {/* Tabs */}
         <OrdersTabs tabs={tabs} current={tab} onChange={setTab} />
-
 
         {/* Inline widgets */}
         {(role === 'admin' || role === 'staff') && (
@@ -289,11 +268,12 @@ export default function OrdersDashboard({
           <ReconciledHistorySection reconciledRecords={reconciledRecords} />
         )}
 
-
         {/* Delivered/Completed → StatementView; else → OrdersGridWrapper */}
         {(tab === 'delivered' || tab === 'completed') ? (
           <StatementView
             list={listToShow}
+            isAdmin={isAdmin}          /* toggle Delete button */
+            onDeleted={() => mutate()} /* refresh after 204    */
             onShowDetail={setDetail as Dispatch<SetStateAction<Order>>}
           />
         ) : (
@@ -309,7 +289,6 @@ export default function OrdersDashboard({
           />
         )}
 
-
         {/* Pagination */}
         {totalPages > 1 && (
           <PaginationControls
@@ -320,7 +299,6 @@ export default function OrdersDashboard({
         )}
       </div>
 
-
       {/* Detail Modal */}
       <DetailModal
         isOpen={Boolean(detail)}
@@ -328,7 +306,6 @@ export default function OrdersDashboard({
         role={role}
         onClose={() => setDetail(null)}
       />
-
 
       {/* Age-Check Modal */}
       <AgeCheckModal
@@ -343,6 +320,3 @@ export default function OrdersDashboard({
     </>
   );
 }
-
-
-

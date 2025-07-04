@@ -1,18 +1,13 @@
-/* ======================================================================
- * File: app/dashboard/admin-dashboard/profile/page.tsx
- * ----------------------------------------------------------------------
- * Admin profile editor — updated with sleek CSS‑module classes.
- * -------------------------------------------------------------------*/
+// File: app/dashboard/admin-dashboard/profile/page.tsx
 
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import styles from "@/components/dashboard/AdminDashboard/profile.module.css";
+import styles from '@/components/dashboard/AdminDashboard/profile.module.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-/* ---------------- Types ---------------- */
 interface ProfileData {
   firstName: string;
   lastName: string;
@@ -28,39 +23,41 @@ interface ProfileData {
 }
 
 export default function AdminProfilePage() {
-  const { data: session } = useSession();
-  const roles = (session?.user as any)?.roles as string[] | undefined;
+  // 1) NextAuth session & status
+  const { data: session, status } = useSession();
 
-  /* guard */
-  if (session && roles && !roles.includes('ADMIN')) {
-    return <p className={styles.error}>Access denied</p>;
-  }
+  // 2) State hooks
+  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
 
-  /* ---------------- State ---------------- */
-  const [loading, setLoading]   = useState(false);
-  const [profile, setProfile]   = useState<ProfileData | null>(null);
-
-  const [phone, setPhone]           = useState('');
-  const [streetAddress, setStreet]  = useState('');
-  const [aptSuite, setAptSuite]     = useState('');
-  const [city, setCity]             = useState('');
+  const [phone, setPhone] = useState('');
+  const [streetAddress, setStreet] = useState('');
+  const [aptSuite, setAptSuite] = useState('');
+  const [city, setCity] = useState('');
   const [stateField, setStateField] = useState('');
-  const [zip, setZip]               = useState('');
-  const [country, setCountry]       = useState('');
-  const [position, setPosition]     = useState('');
+  const [zip, setZip] = useState('');
+  const [country, setCountry] = useState('');
+  const [position, setPosition] = useState('');
 
-  /* ---------------- Fetch profile ---------------- */
+  // 3) Determine admin role from session
+  const isAdmin = Boolean(
+    session?.user?.roles?.some(
+      (r: string | null) => typeof r === 'string' && r.toLowerCase() === 'admin'
+    )
+  );
+
+  // 4) Fetch profile when authenticated admin
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (status !== 'authenticated' || !isAdmin) return;
     let mounted = true;
-    setLoading(true);
 
-    (async () => {
+    async function loadProfile() {
+      setLoading(true);
       try {
         const res = await fetch('/api/admin/profile');
         if (!res.ok) {
-          const { message } = await res.json().catch(() => ({ message: res.statusText }));
-          throw new Error(message || 'Failed to load profile');
+          const err = await res.json().catch(() => ({ message: res.statusText }));
+          throw new Error(err.message || 'Failed to load profile');
         }
         const { profile: p }: { profile: ProfileData } = await res.json();
         if (!mounted) return;
@@ -80,18 +77,29 @@ export default function AdminProfilePage() {
       } finally {
         if (mounted) setLoading(false);
       }
-    })();
+    }
 
+    loadProfile();
     return () => {
       mounted = false;
     };
-  }, [session]);
+  }, [status, isAdmin]);
 
-  /* ---------------- Submit ---------------- */
+  // 5) Early renders
+  if (status === 'loading') {
+    return <p className={styles.loading}>Loading…</p>;
+  }
+  if (status === 'authenticated' && !isAdmin) {
+    return <p className={styles.error}>Access denied</p>;
+  }
+  if (loading && !profile) {
+    return <p className={styles.loading}>Loading profile…</p>;
+  }
+
+  // 6) Handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const res = await fetch('/api/admin/profile', {
         method: 'PATCH',
@@ -108,8 +116,8 @@ export default function AdminProfilePage() {
         }),
       });
       if (!res.ok) {
-        const { message } = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(message || 'Update failed');
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err.message || 'Update failed');
       }
       const { profile: updated }: { profile: ProfileData } = await res.json();
       setProfile(updated);
@@ -122,9 +130,7 @@ export default function AdminProfilePage() {
     }
   };
 
-  if (loading && !profile) return <p>Loading…</p>;
-
-  /* ---------------- Render ---------------- */
+  // 7) Main UI
   return (
     <div className={styles.container}>
       <ToastContainer position="top-right" autoClose={3000} />
@@ -132,7 +138,7 @@ export default function AdminProfilePage() {
       <h2 className={styles.heading}>Admin Profile</h2>
 
       <form onSubmit={handleSubmit} className={styles.form}>
-        {/* read‑only */}
+        {/* Read-only */}
         <div className={styles.group}>
           <label>First Name</label>
           <input type="text" value={profile?.firstName ?? ''} disabled />
@@ -146,38 +152,57 @@ export default function AdminProfilePage() {
           <input type="email" value={profile?.email ?? ''} disabled />
         </div>
 
-        {/* editable */}
+        {/* Editable */}
         <div className={styles.group}>
           <label>Phone</label>
-          <input value={phone} onChange={e => setPhone(e.target.value)} type="tel" />
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
         </div>
         <div className={styles.group}>
           <label>Street Address</label>
-          <input value={streetAddress} onChange={e => setStreet(e.target.value)} />
+          <input
+            value={streetAddress}
+            onChange={(e) => setStreet(e.target.value)}
+          />
         </div>
         <div className={styles.group}>
           <label>Apt / Suite</label>
-          <input value={aptSuite} onChange={e => setAptSuite(e.target.value)} />
+          <input
+            value={aptSuite}
+            onChange={(e) => setAptSuite(e.target.value)}
+          />
         </div>
         <div className={styles.group}>
           <label>City</label>
-          <input value={city} onChange={e => setCity(e.target.value)} />
+          <input value={city} onChange={(e) => setCity(e.target.value)} />
         </div>
         <div className={styles.group}>
           <label>State</label>
-          <input value={stateField} onChange={e => setStateField(e.target.value)} />
+          <input
+            value={stateField}
+            onChange={(e) => setStateField(e.target.value)}
+          />
         </div>
         <div className={styles.group}>
           <label>Zip</label>
-          <input value={zip} onChange={e => setZip(e.target.value)} />
+          <input value={zip} onChange={(e) => setZip(e.target.value)} />
         </div>
         <div className={styles.group}>
           <label>Country</label>
-          <input value={country} onChange={e => setCountry(e.target.value)} />
+          <input
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+          />
         </div>
         <div className={styles.group}>
           <label>Position</label>
-          <input value={position} onChange={e => setPosition(e.target.value)} />
+          <input
+            value={position}
+            onChange={(e) => setPosition(e.target.value)}
+          />
         </div>
 
         <button

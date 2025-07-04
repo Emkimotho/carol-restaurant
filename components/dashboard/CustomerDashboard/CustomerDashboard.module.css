@@ -196,3 +196,59 @@
   font-style: italic;
   line-height: 1.4;
 }
+
+
+/* ================================================================== */
+/*  MOBILE RESPONSIVE BELOW 768px                                      */
+/* ================================================================== */
+@media (max-width: 767px) {
+  .container {
+    flex-direction: column;
+  }
+
+  /* Sidebar becomes a top nav */
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    padding: 0.5rem;
+    overflow-x: auto;
+    box-shadow: none;
+  }
+  .profileSummary {
+    display: none; /* hide avatar on mobile to save space */
+  }
+  .nav {
+    flex-direction: row;
+    gap: 0.5rem;
+    width: auto;
+  }
+  .navBtn {
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  /* Main padding */
+  .main {
+    padding: 1rem;
+  }
+
+  /* Section cards full width */
+  .sectionCard {
+    margin: 0 0.5rem 1rem;
+    padding: 1rem;
+    box-shadow: none;
+  }
+
+  /* Order list items stack */
+  .orderList li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .orderInfo {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

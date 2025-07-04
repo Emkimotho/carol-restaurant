@@ -1,48 +1,85 @@
-/* File: components/dashboard/OrdersDashboard/StatementView.module.css */
+/* ======================================================================
+   StatementView.module.css — Styles for the admin/driver/server order
+   statement table. Tweaks include mobile‑friendly scroll, consistent
+   button sizing, and a disabled state to prevent double‑submits.
+   ====================================================================== */
 
+/* ───────────────────────── Wrapper ───────────────────────── */
 .statement {
   margin-top: 1.5rem;
-  font-family: var(--font-body);
+  font-family: var(--font-body, sans-serif);
+  /* Mobile: enable horizontal scroll so columns never squeeze */
+  overflow-x: auto;
 }
 
+/* ───────────────────────── Table ───────────────────────── */
 .table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  min-width: 640px;              /* prevents wrap on narrow screens */
 }
 
 .table th,
 .table td {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-color, #dcdcdc);
   padding: 0.6rem 0.9rem;
 }
 
 .table th {
-  background: var(--light-gray);
+  background: var(--light-gray, #f0f0f0);
   text-align: left;
 }
 
-.table tr:nth-child(even) td {
+/* Zebra striping for readability */
+.table tbody tr:nth-child(even) td {
   background: #fafafa;
 }
 
-.detailBtn {
-  padding: 0.3rem 0.6rem;
-  background: var(--primary-color);
-  color: var(--white);
-  border: none;
-  border-radius: 0.25rem;
+/* Row hover makes entire row feel clickable (Details) */
+.table tbody tr:hover td {
+  background: #f2f2f2;
   cursor: pointer;
+}
+
+/* ───────────────────────── Action Buttons ───────────────────────── */
+.detailBtn,
+.deleteBtn {
   font-size: 0.85rem;
+  line-height: 1.2;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.25rem;
+  border: 1px solid transparent;
+  cursor: pointer;
   transition: background 0.2s;
 }
 
+/* Details button inherits primary brand colour */
+.detailBtn {
+  background: var(--primary-color, #0070f3);
+  color: var(--white, #fff);
+}
 .detailBtn:hover {
-  background: var(--primary-color-hover);
+  background: var(--primary-color-hover, #0059c1);
 }
 
+/* Delete button uses danger palette with fallbacks */
+.deleteBtn {
+  background: var(--danger-bg, #ffe8e8);
+  color: var(--danger-text, #b30000);
+  border: 1px solid var(--border-color-dark, #b30000);
+}
+.deleteBtn:hover {
+  background: var(--danger-hover, #ffd0d0);
+}
+.deleteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ───────────────────────── Empty State ───────────────────────── */
 .empty {
   text-align: center;
-  color: var(--gray-hover);
+  color: var(--gray-hover, #888);
   margin: 2rem 0;
 }
