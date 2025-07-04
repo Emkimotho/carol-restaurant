@@ -1,43 +1,57 @@
 /* File: components/dashboard/OrdersDashboard/OrderActions.module.css */
-/* ─────────────────────────────────────────────────────────────────────
-   Styles for the action‐button row in each OrderCard
-   ──────────────────────────────────────────────────────────────────── */
 
+/* ––––– action bar container ––––– */
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;               /* preferred spacing */
   margin-top: 1rem;
 }
 
-.button {
-  padding: 0.5rem 1rem;
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  background-color: var(--primary-color);
-  color: var(--white);
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+/* **fallback** if flex-gap not honoured */
+.actions > * + * {
+  margin-left: 0.75rem;       /* ignored when gap works */
+  margin-top: 0.75rem;
 }
 
-.button:hover:not(:disabled) {
-  background-color: var(--primary-color-hover);
-}
-
+/* ––––– shared button ––––– */
+.button,
 .deleteButton {
+  flex: 0 0 auto;             /* width = content, never stretch full row */
+  min-width: 8rem;
   padding: 0.5rem 1rem;
   font-family: var(--font-body);
   font-size: 0.9rem;
-  background-color: var(--danger-color, #c62828);
-  color: var(--white);
+  text-align: center;
   border: none;
   border-radius: 0.25rem;
   cursor: pointer;
+  white-space: nowrap;
   transition: background-color 0.2s ease;
 }
 
-.deleteButton:hover:not(:disabled) {
-  background-color: #a71d2a;
+/* primary action */
+.button {
+  background: var(--primary-color);
+  color: var(--white);
+}
+.button:hover:not(:disabled) { background: var(--primary-color-hover); }
+
+/* danger / delete */
+.deleteButton {
+  background: var(--danger-color,#c62828);
+  color: var(--white);
+}
+.deleteButton:hover:not(:disabled) { background:#a71d2a; }
+
+/* disabled */
+.button:disabled,
+.deleteButton:disabled { opacity:0.55; cursor:not-allowed; }
+
+/* mobile: stack vertically */
+@media (max-width:480px){
+  .actions   { flex-direction:column; }
+  .actions > * + * { margin-left:0; }   /* override fallback */
+  .button,
+  .deleteButton { width:100%; }
 }
