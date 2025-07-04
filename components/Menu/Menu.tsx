@@ -2,9 +2,12 @@
 /*  File: components/Menu/Menu.tsx                                    */
 /* ------------------------------------------------------------------ */
 /*  • Keeps track of last-visited category per section (localStorage). */
-/*  • When a user clicks a dish we append  ?from=main  or  ?from=golf  */
-/*    so the Item-detail page knows which flow to use.                */
-/*  • Default to ASAP when store is open (no pop-up).                 */
+/*  • When a user clicks a dish we append ?from=main or ?from=golf so  */
+/*    the Item-detail page knows which flow to use.                   */
+/*  • Auto-clears only *stale* schedules when the kitchen is open,     */
+/*    letting future schedules persist until they pass.               */
+/*  • When the kitchen is open and a future schedule already exists,  */
+/*    we honour it instead of forcing ASAP (toast reflects this).     */
 /* ------------------------------------------------------------------ */
 
 "use client";
@@ -16,17 +19,20 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import dynamic from "next/dynamic";
-import { Tabs, Tab } from "react-bootstrap";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
-import styles from "./Menu.module.css";
+import dynamic          from "next/dynamic";
+import { Tabs, Tab }    from "react-bootstrap";
+import { useRouter }    from "next/navigation";
+import { toast }        from "react-toastify";
+import styles           from "./Menu.module.css";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CartContext } from "@/contexts/CartContext";
-import { OpeningHoursContext } from "@/contexts/OpeningHoursContext";
+import { CartContext }              from "@/contexts/CartContext";
+import { OpeningHoursContext }      from "@/contexts/OpeningHoursContext";
+import { OrderContext }             from "@/contexts/OrderContext";
+
 import MenuItemComponent from "@/components/MenuItem/MenuItem";
-import MenuTimingBar from "@/components/MenuTimingBar/MenuTimingBar";
+import MenuTimingBar     from "@/components/MenuTimingBar/MenuTimingBar";
+
 import type {
   MenuItem as MenuItemType,
   MenuCategory,
@@ -45,17 +51,17 @@ interface MenuProps {
 
 /* =================================================================== */
 export default function Menu({ slug }: MenuProps) {
-  const router = useRouter();
+  const router      = useRouter();
   const queryClient = useQueryClient();
 
   /* ------------------------ context ------------------------------ */
-  const { setOrderStatus, setScheduledTime } =
-    useContext(CartContext)!;
-  const { isOpen } = useContext(OpeningHoursContext)!;
+  const { setOrderStatus, setScheduledTime } = useContext(CartContext)!;
+  const { isOpen }                           = useContext(OpeningHoursContext)!;
+  const { order, clearSchedule }             = useContext(OrderContext)!;
 
   /* ------------------------ state -------------------------------- */
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal,      setShowModal]      = useState(false);
 
   /* remember last category per section (by id) */
   const [lastCat, setLastCat] = useState<{ MainMenu: string; GolfMenu: string }>(
@@ -130,6 +136,17 @@ export default function Menu({ slug }: MenuProps) {
     return [...map.values()].sort((a, b) => a.order - b.order);
   }, [golfItems]);
 
+  /* ---------- clear stale schedules when kitchen open ------------ */
+  useEffect(() => {
+    if (!order.schedule) return;
+    const when = new Date(order.schedule);
+    const isStale =
+      Number.isNaN(when.getTime()) || when < new Date();
+    if (isOpen && isStale) {
+      clearSchedule();
+    }
+  }, [isOpen, order.schedule, clearSchedule]);
+
   /* -------------- routing helpers ------------------------------- */
   const activeSection = slug[0] || "MainMenu";
   const mainDefaultId = lastCat.MainMenu || mainCats[0]?.id || "";
@@ -163,15 +180,29 @@ export default function Menu({ slug }: MenuProps) {
   /* ----------------------------------------------------------------
    *  Item-click routing helpers
    * ---------------------------------------------------------------- */
-  /* MAIN flow: direct to ASAP if open, otherwise show schedule modal */
   const startMain = (id: string) => {
     setSelectedItemId(id);
 
     if (!isOpen) {
-      // Closed → let user pick ASAP or scheduled time
+      /* Closed → let user pick ASAP or scheduled time */
       setShowModal(true);
+      return;
+    }
+
+    if (order.schedule) {
+      /* Honour existing future schedule */
+      const when = new Date(order.schedule);
+      const formatted = when.toLocaleString([], {
+        weekday: "short",
+        month:   "short",
+        day:     "numeric",
+        hour:    "2-digit",
+        minute:  "2-digit",
+      });
+      toast.success(`Order scheduled for ${formatted}`);
+      router.push(`/menuitem/${id}?schedule=scheduled&from=main`);
     } else {
-      // Open → default to ASAP
+      /* No schedule → default to ASAP */
       setOrderStatus("asap");
       setScheduledTime(new Date().toISOString());
       toast.success("ASAP order set!");

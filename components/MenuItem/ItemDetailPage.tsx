@@ -8,6 +8,8 @@ import styles from "./ItemDetailPage.module.css";
 
 import { useItemDetail } from "./useItemDetail";
 import RecommendationsSection from "./RecommendationsSection";
+import MenuTimingBar from "@/components/MenuTimingBar/MenuTimingBar";          // ← NEW
+
 import type { MenuItem as MenuItemType } from "@/utils/types";
 import { getCloudinaryImageUrl } from "@/lib/cloudinary-client";
 
@@ -65,6 +67,11 @@ export default function ItemDetailPage({
 
   return (
     <div className={styles.detailPageContainer}>
+      {/* ------------------------------------------------------------ */}
+      {/*  Fixed timing bar (same as Menu view)                       */}
+      {/* ------------------------------------------------------------ */}
+      <MenuTimingBar />                                               {/* ← NEW */}
+
       <div className={styles.mainContent}>
         {/* ——— Image ——— */}
         <div className={styles.imageContainer}>
@@ -168,40 +175,43 @@ export default function ItemDetailPage({
                                   : ""}
                                 )
                               </h5>
-                              {choice.nestedOptionGroup.choices.map((nested) => {
-                                const nestSel =
-                                  gState.nestedSelections[choice.id] || [];
-                                const nestChecked = nestSel.includes(nested.id);
+                              {choice.nestedOptionGroup.choices.map(
+                                (nested) => {
+                                  const nestSel =
+                                    gState.nestedSelections[choice.id] || [];
+                                  const nestChecked =
+                                    nestSel.includes(nested.id);
 
-                                return (
-                                  <div
-                                    key={nested.id}
-                                    className={styles.nestedOptionItem}
-                                  >
-                                    <label>
-                                      <input
-                                        type="checkbox"
-                                        checked={nestChecked}
-                                        onChange={(e) =>
-                                          handleNestedOptionChange(
-                                            group.id,
-                                            choice.id,
-                                            nested.id,
-                                            e.target.checked,
-                                            choice.nestedOptionGroup?.maxAllowed
-                                          )
-                                        }
-                                      />
-                                      {nested.label}
-                                      {nested.priceAdjustment
-                                        ? ` (+$${nested.priceAdjustment.toFixed(
-                                            2
-                                          )})`
-                                        : ""}
-                                    </label>
-                                  </div>
-                                );
-                              })}
+                                  return (
+                                    <div
+                                      key={nested.id}
+                                      className={styles.nestedOptionItem}
+                                    >
+                                      <label>
+                                        <input
+                                          type="checkbox"
+                                          checked={nestChecked}
+                                          onChange={(e) =>
+                                            handleNestedOptionChange(
+                                              group.id,
+                                              choice.id,
+                                              nested.id,
+                                              e.target.checked,
+                                              choice.nestedOptionGroup?.maxAllowed
+                                            )
+                                          }
+                                        />
+                                        {nested.label}
+                                        {nested.priceAdjustment
+                                          ? ` (+$${nested.priceAdjustment.toFixed(
+                                              2
+                                            )})`
+                                          : ""}
+                                      </label>
+                                    </div>
+                                  );
+                                }
+                              )}
                             </div>
                           )}
                         </div>

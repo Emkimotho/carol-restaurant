@@ -3,14 +3,12 @@
 /*  Global Order Context – manages the “live” Order during checkout        */
 /*  and persists it to localStorage.                                       */
 /*                                                                         */
-/*  26 Jun 2025 PATCH 3                                                     */
+/*  04 Jul 2025 PATCH 4                                                    */
 /*  --------------------------------------------------------------------- */
-/*  • Adds a post-login sync effect: once the NextAuth `user` arrives,      */
-/*    any missing delivery address fields are auto-filled from the user’s  */
-/*    saved profile (streetAddress, city, state, zip, aptSuite).           */
-/*  • Does NOT overwrite an address the user has already typed.            */
-/*  • All previous patches—phone‐number safety, helpers, persistence—stay  */
-/*    exactly as they were.                                                */
+/*  • Wipes any stored schedule that is in the past (or invalid) so every  */
+/*    new session defaults to ASAP.                                        */
+/*  • Everything else — post-login address sync, phone safety, helpers —   */
+/*    remains unchanged.                                                   */
 /* ======================================================================= */
 
 "use client";
@@ -229,7 +227,7 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
 
       const parsed = JSON.parse(raw) as Order;
 
-      /* make sure required props exist */
+      /* make sure required props exist or add defaults */
       parsed.schedule        ??= null;
       parsed.orderType       ??= null;
       parsed.deliveryType    ??= "PICKUP_AT_CLUBHOUSE";
@@ -238,6 +236,15 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
       parsed.customerPhone   ??= (user as any)?.phone ?? "";
       parsed.containsAlcohol ??= false;
       parsed.ageVerified     ??= false;
+
+      /* ---------- NEW: wipe past-dated schedule ---------- */
+      if (parsed.schedule) {
+        const when = new Date(parsed.schedule);
+        if (Number.isNaN(when.getTime()) || when < new Date()) {
+          parsed.schedule  = null;
+          parsed.orderType = null;
+        }
+      }
 
       return parsed;
     } catch {
@@ -261,8 +268,8 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
 
   /* ---------- NEW: post-login address sync ---------- */
   useEffect(() => {
-    if (!user || !user.streetAddress) return;                  // nothing to sync
-    if (order.deliveryStreet.trim()) return;                   // already filled
+    if (!user || !user.streetAddress) return;      // nothing to sync
+    if (order.deliveryStreet.trim()) return;       // already filled
 
     setOrder(prev => ({
       ...prev,
