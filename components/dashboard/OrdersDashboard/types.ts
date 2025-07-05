@@ -6,73 +6,82 @@
 //  Prisma model, just the fields the React code actually touches.
 // ============================================================================
 
+import type { DeliveryType, OrderStatus } from "@prisma/client";
+
+/**
+ * Dashboard roles—used throughout the OrdersDashboard and its children.
+ */
+export type DashboardRole = "admin" | "staff" | "server" | "cashier";
+
 /* ---------------------------------------------------------------------------
    Order – the slice of data every grid / card needs.
 --------------------------------------------------------------------------- */
 export interface Order {
   /* primary keys */
-  id:            string;      // internal UUID
-  orderId:       string;      // human-friendly code “ORD-YYYY…”
-  createdAt:     string;      // ISO timestamp
+  id:        string;        // internal UUID
+  orderId:   string;        // human-friendly code “ORD-YYYY…”
+  createdAt: string;        // ISO timestamp
 
   /* lifecycle */
-  status:           string;             // “ORDER_RECEIVED” | “ORDER_READY” | …
-  schedule:         string | null;      // ISO schedule time for pre-orders
-  statusHistory:    Array<Record<string, any>>;
+  status:        OrderStatus;
+  schedule:      string | null;           // ISO schedule time for pre-orders
+  statusHistory: Array<Record<string, any>>;
 
   /* routing / type info */
-  orderType?:         string | null;  // “delivery” | “golf” | etc. (nullable for old rows)
-  deliveryType:       string;         // PICKUP_AT_CLUBHOUSE | ON_COURSE | …
-  holeNumber?:        number | null;  // for on-course golf orders
-  deliveryAddress?:   import('@/contexts/OrderContext').DeliveryAddress | null;
+  orderType?:           string | null;    // e.g. “delivery” | “golf”
+  deliveryType:         DeliveryType;     // PICKUP_AT_CLUBHOUSE | ON_COURSE | …
+  holeNumber?:          number | null;    // for on-course golf orders
+  deliveryAddress?:     import("@/contexts/OrderContext").DeliveryAddress | null;
   deliveryInstructions?: string | null;
 
   /* alcohol / compliance */
-  containsAlcohol:   boolean;
-  paymentMethod:     'CARD' | 'CASH';
+  containsAlcohol: boolean;
+  paymentMethod:   "CARD" | "CASH";
 
   /* money */
-  totalAmount:       number;
-  tipAmount?:        number;
-  driverPayout?:     number;
-  tipRecipientId?:   number;
+  totalAmount:     number;
+  tipAmount?:      number;
+  driverPayout?:   number;
+  tipRecipientId?: number;
 
   /* timestamps for print/statement views */
-  deliveredAt?:      string | null;    // when the order was delivered
-  updatedAt?:        string | null;    // last status‐update timestamp
+  deliveredAt?: string | null;
+  updatedAt?:   string | null;
 
   /* line items (flat list + rich lineItems for admin detail) */
-  items:      Array<Record<string, any>>;
-  lineItems:  Array<Record<string, any>>;
+  items:     Array<Record<string, any>>;
+  lineItems: Array<Record<string, any>>;
 
   /* relations (all optional so grids don’t explode on partial selects) */
   guestName?: string | null;
-  customer?:  { firstName: string; lastName: string } | null;
+  customer?: {
+    firstName: string;
+    lastName:  string;
+  } | null;
 
   driver?: {
-    id:         number;
-    firstName:  string;
-    lastName:   string;
+    id:        number;
+    firstName: string;
+    lastName:  string;
   } | null;
 
   staff?: {
-    firstName:  string;
-    lastName:   string;
+    firstName: string;
+    lastName:  string;
   } | null;
 
   /* cash collection (server flow, cashier recon) */
   cashCollection?: {
-    status:   'PENDING' | 'SETTLED';
-    amount?:  number;
-    server?:  { firstName: string; lastName: string } | null;
+    status: "PENDING" | "SETTLED";
+    amount?: number;
+    server?: {
+      firstName: string;
+      lastName:  string;
+    } | null;
   };
 
-  /* NOTE ─────────────────────────────────────────────────────────────
-     A few grids still cast an `order` to `{ ...order, driverId }`
-     so that deeply nested components don’t need to know about the
-     `driver?.id` shape.  We keep the prop optional for compatibility.
-  ------------------------------------------------------------------- */
-  driverId?:    number | null;
+  /** Some components cast in a `driverId` for convenience. */
+  driverId?: number | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -93,7 +102,7 @@ export interface ServerAgg {
 --------------------------------------------------------------------------- */
 export interface CashCollectionRecord {
   id:          string;
-  orderId:     string;   // human-friendly code
+  orderId:     string;           // human-friendly code
   amount:      number;
   collectedAt: string | null;
 }

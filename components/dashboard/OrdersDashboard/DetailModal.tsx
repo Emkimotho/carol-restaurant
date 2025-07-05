@@ -77,7 +77,8 @@ function renderOptions(
 export interface DetailModalProps {
   isOpen: boolean;
   order: Order | null;
-  role: 'admin' | 'staff' | 'server' | 'cashier';
+  role: 'admin' | 'staff' | 'server' | 'driver' | 'cashier'
+
   onClose: () => void;
 }
 

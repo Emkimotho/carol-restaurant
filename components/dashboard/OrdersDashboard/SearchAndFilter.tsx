@@ -5,7 +5,7 @@ import styles from './SearchAndFilter.module.css';
 import type { ServerAgg } from './types';
 
 interface SearchAndFilterProps {
-  role: 'admin' | 'staff' | 'server' | 'cashier';
+  role: 'admin' | 'staff' | 'server' | 'driver' | 'cashier';
   query: string;
   onQueryChange: (q: string) => void;
   serverFilter: string;

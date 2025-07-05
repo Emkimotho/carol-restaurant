@@ -19,14 +19,14 @@
 //  • No other role behaviour changed.
 // ------------------------------------------------------------------
 
-import { NextResponse } from 'next/server';
-import { prisma }       from '@/lib/prisma';
+import { NextResponse }   from "next/server";
+import { prisma }         from "@/lib/prisma";
 import {
   Prisma,
   OrderStatus,
   PaymentMethod,
   CashCollectionStatus,
-} from '@prisma/client';
+}                         from "@prisma/client";
 
 /* =================================================================== */
 /*  Main handler                                                       */
@@ -35,18 +35,18 @@ export async function getOrders(req: Request) {
   const { searchParams } = new URL(req.url);
 
   /* ---------- common query-params ---------- */
-  const role               = searchParams.get('role');          // driver | server | cashier | admin | staff
-  const driverIdRaw        = searchParams.get('driverId');
-  const statusParam        = searchParams.get('status');
-  const paymentMethodParam = searchParams.get('paymentMethod');
-  const reconciledParam    = searchParams.get('reconciled');    // cashier: "true" | "false"
-  const serverIdParam      = searchParams.get('serverId');      // cashier filter
-  const q                  = searchParams.get('q') ?? '';       // admin / staff search
-  const staffIdParam       = searchParams.get('staffId');       // staff filter
+  const role               = searchParams.get("role");       // driver|server|cashier|admin|staff
+  const driverIdRaw        = searchParams.get("driverId");
+  const statusParam        = searchParams.get("status");
+  const paymentMethodParam = searchParams.get("paymentMethod");
+  const reconciledParam    = searchParams.get("reconciled"); // cashier
+  const serverIdParam      = searchParams.get("serverId");   // cashier filter
+  const q                  = searchParams.get("q") ?? "";    // admin/staff search
+  const staffIdParam       = searchParams.get("staffId");    // staff filter
 
-  /* ---------- pagination for admin/staff ---------- */
-  const page  = Number(searchParams.get('page')  ?? '1');
-  const limit = Number(searchParams.get('limit') ?? '20');
+  /* ---------- pagination (admin/staff only) ---------- */
+  const page  = Number(searchParams.get("page")  ?? "1");
+  const limit = Number(searchParams.get("limit") ?? "20");
   const skip  = (page - 1) * limit;
 
   /* helper to wrap arrays into paginated response */
@@ -57,26 +57,25 @@ export async function getOrders(req: Request) {
   });
 
   /* ================================================================= */
-  /*  Driver dashboard                                                 */
+  /*  DRIVER dashboard                                                 */
   /* ================================================================= */
-  if (role === 'driver' && driverIdRaw) {
+  if (role === "driver" && driverIdRaw) {
     const driverId = Number(driverIdRaw);
-
-    /* ---------- delivered-history tab ---------- */
-    if (statusParam === 'delivered') {
+    // delivered-history tab
+    if (statusParam === "delivered") {
       const delivered = await prisma.order.findMany({
         where: {
           driverId,
           status:     OrderStatus.DELIVERED,
-          orderType:  'delivery',                // delivery-only
+          orderType:  "delivery",
         },
-        orderBy: { deliveredAt: 'desc' },
+        orderBy: { deliveredAt: "desc" },
         include: baseIncludes(),
       });
       return NextResponse.json(wrap(delivered));
     }
 
-    /* ---------- active queue (received / ready …) ---------- */
+    // active queue – now with built-in schedule filter
     const activeStatuses: OrderStatus[] = [
       OrderStatus.ORDER_RECEIVED,
       OrderStatus.IN_PROGRESS,
@@ -87,26 +86,40 @@ export async function getOrders(req: Request) {
 
     const active = await prisma.order.findMany({
       where: {
-        orderType: 'delivery',                   // delivery-only
+        orderType: "delivery",
         status:    { in: activeStatuses },
-        OR: [
-          { driverId: null },                    // unclaimed
-          { driverId },                          // mine
+
+        // unclaimed or mine...
+        AND: [
+          {
+            OR: [
+              { driverId: null },
+              { driverId },
+            ],
+          },
+          // ...AND either no schedule (ASAP) or schedule ≤ now
+          {
+            OR: [
+              { schedule: null },
+              { schedule: { lte: new Date() } },
+            ],
+          },
         ],
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: baseIncludes(),
     });
+
     return NextResponse.json(wrap(active));
   }
 
   /* ================================================================= */
-  /*  Server dashboard                                                 */
+  /*  SERVER dashboard                                                 */
   /* ================================================================= */
-  if (role === 'server') {
+  if (role === "server") {
     const statuses = statusParam && (OrderStatus as any)[statusParam]
-      ? [ (OrderStatus as any)[statusParam] as OrderStatus ]
-      : [ OrderStatus.ORDER_READY ];
+      ? [(OrderStatus as any)[statusParam] as OrderStatus]
+      : [OrderStatus.ORDER_READY];
 
     const where: Prisma.OrderWhereInput = { status: { in: statuses } };
     if (paymentMethodParam) {
@@ -115,7 +128,7 @@ export async function getOrders(req: Request) {
 
     const orders = await prisma.order.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         ...baseIncludes(),
         cashCollection: {
@@ -126,14 +139,15 @@ export async function getOrders(req: Request) {
         },
       },
     });
+
     return NextResponse.json(wrap(orders));
   }
 
   /* ================================================================= */
-  /*  Cashier dashboard                                                */
+  /*  CASHIER dashboard                                                */
   /* ================================================================= */
-  if (role === 'cashier') {
-    const cashStatus = reconciledParam === 'true'
+  if (role === "cashier") {
+    const cashStatus = reconciledParam === "true"
       ? CashCollectionStatus.SETTLED
       : CashCollectionStatus.PENDING;
 
@@ -142,10 +156,10 @@ export async function getOrders(req: Request) {
 
     const orders = await prisma.order.findMany({
       where: {
-        paymentMethod: PaymentMethod.CASH,
+        paymentMethod:  PaymentMethod.CASH,
         cashCollection: cashFilter,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         ...baseIncludes(),
         cashCollection: {
@@ -156,24 +170,25 @@ export async function getOrders(req: Request) {
         },
       },
     });
+
     return NextResponse.json(wrap(orders));
   }
 
   /* ================================================================= */
-  /*  Admin / Staff list + search + pagination                         */
+  /*  ADMIN / STAFF list + search + pagination                         */
   /* ================================================================= */
   let where: Prisma.OrderWhereInput = {};
   if (q.trim()) {
     where = {
       OR: [
-        { orderId:    { contains: q, mode: 'insensitive' } },
-        { guestName:  { contains: q, mode: 'insensitive' } },
-        { guestEmail: { contains: q, mode: 'insensitive' } },
+        { orderId:    { contains: q, mode: "insensitive" } },
+        { guestName:  { contains: q, mode: "insensitive" } },
+        { guestEmail: { contains: q, mode: "insensitive" } },
         {
           customer: {
             OR: [
-              { firstName: { contains: q, mode: 'insensitive' } },
-              { lastName:  { contains: q, mode: 'insensitive' } },
+              { firstName: { contains: q, mode: "insensitive" } },
+              { lastName:  { contains: q, mode: "insensitive" } },
             ],
           },
         },
@@ -187,8 +202,8 @@ export async function getOrders(req: Request) {
     prisma.order.findMany({
       where,
       skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
+      take:  limit,
+      orderBy: { createdAt: "desc" },
       include: baseIncludes(),
     }),
   ]);
@@ -210,7 +225,7 @@ function baseIncludes(): Prisma.OrderInclude {
     staff:    { select: { firstName: true, lastName: true } },
     lineItems: { include: { menuItem: true } },
     statusHistory: {
-      orderBy: { timestamp: 'asc' },
+      orderBy: { timestamp: "asc" },
       select: {
         status:    true,
         timestamp: true,
@@ -218,6 +233,5 @@ function baseIncludes(): Prisma.OrderInclude {
         user:      { select: { firstName: true, lastName: true } },
       },
     },
-    // scalar fields come automatically
   };
 }

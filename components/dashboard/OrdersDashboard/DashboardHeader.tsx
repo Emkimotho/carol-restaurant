@@ -4,7 +4,7 @@ import React from 'react';
 import styles from './DashboardHeader.module.css';
 
 interface DashboardHeaderProps {
-  role: 'admin' | 'staff' | 'server' | 'cashier';
+ role: 'admin' | 'staff' | 'server' | 'driver' | 'cashier'
   tipTotal: number;
 }
 

@@ -1,196 +1,119 @@
-// File: app/api/drivers/[id]/status/route.ts
+/* ======================================================================== */
+/*  /api/drivers/[id]/status                                                */
+/*  • GET   → { isOnline }                                                  */
+/*  • PATCH → { isOnline }                                                  */
+/*    (body: { status: 'online' | 'offline' })                              */
+/*  Access: driver themselves or ADMIN / SUPERADMIN                         */
+/* ======================================================================== */
 
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import prisma from '@/lib/prisma';
+import { getToken }                  from 'next-auth/jwt';
+import prisma                        from '@/lib/prisma';
 
-type Params = { id: string };
+/* Disable all caches for this route */
+const noStore = { headers: { 'Cache-Control': 'no-store' } };
 
-// Disable caching on all responses
-const noStoreHeaders = { 'Cache-Control': 'no-store' };
-
-/**
- * GET /api/drivers/[id]/status
- * Returns { isOnline: boolean }.
- * Only the driver themselves or an admin may fetch this.
- */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Params }
-) {
-  // 1️⃣ Validate driver ID
-  const driverId = Number(params.id);
-  if (isNaN(driverId)) {
-    return NextResponse.json(
-      { error: 'Invalid driver ID' },
-      { status: 400, headers: noStoreHeaders }
-    );
-  }
-
-  // 2️⃣ Authenticate via NextAuth JWT
-  const token = (await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET!,
-  })) as any;
-  if (!token) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401, headers: noStoreHeaders }
-    );
-  }
-
-  // 3️⃣ Parse session user ID
-  const rawSub = token.sub;
-  const sessionUserId =
-    typeof rawSub === 'string'
-      ? parseInt(rawSub, 10)
-      : typeof rawSub === 'number'
-      ? rawSub
-      : NaN;
-  if (!sessionUserId) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401, headers: noStoreHeaders }
-    );
-  }
-
-  // 4️⃣ Check roles for authorization
-  const rolesRaw = token.roles;
-  const roles: string[] = [];
-  if (Array.isArray(rolesRaw)) {
-    for (const r of rolesRaw) {
-      if (typeof r === 'string') roles.push(r.toLowerCase());
-    }
-  } else if (typeof rolesRaw === 'string') {
-    roles.push(rolesRaw.toLowerCase());
-  }
-  const isAdmin = roles.includes('admin') || roles.includes('superadmin');
-
-  if (sessionUserId !== driverId && !isAdmin) {
-    return NextResponse.json(
-      { error: 'Forbidden' },
-      { status: 403, headers: noStoreHeaders }
-    );
-  }
-
-  // 5️⃣ Fetch driver status
-  const user = await prisma.user.findUnique({
-    where: { id: driverId },
-    select: { isOnline: true },
-  });
-  if (!user) {
-    return NextResponse.json(
-      { error: 'Driver not found' },
-      { status: 404, headers: noStoreHeaders }
-    );
-  }
-
-  // 6️⃣ Return the status
-  return NextResponse.json(
-    { isOnline: user.isOnline },
-    { headers: noStoreHeaders }
-  );
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                           */
+/* ------------------------------------------------------------------ */
+async function getDriverId(rawParams: { id?: string } | Promise<{ id?: string }>) {
+  /* ❗ Next 14+ marks `params` as a Promise – must be awaited */
+  const { id } = await rawParams;
+  const n = Number(id);
+  if (Number.isNaN(n)) throw new Error('Invalid driver ID');
+  return n;
 }
 
-/**
- * PATCH /api/drivers/[id]/status
- * Body: { status: 'online' | 'offline' }
- * Only the driver themselves or an admin may update.
- */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Params }
-) {
-  // 1️⃣ Validate driver ID
-  const driverId = Number(params.id);
-  if (isNaN(driverId)) {
-    return NextResponse.json(
-      { error: 'Invalid driver ID' },
-      { status: 400, headers: noStoreHeaders }
-    );
-  }
-
-  // 2️⃣ Authenticate via NextAuth JWT
+async function getSessionUserId(req: NextRequest) {
   const token = (await getToken({
-    req: request,
+    req,
     secret: process.env.NEXTAUTH_SECRET!,
   })) as any;
-  if (!token) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401, headers: noStoreHeaders }
-    );
-  }
 
-  // 3️⃣ Parse session user ID
-  const rawSub = token.sub;
-  const sessionUserId =
-    typeof rawSub === 'string'
-      ? parseInt(rawSub, 10)
-      : typeof rawSub === 'number'
-      ? rawSub
-      : NaN;
-  if (!sessionUserId) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401, headers: noStoreHeaders }
-    );
-  }
+  if (!token) throw new Error('Unauthorized');
 
-  // 4️⃣ Check roles for authorization
-  const rolesRaw = token.roles;
-  const roles: string[] = [];
-  if (Array.isArray(rolesRaw)) {
-    for (const r of rolesRaw) {
-      if (typeof r === 'string') roles.push(r.toLowerCase());
-    }
-  } else if (typeof rolesRaw === 'string') {
-    roles.push(rolesRaw.toLowerCase());
-  }
-  const isAdmin = roles.includes('admin') || roles.includes('superadmin');
+  const sub = token.sub;
+  const id  =
+    typeof sub === 'string' ? parseInt(sub, 10) :
+    typeof sub === 'number' ? sub : NaN;
 
-  if (sessionUserId !== driverId && !isAdmin) {
-    return NextResponse.json(
-      { error: 'Forbidden' },
-      { status: 403, headers: noStoreHeaders }
-    );
-  }
+  if (!id) throw new Error('Unauthorized');
+  return { id, roles: Array.isArray(token.roles) ? token.roles : [token.roles] };
+}
 
-  // 5️⃣ Parse and validate request body
-  let body: any;
+function forbidden(resMsg = 'Forbidden') {
+  return NextResponse.json({ error: resMsg }, { status: 403, ...noStore });
+}
+
+/* ------------------------------------------------------------------ */
+/*  GET                                                               */
+/* ------------------------------------------------------------------ */
+export async function GET(
+  req: NextRequest,
+  ctx: { params: { id: string } } | { params: Promise<{ id: string }> }
+) {
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: 'Invalid JSON' },
-      { status: 400, headers: noStoreHeaders }
-    );
-  }
-  if (body.status !== 'online' && body.status !== 'offline') {
-    return NextResponse.json(
-      { error: "Payload must be { status: 'online'|'offline' }" },
-      { status: 422, headers: noStoreHeaders }
-    );
-  }
+    const driverId           = await getDriverId(ctx.params);
+    const { id: uid, roles } = await getSessionUserId(req);
 
-  // 6️⃣ Update driver status
-  try {
-    const updated = await prisma.user.update({
-      where: { id: driverId },
-      data: { isOnline: body.status === 'online' },
+    const isAdmin = (roles ?? []).some((r: string) =>
+      ['admin', 'superadmin'].includes(String(r).toLowerCase())
+    );
+    if (uid !== driverId && !isAdmin) return forbidden();
+
+    const driver = await prisma.user.findUnique({
+      where:  { id: driverId },
       select: { isOnline: true },
     });
-    return NextResponse.json(
-      { isOnline: updated.isOnline },
-      { headers: noStoreHeaders }
+    if (!driver)
+      return NextResponse.json(
+        { error: 'Driver not found' },
+        { status: 404, ...noStore }
+      );
+
+    return NextResponse.json({ isOnline: driver.isOnline }, noStore);
+  } catch (err: any) {
+    const msg = err.message || 'Bad Request';
+    const code = /Unauthorized|Forbidden|Invalid/.test(msg) ? 400 : 500;
+    return NextResponse.json({ error: msg }, { status: code, ...noStore });
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  PATCH                                                             */
+/* ------------------------------------------------------------------ */
+export async function PATCH(
+  req: NextRequest,
+  ctx: { params: { id: string } } | { params: Promise<{ id: string }> }
+) {
+  try {
+    const driverId           = await getDriverId(ctx.params);
+    const { id: uid, roles } = await getSessionUserId(req);
+
+    const isAdmin = (roles ?? []).some((r: string) =>
+      ['admin', 'superadmin'].includes(String(r).toLowerCase())
     );
-  } catch (err) {
-    console.error('Failed to update driver status:', err);
-    return NextResponse.json(
-      { error: 'Failed to update status' },
-      { status: 500, headers: noStoreHeaders }
-    );
+    if (uid !== driverId && !isAdmin) return forbidden();
+
+    const body = await req.json().catch(() => null);
+    if (!body || !['online', 'offline'].includes(body.status))
+      return NextResponse.json(
+        { error: "Body must be { status: 'online' | 'offline' }" },
+        { status: 422, ...noStore }
+      );
+
+    const updated = await prisma.user.update({
+      where: { id: driverId },
+      data : { isOnline: body.status === 'online' },
+      select: { isOnline: true },
+    });
+
+    return NextResponse.json({ isOnline: updated.isOnline }, noStore);
+  } catch (err: any) {
+    const msg  = err.message || 'Server error';
+    const code = /Unauthorized|Forbidden|Invalid/.test(msg) ? 400 : 500;
+    return NextResponse.json({ error: msg }, { status: code, ...noStore });
   }
 }

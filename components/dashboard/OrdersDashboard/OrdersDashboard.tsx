@@ -1,70 +1,69 @@
-// File: components/dashboard/OrdersDashboard/OrdersDashboard.tsx
 'use client';
 
-import React, { useEffect, useState, Dispatch, SetStateAction } from 'react';
+import React, {
+  useEffect,
+  useState,
+  Dispatch,
+  SetStateAction,
+} from 'react';
 import useSWR from 'swr';
 import { ToastContainer, toast } from 'react-toastify';
 
 import styles from './OrdersDashboard.module.css';
-import DashboardHeader from './DashboardHeader';
-import SearchAndFilter from './SearchAndFilter';
-import OnlineDrivers from './OnlineDrivers';
-import PendingCashSection from './PendingCashSection';
+import DashboardHeader           from './DashboardHeader';
+import SearchAndFilter           from './SearchAndFilter';
+import OnlineDrivers             from './OnlineDrivers';
+import PendingCashSection        from './PendingCashSection';
 import CashReconciliationSection from './CashReconciliationSection';
-import ReconciledHistorySection from './ReconciledHistorySection';
-import OrdersGridWrapper from './OrdersGridWrapper';
-import PaginationControls from './PaginationControls';
-import OrdersTabs, { TabKey, Tab } from './OrdersTabs';
-import DetailModal from './DetailModal';
-import AgeCheckModal from './AgeCheckModal';
-import StatementView from './StatementView';
+import ReconciledHistorySection  from './ReconciledHistorySection';
+import OrdersGridWrapper         from './OrdersGridWrapper';
+import PaginationControls        from './PaginationControls';
+import OrdersTabs, { TabKey, Tab }from './OrdersTabs';
+import DetailModal               from './DetailModal';
+import AgeCheckModal             from './AgeCheckModal';
+import StatementView             from './StatementView';
 
-import { fetcher, useDebounce } from './utils';
-import { useOrders } from './hooks/useOrders';
-import { useCashCollections } from './hooks/useCashCollections';
-import { useReconciledRecords } from './hooks/useReconciledRecords';
+import { fetcher, useDebounce }  from './utils';
+import { useOrders }             from './hooks/useOrders';
+import { useCashCollections }    from './hooks/useCashCollections';
+import { useReconciledRecords }  from './hooks/useReconciledRecords';
 
 import type {
   Order,
   CashCollectionRecord,
   ServerAgg,
-  OrdersListResponse,
 } from './types';
-import type { Driver } from './DriverAssigner';
-import type { KeyedMutator } from 'swr';
+import type { Driver }           from './DriverAssigner';
 
+/* —————————————————————————————————————————— props — */
 export interface OrdersDashboardProps {
-  role: 'admin' | 'staff' | 'server' | 'cashier';
+  role: 'admin' | 'staff' | 'server' | 'driver' | 'cashier';
   userId?: string | number;
 }
 
 const PAGE_SIZE = 20;
 
-export default function OrdersDashboard({
-  role,
-  userId,
-}: OrdersDashboardProps) {
-  // Search & filter state
+/* ===================================================================== */
+export default function OrdersDashboard({ role, userId }: OrdersDashboardProps) {
+  /* ─────────── search / filters —────────────────────────────── */
   const [query, setQuery] = useState('');
-  const debouncedQuery = useDebounce(query, 300);
+  const debouncedQuery    = useDebounce(query, 300);
   const [serverFilter, setServerFilter] = useState('');
 
-  // Tab & pagination state
+  /* ─────────── tabs & pagination —───────────────────────────── */
   const [tab, setTab] = useState<TabKey>(
     role === 'cashier'
       ? 'toReconcile'
       : role === 'staff'
       ? 'received'
-      : role === 'server'
+      : (role === 'server' || role === 'driver')
       ? 'ready'
       : 'active'
   );
   const [page, setPage] = useState(1);
-  useEffect(() => {
-    setPage(1);
-  }, [tab, debouncedQuery, serverFilter]);
+  useEffect(() => setPage(1), [tab, debouncedQuery, serverFilter]);
 
-  // Detail / modals state
+  /* ─────────── modal state —─────────────────────────────────── */
   const [detail, setDetail] = useState<Order | null>(null);
   const [agePatch, setAgePatch] = useState<{
     order: Order;
@@ -73,17 +72,21 @@ export default function OrdersDashboard({
   } | null>(null);
   const [cashInput, setCashInput] = useState('');
 
-  // Cashier’s server dropdown
+  /* ─────────── cashier: server dropdown datasource —────────── */
   const { data: serverAgg = [] } = useSWR<ServerAgg[]>(
     role === 'cashier'
       ? '/api/orders/cash-collections?groupBy=server'
       : null,
     fetcher,
-    { refreshInterval: 10000 }
+    { refreshInterval: 10_000 }
   );
 
-  // Paginated orders fetch
-  const { orders, totalPages, mutate } = useOrders({
+  /* ─────────── paginated orders list (raw from API) —────────── */
+  const {
+    orders: rawOrders,
+    totalPages,
+    mutate,
+  } = useOrders({
     role,
     userId,
     page,
@@ -93,61 +96,76 @@ export default function OrdersDashboard({
     reconciledFlag: tab === 'reconciled',
   });
 
-  // Live driver & cash data
+  /* ─────────── 45-minute reveal window (drivers only) —──────── */
+  const now     = Date.now();
+  const cutoff  = 45 * 60 * 1_000;          // 45 min in ms
+  const orders: Order[] =
+    role === 'driver'
+      ? rawOrders.filter(o => {
+          // no schedule → always show
+          if (!o.schedule) return true;
+          const diff = new Date(o.schedule).getTime() - now;
+          return diff <= cutoff;            // within window or already past
+        })
+      : rawOrders;                          // servers & others: full list
+
+  /* ─────────── live driver / cash data —────────────────────── */
   const { data: drivers = [] } = useSWR<Driver[]>(
     role === 'admin' || role === 'staff'
       ? '/api/drivers?status=online'
       : null,
     fetcher,
-    { refreshInterval: 30000 }
+    { refreshInterval: 30_000 }
   );
+
   const { records: pendingCash } = useCashCollections({
     serverId: role === 'server' ? userId : undefined,
-    status: 'PENDING',
+    status:   'PENDING',
   });
+
   const { records: reconciledRecords } = useReconciledRecords({
     cashierId: role === 'cashier' ? userId : undefined,
   });
 
-  // Buckets & totals
+  /* ─────────── bucketing helpers —──────────────────────────── */
   const filterBy = (statuses: Order['status'][]) =>
-    orders.filter((o) => statuses.includes(o.status));
+    orders.filter(o => statuses.includes(o.status));
 
-  const received  = filterBy(['ORDER_RECEIVED']);
-  const inPrep    = filterBy(['IN_PROGRESS']);
-  const ready     = filterBy(['ORDER_READY']);
-  const enRoute   = filterBy(['PICKED_UP_BY_DRIVER']);
-  const delivered = filterBy(['DELIVERED']);
-  const pending   = filterBy(['PENDING_PAYMENT']);
-  const cancelled = filterBy(['CANCELLED']);
-  const active    = orders.filter(
-    (o) =>
+  const received    = filterBy(['ORDER_RECEIVED']);
+  const inPrep      = filterBy(['IN_PROGRESS']);
+  const ready       = filterBy(['ORDER_READY']);
+  const enRoute     = filterBy(['PICKED_UP_BY_DRIVER']);
+  const delivered   = filterBy(['DELIVERED']);
+  const pending     = filterBy(['PENDING_PAYMENT']);
+  const cancelled   = filterBy(['CANCELLED']);
+  const active      = orders.filter(
+    o =>
       !['PENDING_PAYMENT', 'ORDER_READY', 'DELIVERED', 'CANCELLED'].includes(
         o.status
       )
   );
   const completed   = delivered;
   const toReconcile = orders.filter(
-    (o) => o.cashCollection?.status === 'PENDING'
+    o => o.cashCollection?.status === 'PENDING'
   );
 
-  const expectedTotal = toReconcile.reduce((sum, o) => sum + o.totalAmount, 0);
-  const diff = Number(cashInput) - expectedTotal;
+  /* ─────────── money helpers —──────────────────────────────── */
+  const expectedTotal = toReconcile.reduce((s, o) => s + o.totalAmount, 0);
+  const diff          = Number(cashInput) - expectedTotal;
 
   const tipTotal = orders
     .filter(
-      (o) =>
+      o =>
         o.tipRecipientId === Number(userId) &&
         o.deliveryType !== 'DELIVERY' &&
         (o.driverPayout ?? 0) !== 0 &&
         o.deliveryInstructions != null
     )
-    .reduce((sum, o) => sum + (o.tipAmount ?? 0), 0);
+    .reduce((s, o) => s + (o.tipAmount ?? 0), 0);
 
-  // Admin flag → toggles Delete column in StatementView
   const isAdmin = role === 'admin';
 
-  // Tabs metadata
+  /* ─────────── tab definitions (counts) —───────────────────── */
   const tabs: Tab[] =
     role === 'staff'
       ? [
@@ -163,6 +181,12 @@ export default function OrdersDashboard({
           { key: 'delivered',  label: 'Delivered',      count: delivered.length},
           { key: 'pendingCash',label: 'Pending Cash',   count: pendingCash.length },
         ]
+      : role === 'driver'
+      ? [
+          { key: 'ready',     label: 'Ready',    count: ready.length     },
+          { key: 'enRoute',   label: 'En Route', count: enRoute.length   },
+          { key: 'delivered', label: 'Delivered',count: delivered.length },
+        ]
       : role === 'cashier'
       ? [
           { key: 'toReconcile', label: 'To Reconcile', count: toReconcile.length    },
@@ -176,7 +200,7 @@ export default function OrdersDashboard({
           { key: 'cancelled', label: 'Cancelled',count: cancelled.length },
         ];
 
-  // Map for current tab’s list
+  /* ─────────── list map for current tab —───────────────────── */
   const listMap: Record<TabKey, Order[]> = {
     received,
     inPrep,
@@ -188,12 +212,12 @@ export default function OrdersDashboard({
     completed,
     cancelled,
     toReconcile,
-    reconciled: [],   // handled by ReconciledHistorySection
-    pendingCash: [],  // handled by PendingCashSection
+    reconciled: [],
+    pendingCash: [],
   };
   const listToShow = listMap[tab] ?? [];
 
-  // Cashier reconciliation handler
+  /* ─────────── cashier reconcile handler —──────────────────── */
   const handleReconcile = async () => {
     if (diff < 0) {
       toast.error(
@@ -208,17 +232,20 @@ export default function OrdersDashboard({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderIds:     listToShow.map((o) => o.orderId),
+          orderIds:     listToShow.map(o => o.orderId),
           cashReceived: Number(cashInput),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-      const msg =
-        diff > 0
+      toast.update(t, {
+        render: diff > 0
           ? `Reconciled • change due $${diff.toFixed(2)}`
-          : 'Reconciled';
-      toast.update(t, { render: msg, type: 'success', isLoading: false, autoClose: 1800 });
+          : 'Reconciled',
+        type: 'success',
+        isLoading: false,
+        autoClose: 1800,
+      });
       setCashInput('');
       mutate();
     } catch (err: any) {
@@ -226,6 +253,9 @@ export default function OrdersDashboard({
     }
   };
 
+  /* =================================================================== */
+  /*  Render                                                             */
+  /* =================================================================== */
   return (
     <>
       <ToastContainer position="top-right" theme="colored" />
@@ -252,7 +282,9 @@ export default function OrdersDashboard({
           <OnlineDrivers drivers={drivers} />
         )}
         {role === 'server' && tab === 'pendingCash' && (
-          <PendingCashSection pendingCash={pendingCash as CashCollectionRecord[]} />
+          <PendingCashSection
+            pendingCash={pendingCash as CashCollectionRecord[]}
+          />
         )}
         {role === 'cashier' && tab === 'toReconcile' && (
           <CashReconciliationSection
@@ -268,12 +300,12 @@ export default function OrdersDashboard({
           <ReconciledHistorySection reconciledRecords={reconciledRecords} />
         )}
 
-        {/* Delivered/Completed → StatementView; else → OrdersGridWrapper */}
+        {/* Delivered/Completed → StatementView; else → grid */}
         {(tab === 'delivered' || tab === 'completed') ? (
           <StatementView
             list={listToShow}
-            isAdmin={isAdmin}          /* toggle Delete button */
-            onDeleted={() => mutate()} /* refresh after 204    */
+            isAdmin={isAdmin}
+            onDeleted={() => mutate()}
             onShowDetail={setDetail as Dispatch<SetStateAction<Order>>}
           />
         ) : (
@@ -299,7 +331,7 @@ export default function OrdersDashboard({
         )}
       </div>
 
-      {/* Detail Modal */}
+      {/* Detail modal */}
       <DetailModal
         isOpen={Boolean(detail)}
         order={detail}
@@ -307,7 +339,7 @@ export default function OrdersDashboard({
         onClose={() => setDetail(null)}
       />
 
-      {/* Age-Check Modal */}
+      {/* Age-check modal */}
       <AgeCheckModal
         isOpen={Boolean(agePatch)}
         patch={agePatch}
