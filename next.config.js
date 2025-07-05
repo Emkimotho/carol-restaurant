@@ -2,21 +2,15 @@
 // ──────────────────────────────────────────────────────────────
 //  Global Next.js configuration for “19th-Hole”
 //
-//  Highlights
-//  ──────────
-//  1.   Forces all server-side code to run in Eastern Time.
-//  2.   Keeps React strict-mode on in dev for extra warnings.
-//  3.   Produces a ‘standalone’ build folder for easy Docker /
-//       PM2 / Render / Railway / Fly deployment.
-//  4.   Skips ESLint during `next build` so production deploys
-//       can never be blocked by lint errors (you can still run
-//       `npm run lint` locally to see issues).
-//  5.   Configures Next/Image to allow Cloudinary-hosted images
-//       (and any other remote sources you whitelist).
-//  6.   **No** secrets are inlined — they’re read from process.env
-//       at runtime.  Use NEXT_PUBLIC_* for client-side variables.
+//  Highlights:
+//  1. Forces all server-side code to run in Eastern Time.
+//  2. Enables React strict-mode and TypeScript checks in development.
+//  3. Produces a standalone build for Docker/PM2/Render/Fly deployments.
+//  4. Skips ESLint errors during production builds.
+//  5. Configures Next/Image to allow Cloudinary (and other) external images.
+//  6. Reads secrets at runtime—use NEXT_PUBLIC_* for client-side vars.
 //
-//  Docs → https://nextjs.org/docs/app/api-reference/next-config-js
+//  Docs → https://nextjs.org/docs/api-reference/next.config.js
 // ──────────────────────────────────────────────────────────────
 
 /* 0. Force Node.js to America/New_York *before* anything runs */
@@ -24,16 +18,15 @@ process.env.TZ = "America/New_York";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* 1 — React / TypeScript */
+  // 1 — React and TypeScript
   reactStrictMode: true,
   typescript: {
-    ignoreBuildErrors: false, // fail build if TS compiler fails
+    ignoreBuildErrors: false, // Fail the build on TS errors
   },
 
-  /* 2 — Image optimisation
-       Use remotePatterns to allow <Image> to fetch from these hosts */
+  // 2 — Image optimization: allow remote images
   images: {
-    // for Next 13+, remotePatterns is preferred
+    // Preferred for Next 13+: granular control over allowed hosts/paths
     remotePatterns: [
       {
         protocol: "https",
@@ -47,26 +40,26 @@ const nextConfig = {
         port: "",
         pathname: "/**",
       },
-      // add more as-needed
+      // Add other hosts here as needed
     ],
-    // you can still whitelist simple domains if you like
-    domains: ["res.cloudinary.com", "images.ctfassets.net"],
+    // You can also whitelist entire domains
+    domains: [
+      "res.cloudinary.com",
+      "images.ctfassets.net",
+    ],
   },
 
-  /* 3 — Output target (ideal for Docker / standalone hosting) */
-  output: "standalone",
+  // 3 — Build output
+  output: "standalone", // Ideal for Docker or similar environments
 
-  /* 4 — Skip ESLint in production builds */
+  // 4 — ESLint settings
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // Don’t block production builds on lint errors
   },
 
-  /* 5 — Experimental flags (enable as you adopt them) */
+  // 5 — Experimental flags
   experimental: {
-    // ensure SWC transforms still run even though you have a custom .babelrc
-    forceSwcTransforms: true,
-
-    // existing experimental flags, uncomment as needed:
+    forceSwcTransforms: true, // Ensure SWC is used even with a .babelrc
     // serverActions: true,
     // turbo: { /* … */ },
   },

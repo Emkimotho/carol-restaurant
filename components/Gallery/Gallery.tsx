@@ -1,3 +1,4 @@
+// File: components/Gallery/Gallery.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -17,72 +18,51 @@ interface GalleryImage {
 
 const Gallery: React.FC = () => {
   const [images, setImages] = useState<GalleryImage[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch images from API
+  // 1. Fetch images on mount
   useEffect(() => {
-    const fetchImages = async () => {
+    (async () => {
       try {
         const res = await fetch("/api/gallery");
         const data: GalleryImage[] = await res.json();
         setImages(data);
-      } catch (error) {
-        console.error("Error fetching gallery images:", error);
+      } catch (err) {
+        console.error("Error fetching gallery images:", err);
       } finally {
         setIsLoading(false);
       }
-    };
-    fetchImages();
+    })();
   }, []);
 
-  // Auto-slide when not paused
+  // 2. Auto-advance every 5s when not paused
   useEffect(() => {
     if (!isPaused && images.length > 1) {
-      const timer = setInterval(() => {
-        setDirection(1);
-        setSelectedIndex((i) => (i + 1) % images.length);
-      }, 5000);
-      return () => clearInterval(timer);
+      const id = setInterval(() => slide(1), 5000);
+      return () => clearInterval(id);
     }
   }, [isPaused, images]);
 
-  // Keyboard navigation
+  // 3. Keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") {
-        setDirection(1);
-        setSelectedIndex((i) => (i + 1) % images.length);
-      } else if (e.key === "ArrowLeft") {
-        setDirection(-1);
-        setSelectedIndex((i) => (i - 1 + images.length) % images.length);
-      }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") slide(1);
+      if (e.key === "ArrowLeft") slide(-1);
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [images]);
 
-  // Swipe handling
-  const handleDragEnd = (_: any, info: any) => {
-    if (info.offset.x < -50) {
-      setDirection(1);
-      setSelectedIndex((i) => (i + 1) % images.length);
-    } else if (info.offset.x > 50) {
-      setDirection(-1);
-      setSelectedIndex((i) => (i - 1 + images.length) % images.length);
-    }
+  // Slide helper
+  const slide = (dir: number) => {
+    setDirection(dir);
+    setCurrentIndex((i) => (i + dir + images.length) % images.length);
   };
 
-  // Motion variants
-  const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
-  };
-
-  // Loading & empty states
+  // Loading state
   if (isLoading) {
     return (
       <section className={styles.gallery}>
@@ -91,16 +71,14 @@ const Gallery: React.FC = () => {
       </section>
     );
   }
-  if (!images.length) {
+
+  // Empty state
+  if (images.length === 0) {
     return (
       <section className={styles.gallery}>
         <h1 className={styles.pageTitle}>Gallery</h1>
         <div className={styles.noImages}>
-          <span
-            className={styles.noImagesIcon}
-            role="img"
-            aria-label="No images"
-          >
+          <span className={styles.noImagesIcon} role="img" aria-label="No images">
             📷
           </span>
           <p>Oops! The gallery is currently empty.</p>
@@ -109,10 +87,17 @@ const Gallery: React.FC = () => {
     );
   }
 
-  // Current image
-  const current = images[selectedIndex];
+  // Motion variants for swipe
+  const variants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
+  };
+
+  // Current image data
+  const current = images[currentIndex];
   const mainSrc = current.cloudinaryPublicId
-    ? getCloudinaryImageUrl(current.cloudinaryPublicId, 800, 600)
+    ? getCloudinaryImageUrl(current.cloudinaryPublicId, 800, 600, "fit")
     : current.imageUrl || "/images/placeholder.png";
 
   return (
@@ -120,16 +105,16 @@ const Gallery: React.FC = () => {
       <h1 className={styles.pageTitle}>Gallery</h1>
 
       <div className={styles.galleryContainer}>
-        {/* Main pane */}
+        {/* Main image pane */}
         <div className={styles.mainContent}>
           <div
             className={styles.mainImageContainer}
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
-            <AnimatePresence custom={direction} initial={false}>
+            <AnimatePresence initial={false} custom={direction}>
               <motion.div
-                key={selectedIndex}
+                key={currentIndex}
                 custom={direction}
                 variants={variants}
                 initial="enter"
@@ -137,42 +122,33 @@ const Gallery: React.FC = () => {
                 exit="exit"
                 transition={{ duration: 0.5, ease: "easeInOut" }}
                 className={styles.motionImageWrapper}
-                drag={false}
-                onDragEnd={handleDragEnd}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x < -50) slide(1);
+                  else if (info.offset.x > 50) slide(-1);
+                }}
               >
                 <Image
                   src={mainSrc}
                   alt={current.alt}
                   fill
                   style={{ objectFit: "contain" }}
-                  quality={90}
                   priority
                   sizes="(max-width: 768px) 100vw, 800px"
                   unoptimized
                 />
               </motion.div>
             </AnimatePresence>
-            <button
-              className={styles.navButtonLeft}
-              onClick={() => {
-                setDirection(-1);
-                setSelectedIndex(
-                  (i) => (i - 1 + images.length) % images.length
-                );
-              }}
-            >
+
+            <button className={styles.navButtonLeft} onClick={() => slide(-1)}>
               ‹
             </button>
-            <button
-              className={styles.navButtonRight}
-              onClick={() => {
-                setDirection(1);
-                setSelectedIndex((i) => (i + 1) % images.length);
-              }}
-            >
+            <button className={styles.navButtonRight} onClick={() => slide(1)}>
               ›
             </button>
           </div>
+
           <div className={styles.metadata}>
             <h3>{current.title}</h3>
             <p>{current.description}</p>
@@ -183,27 +159,29 @@ const Gallery: React.FC = () => {
         <div className={styles.thumbnailContainer}>
           {images.map((img, idx) => {
             const thumbSrc = img.cloudinaryPublicId
-              ? getCloudinaryImageUrl(img.cloudinaryPublicId, 150, 100)
+              ? getCloudinaryImageUrl(img.cloudinaryPublicId, 150, 100, "fit")
               : img.imageUrl || "/images/placeholder.png";
 
             return (
               <div
                 key={img.id}
-                className={`${styles.thumbnail} ${
-                  idx === selectedIndex ? styles.activeThumbnail : ""
+                className={`${styles.thumbnailWrapper} ${
+                  idx === currentIndex ? styles.activeThumbnail : ""
                 }`}
                 onClick={() => {
-                  setDirection(idx > selectedIndex ? 1 : -1);
-                  setSelectedIndex(idx);
+                  setDirection(idx > currentIndex ? 1 : -1);
+                  setCurrentIndex(idx);
                 }}
               >
                 <Image
                   src={thumbSrc}
                   alt={img.alt}
-                  width={80}
-                  height={60}
-                  style={{ objectFit: "cover" }}
-                  loading="lazy"
+                  fill
+                  style={{
+                    objectFit: "contain",
+                    objectPosition: "center",
+                  }}
+                  sizes="80px"
                   unoptimized
                 />
               </div>

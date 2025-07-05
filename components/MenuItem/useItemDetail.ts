@@ -1,18 +1,16 @@
-/* File: components/ItemDetailPage/useItemDetail.ts
-   --------------------------------------------------------------------
-   • NEW resetForm() is called after a successful Add-to-Cart so the
-     page clears itself (quantity ↩︎ 1, spice level ↩︎ default, text
-     boxes emptied, options unchecked).
-   • All original logic, helpers, and comments remain intact.
-   -------------------------------------------------------------------- */
+// File: components/ItemDetailPage/useItemDetail.ts
 
+/* =================================================================== */
+/* 1. Imports                                                          */
+/* =================================================================== */
 "use client";
 
+import { v4 as uuidv4 } from "uuid";
 import { useState, useEffect, useContext } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-toastify";
 
-import { CartContext }  from "@/contexts/CartContext";
+import { CartContext } from "@/contexts/CartContext";
 import { OrderContext } from "@/contexts/OrderContext";
 import {
   MenuItem as MenuItemType,
@@ -21,34 +19,33 @@ import {
 } from "@/utils/types";
 
 /* =================================================================== */
-/*                    Custom Hook: useItemDetail                       */
+/* 2. Hook signature                                                   */
 /* =================================================================== */
 export function useItemDetail(item: MenuItemType, isPreview = false) {
-  const router              = useRouter();
-  const searchParams        = useSearchParams();
-  const { addToCart }       = useContext(CartContext)!;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { addToCart } = useContext(CartContext)!;
   const { order, setOrder } = useContext(OrderContext)!;
 
-  /* ---------- state ------------------------------------------------- */
-  const [quantity, setQuantity]                       = useState<number>(1);
-  const [spiceLevel, setSpiceLevel]                   = useState<string>("No Spice");
+  /* =================================================================== */
+  /* 3. Local state                                                     */
+  /* =================================================================== */
+  const [quantity, setQuantity] = useState<number>(1);
+  const [spiceLevel, setSpiceLevel] = useState<string>("No Spice");
   const [specialInstructions, setSpecialInstructions] = useState<string>("");
 
   const [selectedOptions, setSelectedOptions] = useState<{
     [groupId: string]: {
       selectedChoiceIds: string[];
-      nestedSelections:  { [choiceId: string]: string[] };
+      nestedSelections: { [choiceId: string]: string[] };
     };
   }>({});
 
-  /* ---------- helpers to build/reset option state ------------------- */
+  /* =================================================================== */
+  /* 4. Helpers to init + reset                                          */
+  /* =================================================================== */
   function buildInitialSelections(it: MenuItemType) {
-    const obj: {
-      [groupId: string]: {
-        selectedChoiceIds: string[];
-        nestedSelections:  { [choiceId: string]: string[] };
-      };
-    } = {};
+    const obj: typeof selectedOptions = {};
     it.optionGroups?.forEach((g) => {
       obj[g.id] = { selectedChoiceIds: [], nestedSelections: {} };
     });
@@ -62,10 +59,13 @@ export function useItemDetail(item: MenuItemType, isPreview = false) {
     setSelectedOptions(buildInitialSelections(item));
   }
 
-  /* ---------- reset whenever the *item* changes --------------------- */
-  useEffect(() => resetForm(), [item]);
+  useEffect(() => {
+    resetForm();
+  }, [item]);
 
-  /* ---------- option change handlers (unchanged) -------------------- */
+  /* =================================================================== */
+  /* 5. Option change handlers                                          */
+  /* =================================================================== */
   function handleOptionChange(
     group: MenuItemOptionGroup,
     choice: MenuOptionChoice,
@@ -74,7 +74,7 @@ export function useItemDetail(item: MenuItemType, isPreview = false) {
     setSelectedOptions((prev) => {
       const gState = prev[group.id] || {
         selectedChoiceIds: [],
-        nestedSelections : {},
+        nestedSelections: {},
       };
       let nextSel = [...gState.selectedChoiceIds];
 
@@ -109,7 +109,7 @@ export function useItemDetail(item: MenuItemType, isPreview = false) {
     setSelectedOptions((prev) => {
       const gState = prev[groupId] || {
         selectedChoiceIds: [],
-        nestedSelections : {},
+        nestedSelections: {},
       };
       const current = gState.nestedSelections[parentChoiceId] || [];
       let next = [...current];
@@ -137,31 +137,29 @@ export function useItemDetail(item: MenuItemType, isPreview = false) {
     });
   }
 
-  /* ---------- price calc / validations (unchanged) ------------------ */
+  /* =================================================================== */
+  /* 6. Price calculation + validation                                   */
+  /* =================================================================== */
   function calculateTotalPrice(): string {
     let total = item.price;
 
-    if (item.optionGroups && selectedOptions) {
-      item.optionGroups.forEach((group) => {
-        const gState = selectedOptions[group.id];
-        if (!gState) return;
+    item.optionGroups?.forEach((group) => {
+      const gState = selectedOptions[group.id];
+      if (!gState) return;
 
-        group.choices.forEach((choice) => {
-          if (!gState.selectedChoiceIds.includes(choice.id)) return;
+      group.choices.forEach((choice) => {
+        if (!gState.selectedChoiceIds.includes(choice.id)) return;
 
-          if (choice.nestedOptionGroup) {
-            const nestedChosen = gState.nestedSelections[choice.id] || [];
-            choice.nestedOptionGroup.choices.forEach((nested) => {
-              if (nestedChosen.includes(nested.id)) {
-                total += nested.priceAdjustment ?? 0;
-              }
-            });
-          } else {
-            total += choice.priceAdjustment ?? 0;
-          }
-        });
+        if (choice.nestedOptionGroup) {
+          const nestedChosen = gState.nestedSelections[choice.id] || [];
+          choice.nestedOptionGroup.choices.forEach((n) => {
+            if (nestedChosen.includes(n.id)) total += n.priceAdjustment ?? 0;
+          });
+        } else {
+          total += choice.priceAdjustment ?? 0;
+        }
       });
-    }
+    });
 
     return (total * quantity).toFixed(2);
   }
@@ -172,7 +170,6 @@ export function useItemDetail(item: MenuItemType, isPreview = false) {
     for (const group of item.optionGroups) {
       const gState = selectedOptions[group.id];
       const selCnt = gState?.selectedChoiceIds.length ?? 0;
-
       if (selCnt < group.minRequired) {
         toast.error(
           `Please select at least ${group.minRequired} option(s) for ${group.title}.`
@@ -199,66 +196,87 @@ export function useItemDetail(item: MenuItemType, isPreview = false) {
     return true;
   }
 
-  /* ---------- Add-to-Cart (with new form reset) --------------------- */
-  function handleAddToCart() {
-    if (isPreview) {
-      return toast.info("Preview mode: Add to cart is disabled.");
-    }
-    if (!canAddToCart()) return;
+  /* =================================================================== */
+/* 7. Add-to-Cart & reset                                              */
+/* =================================================================== */
+function handleAddToCart() {
+  if (isPreview) {
+    toast.info("Preview mode: Add to cart is disabled.");
+    return;
+  }
+  if (!canAddToCart()) return;
 
-    const provenance = (searchParams.get("from") || "").toLowerCase();
-    const sourceMenu =
-      provenance === "golf"
-        ? "GOLF"
-        : provenance === "main"
-        ? "MAIN"
-        : undefined;
+  const provenance = (searchParams.get("from") || "").toLowerCase();
+  const sourceMenu =
+    provenance === "golf"
+      ? "GOLF"
+      : provenance === "main"
+      ? "MAIN"
+      : undefined;
 
-    const cartBase = {
-      id:             item.id,
-      title:          item.title,
-      description:    item.description,
-      price:          item.price,
-      image:          item.image,
-      hasSpiceLevel:  item.hasSpiceLevel,
-      optionGroups:   item.optionGroups || [],
-      showInGolfMenu: item.showInGolfMenu,
-      category:       item.category,
-      specialInstructions,
-      cloverItemId:   item.cloverItemId ?? undefined,
-      stock:          item.stock,
-      isAlcohol:      item.isAlcohol,
-    };
+  /* 7.1 Build the cart item payload, now including images */
+  const cartBase = {
+    cartItemId:        uuidv4(),                    // unique per-add
+    id:                item.id,
+    title:             item.title,
+    description:       item.description,
+    price:             item.price,
+    image:             item.image,                   // legacy
+    imageUrl:          item.imageUrl,                // Cloudinary secure URL
+    cloudinaryPublicId:item.cloudinaryPublicId,      // Cloudinary ID
+    hasSpiceLevel:     item.hasSpiceLevel,
+    optionGroups:      item.optionGroups || [],
+    showInGolfMenu:    item.showInGolfMenu,
+    category:          item.category,
+    cloverItemId:      item.cloverItemId ?? undefined,
+    stock:             item.stock,
+    isAlcohol:         item.isAlcohol,
+    // user choices:
+    quantity,
+    specialInstructions,
+    spiceLevel:        item.hasSpiceLevel ? spiceLevel : undefined,
+    selectedOptions,
+  };
 
-    addToCart(
-      cartBase,
-      quantity,
-      specialInstructions,
-      item.hasSpiceLevel ? spiceLevel : undefined,
-      selectedOptions,
-      sourceMenu
-    );
+  /* 7.2 Perform the add */
+  addToCart(
+    cartBase,
+    quantity,
+    specialInstructions,
+    item.hasSpiceLevel ? spiceLevel : undefined,
+    selectedOptions,
+    sourceMenu
+  );
 
-    /* trigger animation & alcohol flag logic (unchanged) */
-    window.dispatchEvent(new CustomEvent("cart-add"));
-    if (item.isAlcohol) setOrder((prev) => ({ ...prev, containsAlcohol: true }));
-
-    toast.success("Item added to cart!");
-
-    /* ---------- NEW: clear the form so user can add next item -------- */
-    resetForm();
+  /* 7.3 Trigger any side-effects */
+  window.dispatchEvent(new CustomEvent("cart-add"));
+  if (item.isAlcohol) {
+    setOrder((prev) => ({ ...prev, containsAlcohol: true }));
   }
 
-  /* ---------- other small handlers ---------------------------------- */
-  const handleQuantityIncrease = () => setQuantity((q) => q + 1);
-  const handleQuantityDecrease = () => setQuantity((q) => (q > 1 ? q - 1 : 1));
+  toast.success("Item added to cart!");
 
+  /* 7.4 Reset the form for next use */
+  resetForm();
+}
+
+  /* =================================================================== */
+  /* 8. Other handlers                                                   */
+  /* =================================================================== */
+  const handleQuantityIncrease = () => setQuantity((q) => q + 1);
+  const handleQuantityDecrease = () =>
+    setQuantity((q) => (q > 1 ? q - 1 : 1));
   const handleBackToMenu = () => {
-    if (isPreview) return toast.info("Preview mode: 'Back' disabled.");
+    if (isPreview) {
+      toast.info("Preview mode: 'Back' disabled.");
+      return;
+    }
     router.back();
   };
 
-  /* ---------- expose to component ----------------------------------- */
+  /* =================================================================== */
+  /* 9. Exposed API                                                      */
+  /* =================================================================== */
   return {
     router,
     searchParams,

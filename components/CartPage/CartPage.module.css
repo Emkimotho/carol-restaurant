@@ -1,8 +1,8 @@
 /* File: components/CartPage.module.css */
 
-/***************************************
-  Container & Header
-***************************************/
+/***************************************/
+/*  Container & Header                 */
+/***************************************/
 .cartContainer {
   max-width: 900px;
   margin: 2rem auto;
@@ -20,9 +20,9 @@
   margin-bottom: 1.5rem;
 }
 
-/***************************************
-  Empty Cart
-***************************************/
+/***************************************/
+/*  Empty Cart                         */
+/***************************************/
 .emptyCart {
   display: flex;
   flex-direction: column;
@@ -49,9 +49,9 @@
   color: var(--gray);
 }
 
-/***************************************
-  Cart Header
-***************************************/
+/***************************************/
+/*  Cart Header                        */
+/***************************************/
 .cartHeader {
   margin-bottom: 2rem;
   display: flex;
@@ -81,9 +81,9 @@
   margin: 0 auto;
 }
 
-/***************************************
-  Cart Items & Animations
-***************************************/
+/***************************************/
+/*  Cart Items & Animations            */
+/***************************************/
 .cartItemsContainer {
   margin-bottom: 2rem;
 }
@@ -108,16 +108,17 @@
 }
 
 @keyframes fade-in {
-  0% {
+  from {
     opacity: 0;
     transform: translateY(-8px);
   }
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
+/* 5.2.1.1: Header Row */
 .itemHeader {
   display: flex;
   align-items: center;
@@ -134,25 +135,31 @@
   margin-right: 0.5rem;
 }
 
+/* Thumbnail container now enforces a square aspect-ratio */
 .thumbnail {
   flex-shrink: 0;
-}
-
-.itemThumbnail {
-  border-radius: 6px;
-  object-fit: cover;
   width: 150px;
-  height: 150px;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
 }
 
-/* Responsive thumbnail for phones */
 @media (max-width: 480px) {
-  .itemThumbnail {
+  .thumbnail {
     width: 80px;
-    height: 80px;
   }
 }
 
+/* Image fills its container without distortion */
+.itemThumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/***************************************/
+/*  Info & Actions                     */
+/***************************************/
 .itemInfo {
   flex: 1;
   min-width: 220px;
@@ -204,9 +211,9 @@
   background-color: var(--primary-color);
 }
 
-/***************************************
-  Quantity & Spice Level
-***************************************/
+/***************************************/
+/*  Quantity & Spice Level             */
+/***************************************/
 .quantityRow,
 .spiceLevelRow {
   display: flex;
@@ -277,9 +284,9 @@
   background-color: #009f53;
 }
 
-/***************************************
-  Option Groups
-***************************************/
+/***************************************/
+/*  Option Groups                      */
+/***************************************/
 .optionGroupsContainer {
   margin-top: 1rem;
   padding: 1rem;
@@ -313,9 +320,7 @@
   gap: 0.5rem;
 }
 
-/***************************************
-  Checkbox & Radio – interactive hover
-***************************************/
+/* Interactive hover/focus for inputs */
 @media (hover: hover) {
   .choiceRow input[type="checkbox"],
   .choiceRow input[type="radio"],
@@ -368,11 +373,13 @@
   font-weight: 500;
 }
 
-.nestedChoiceRow { margin-bottom: 0.3rem; }
+.nestedChoiceRow {
+  margin-bottom: 0.3rem;
+}
 
-/***************************************
-  Special Instructions
-***************************************/
+/***************************************/
+/*  Special Instructions               */
+/***************************************/
 .instructionsRow {
   display: flex;
   flex-direction: column;
@@ -392,10 +399,12 @@
   background-color: var(--light-gray);
 }
 
-/***************************************
-  Saved for Later
-***************************************/
-.savedContainer { margin: 2rem 0; }
+/***************************************/
+/*  Saved for Later                    */
+/***************************************/
+.savedContainer {
+  margin: 2rem 0;
+}
 
 .savedTitle {
   font-size: 1.4rem;
@@ -423,12 +432,25 @@
   gap: 1rem;
 }
 
-.savedThumbnail {
-  border-radius: 4px;
-  object-fit: cover;
+/* Same square-aspect container for saved thumbnails */
+.savedThumbnailContainer {
+  flex-shrink: 0;
+  width: 80px;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
 }
 
-.savedInfo { flex: 1; text-align: left; }
+.savedThumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.savedInfo {
+  flex: 1;
+  text-align: left;
+}
 
 .savedItemTitle {
   font-size: 1rem;
@@ -450,7 +472,9 @@
 }
 
 @media (min-width: 420px) {
-  .savedActions { flex-direction: row; }
+  .savedActions {
+    flex-direction: row;
+  }
 }
 
 .returnBtn,
@@ -464,16 +488,25 @@
   line-height: 1;
 }
 
-.returnBtn { background-color: var(--primary-color); }
-.removeSavedBtn { background-color: #dc3545; }
+.returnBtn {
+  background-color: var(--primary-color);
+}
+
+.removeSavedBtn {
+  background-color: #dc3545;
+}
 
 .returnBtn:hover,
-.removeSavedBtn:hover { filter: brightness(1.1); }
+.removeSavedBtn:hover {
+  filter: brightness(1.1);
+}
 
-/***************************************
-  Recommendations
-***************************************/
-.recommendationsContainer { margin: 2rem 0; }
+/***************************************/
+/*  Recommendations                    */
+/***************************************/
+.recommendationsContainer {
+  margin: 2rem 0;
+}
 
 .recommendTitle {
   font-size: 1.4rem;
@@ -497,8 +530,12 @@
 }
 
 @keyframes scrollLeft {
-  0%   { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
 }
 
 .recommendItem {
@@ -506,8 +543,7 @@
   border: 1px solid var(--border-color);
   border-radius: 6px;
   width: 180px;
-  /* increased min-height to fit button without overlap */
-  min-height: 300px;
+  min-height: 300px; /* enough room for the button */
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -521,21 +557,34 @@
   transform: translateY(-3px);
 }
 
+/* Square container for recommendation images */
 .recommendImageContainer {
   position: relative;
   width: 160px;
-  height: 160px;
-  margin-bottom: 1rem; /* more space under image */
-  flex-shrink: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  margin-bottom: 1rem;
 }
 
 @media (max-width: 480px) {
-  .recommendImageContainer { width: 120px; height: 120px; }
-  .recommendItem { min-height: 320px; }
-  .addRecommendBtn { margin-top: 0.75rem; }
+  .recommendImageContainer {
+    width: 120px;
+  }
+  .recommendItem {
+    min-height: 320px;
+  }
+  .addRecommendBtn {
+    margin-top: 0.75rem;
+  }
 }
 
-.recommendThumbnail { object-fit: contain; }
+/* Image fills its container and preserves ratio */
+.recommendThumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
 
 .addRecommendBtn {
   font-size: 0.8rem;
@@ -548,7 +597,9 @@
   transition: filter 0.3s;
 }
 
-.addRecommendBtn:hover { filter: brightness(1.1); }
+.addRecommendBtn:hover {
+  filter: brightness(1.1);
+}
 
 .recommendInfo {
   text-align: center;
@@ -557,13 +608,23 @@
   margin-top: 0.4rem;
 }
 
-.recommendItemTitle { font-weight: 600; margin: 0; }
-.recommendItemPrice { margin: 0.25rem 0 0; color: var(--primary-color); }
+.recommendItemTitle {
+  font-weight: 600;
+  margin: 0;
+}
 
-/***************************************
-  Cart Footer
-***************************************/
-.cartFooter { margin-top: 2rem; text-align: center; }
+.recommendItemPrice {
+  margin: 0.25rem 0 0;
+  color: var(--primary-color);
+}
+
+/***************************************/
+/*  Cart Footer                        */
+/***************************************/
+.cartFooter {
+  margin-top: 2rem;
+  text-align: center;
+}
 
 .cartTotal {
   font-size: 1.3rem;
@@ -591,17 +652,27 @@
   transition: filter 0.3s;
 }
 
-.checkoutBtn { background-color: var(--primary-color); }
-.clearBtn    { background-color: #dc3545; }
-.menuBtn     { background-color: var(--secondary-color); }
+.checkoutBtn {
+  background-color: var(--primary-color);
+}
+
+.clearBtn {
+  background-color: #dc3545;
+}
+
+.menuBtn {
+  background-color: var(--secondary-color);
+}
 
 .checkoutBtn:hover,
 .clearBtn:hover,
-.menuBtn:hover { filter: brightness(1.1); }
+.menuBtn:hover {
+  filter: brightness(1.1);
+}
 
-/***************************************
-  Flying Ball
-***************************************/
+/***************************************/
+/*  Flying Ball                        */
+/***************************************/
 .flyingBall {
   position: fixed;
   z-index: 2000;

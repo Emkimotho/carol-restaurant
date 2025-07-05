@@ -1,22 +1,31 @@
 // File: lib/cloudinary-client.ts
 
 /**
- * Build a Cloudinary image URL for use in browser components.
- * Reads NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME from the environment.
+ * Supported Cloudinary cropping modes.
+ *  - "fill":   crop to fill the specified dimensions (default)
+ *  - "crop":   piecewise crop to the exact width/height
+ *  - "scale":  scale to fit within the box
+ *  - "fit":    scale to fit (no cropping; letterbox/pillarbox)
  */
+export type CropMode = "fill" | "crop" | "scale" | "fit";
+
+const DEFAULT_CROP: CropMode = "fill";
 
 /**
- * Returns a Cloudinary URL for the given public ID, with automatic
- * format and quality optimization. If the env var is missing, logs
- * a warning and returns the bare publicId or its URL if it looks like one.
+ * Build a Cloudinary URL for the given public ID, optimized for web.
+ *
+ * @param publicId  Cloudinary public ID OR a full URL (in which case it's returned verbatim)
+ * @param width     Desired image width
+ * @param height    Desired image height
+ * @param crop      Crop mode (see CropMode). Defaults to "fill".
  */
 export function getCloudinaryImageUrl(
   publicId: string,
   width: number,
   height: number,
-  crop: 'fill' | 'crop' | 'scale' | 'fit' = 'fill'
+  crop: CropMode = DEFAULT_CROP
 ): string {
-  // If the publicId is already a full URL, just return it
+  // If it's already a URL, just return it
   if (/^https?:\/\//i.test(publicId)) {
     return publicId;
   }
@@ -24,23 +33,29 @@ export function getCloudinaryImageUrl(
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   if (!cloudName) {
     console.warn(
-      '[cloudinary-client] NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is not set; returning publicId directly'
+      "[cloudinary-client] NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is not set; returning publicId directly"
     );
-    // Append a .jpg if missing, so at least it's a valid path
-    return publicId.match(/\.(jpe?g|png|webp|gif)$/i)
-      ? publicId
-      : `${publicId}.jpg`;
+    return ensureExtension(publicId);
   }
 
-  // Ensure the publicId has an extension
-  const idWithExt = publicId.match(/\.(jpe?g|png|webp|gif)$/i)
-    ? publicId
-    : `${publicId}.jpg`;
+  // Guarantee file extension
+  const idWithExt = ensureExtension(publicId);
 
-  // Build the URL
-  return [
-    `https://res.cloudinary.com/${cloudName}/image/upload`,
-    `c_${crop},w_${width},h_${height},f_auto,q_auto`,
-    idWithExt
-  ].join('/');
+  // Build the transformation string
+  const transformation = [
+    `c_${crop}`,          // crop mode
+    `w_${width}`,         // width
+    `h_${height}`,        // height
+    `f_auto`,             // auto format
+    `q_auto`              // auto quality
+  ].join(",");
+
+  return `https://res.cloudinary.com/${cloudName}/image/upload/${transformation}/${idWithExt}`;
+}
+
+/** 
+ * If the publicId lacks a known extension, append “.jpg” 
+ */
+function ensureExtension(id: string) {
+  return /\.(jpe?g|png|webp|gif)$/i.test(id) ? id : `${id}.jpg`;
 }

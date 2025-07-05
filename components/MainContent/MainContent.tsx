@@ -1,29 +1,29 @@
 "use client";
 
 import React from "react";
-import { motion, useViewportScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion"; // ← useScroll instead of deprecated useViewportScroll
 import Banner from "../Banner/Banner";
 import NeonSign from "../NeonSign/NeonSign";
 import MenuPreview from "../MenuPreview/MenuPreview";
 import Gallery from "../Gallery/Gallery";
-import SlidingServices from "components/SlidingServices/SlidingServices";
+import SlidingServices from "../SlidingServices/SlidingServices";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./MainContent.module.css";
 
 const MainContent: React.FC = () => {
-  // Create a parallax effect for the Banner
-  const { scrollY } = useViewportScroll();
+  // Parallax effect for Banner
+  const { scrollY } = useScroll();
   const parallaxY = useTransform(scrollY, [0, 300], [0, -50]);
 
   return (
     <div className={styles.mainContent}>
-      {/* Banner Section with Parallax */}
+      {/* Banner with parallax */}
       <motion.div style={{ y: parallaxY }}>
         <Banner />
       </motion.div>
 
-      {/* Neon Sign Section - fades & slides in on scroll */}
+      {/* Neon Sign */}
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -33,11 +33,11 @@ const MainContent: React.FC = () => {
         <NeonSign />
       </motion.div>
 
-      {/* About Us Section */}
+      {/* About Us */}
       <section className={styles.aboutUs}>
         <div className="container">
           <div className="row">
-            {/* Left Column - Image */}
+            {/* Image (Above the fold → priority + sizes) */}
             <motion.div
               className="col-lg-6 mb-4 mb-lg-0"
               initial={{ opacity: 0, x: -100 }}
@@ -47,14 +47,21 @@ const MainContent: React.FC = () => {
             >
               <Image
                 src="/images/staff-abtus.jpg"
-                alt="Restaurant Interior"
-                className="img-fluid rounded shadow"
+                alt="Dining area at The 19th Hole Restaurant"
                 width={600}
                 height={400}
+                priority                      // preload as LCP
+                placeholder="empty"          // no blur placeholder
+                sizes="(max-width: 992px) 100vw, 600px"
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  borderRadius: "0.5rem",
+                }}
               />
             </motion.div>
 
-            {/* Right Column - Text Content */}
+            {/* Text */}
             <motion.div
               className="col-lg-6 d-flex flex-column justify-content-center"
               initial={{ opacity: 0, x: 100 }}
@@ -64,7 +71,7 @@ const MainContent: React.FC = () => {
             >
               <h2>About Us</h2>
               <p>
-                Experience fine dining at its best at The 19th Hole Restaurant and Bar. Nestled within the scenic{" "}
+                Experience fine dining at The 19th Hole Restaurant & Bar, nestled on the scenic{" "}
                 <a
                   href="https://www.washco-md.net/black-rock-golf-course/"
                   className={styles.sweepLink}
@@ -73,15 +80,15 @@ const MainContent: React.FC = () => {
                 >
                   Black Rock Golf Course
                 </a>
-                , we offer an exquisite{" "}
+                . Enjoy our carefully curated{" "}
                 <Link href="/menu" className={styles.sweepLink}>
                   menu
                 </Link>{" "}
-                and unparalleled{" "}
+                and unmatched{" "}
                 <Link href="/about" className={styles.sweepLink}>
                   service
-                </Link>{" "}
-                that caters to all your senses. Click &quot;Read More&quot; to see our services...
+                </Link>
+                . Click “Read More” to explore our offerings.
               </p>
               <Link href="/about" className={styles.readMoreBtn}>
                 Read More
@@ -91,7 +98,7 @@ const MainContent: React.FC = () => {
         </div>
       </section>
 
-      {/* Menu Preview Section */}
+      {/* Menu Preview */}
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -101,7 +108,7 @@ const MainContent: React.FC = () => {
         <MenuPreview />
       </motion.div>
 
-      {/* Sliding Services Section */}
+      {/* Sliding Services */}
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
@@ -111,7 +118,7 @@ const MainContent: React.FC = () => {
         <SlidingServices />
       </motion.div>
 
-      {/* Gallery Section */}
+      {/* Gallery */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         whileInView={{ opacity: 1, scale: 1 }}
