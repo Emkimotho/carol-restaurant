@@ -1,0 +1,31 @@
+.card {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  box-shadow: var(--box-shadow-primary);
+}
+
+.icon {
+  margin-right: 1rem;
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.details {
+  flex: 1;
+}
+
+.label {
+  font-size: 0.875rem;
+  color: var(--gray);
+  font-family: var(--font-body);
+}
+
+.value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  font-family: var(--font-heading);
+}
